@@ -11,7 +11,7 @@ const USER_ID = import.meta.env.VITE_USER_ID || 'patty';
 /**
  * Crear nueva sesión
  */
-export async function createSession({ mode = 'aleon', assistantId = null }) {
+export async function createSession({ mode = 'universal', assistantId = null }) {
   try {
     const response = await fetch(`${API_BASE}/api/sessions`, {
       method: 'POST',

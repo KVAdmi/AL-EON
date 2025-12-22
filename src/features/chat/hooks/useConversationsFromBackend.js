@@ -54,7 +54,7 @@ export function useConversationsFromBackend() {
   const createNewSession = useCallback(async () => {
     try {
       setIsLoading(true);
-      const newSession = await createSession({ mode: 'aleon' }); // ✅ AL-EON solo usa modo aleon
+      const newSession = await createSession({ mode: 'universal' }); // ✅ AL-EON usa modo universal
       
       setSessions(prev => [newSession, ...prev]);
       setCurrentSessionId(newSession.id);

@@ -58,7 +58,7 @@ export default function SettingsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mode: 'aleon', // ✅ AL-EON solo usa modo aleon
+          mode: 'universal', // ✅ AL-EON usa modo universal
           workspaceId: 'default',
           userId: 'health-check',
           messages: [{ role: 'user', content: 'ping' }]

@@ -44,7 +44,7 @@ export async function sendWithStreaming({
   }
 
   const payload = {
-    mode: "aleon",
+    mode: "universal",
     workspaceId: "default",
     userId,
     messages,

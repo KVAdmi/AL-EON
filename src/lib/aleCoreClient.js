@@ -60,7 +60,7 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
   const payload = {
     workspaceId: finalWorkspaceId, // ✅ CRÍTICO: SIEMPRE definido
     userId: userId, // ✅ CRÍTICO: Enviar userId explícitamente
-    mode: "aleon", // ✅ OBLIGATORIO: AL-EON siempre usa modo aleon (ChatGPT-like generalista)
+    mode: "universal", // ✅ OBLIGATORIO: AL-EON usa modo universal
     messages,
     meta: {
       ...getRequestMetadata(),

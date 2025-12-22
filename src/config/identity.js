@@ -34,7 +34,7 @@ export const AL_EON_IDENTITY = {
   // Meta información
   meta: {
     workspace: "default",
-    mode: "aleon", // ✅ AL-EON = modo aleon (ChatGPT-like generalista)
+    mode: "universal", // ✅ AL-EON = modo universal
     privacy: "private",
     usageType: "training-and-production"
   }
