@@ -149,13 +149,38 @@ export function extractReply(data) {
   
   // PRIORIDAD 1: Campo "answer" (formato estándar de AL-E Core)
   if (data.answer && typeof data.answer === 'string') {
-    console.log('✅ Extrayendo data.answer:', data.answer);
+    let answer = data.answer;
+    
+    // 🚨 DETECTAR SI answer CONTIENE JSON STRINGIFICADO
+    if (answer.trim().startsWith('{') && answer.trim().endsWith('}')) {
+      try {
+        console.warn('⚠️ CRÍTICO: String JSON detectado en el chat - intentando parsear');
+        const parsed = JSON.parse(answer);
+        
+        // Si el JSON parseado tiene un campo "answer", usar ese
+        if (parsed.answer && typeof parsed.answer === 'string') {
+          console.log('✅ JSON parseado exitosamente, extrayendo answer interno');
+          answer = parsed.answer;
+        } else if (parsed.message && typeof parsed.message === 'string') {
+          console.log('✅ JSON parseado exitosamente, extrayendo message');
+          answer = parsed.message;
+        } else {
+          console.error('❌ JSON parseado pero no tiene campo answer/message válido');
+          // Mantener el JSON original como texto
+        }
+      } catch (e) {
+        console.warn('⚠️ String parece JSON pero no se pudo parsear, usando como texto');
+        // Si falla el parse, usar el string original
+      }
+    }
+    
+    console.log('✅ Extrayendo data.answer:', answer.substring(0, 100));
     console.log('🗑️ Ignorando metadata:', { 
       memories_to_add: data.memories_to_add?.length || 0,
       actions: data.actions?.length || 0,
       artifacts: data.artifacts?.length || 0
     });
-    return data.answer;
+    return answer;
   }
   
   // PRIORIDAD 2: Otros formatos alternativos
