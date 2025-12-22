@@ -1,0 +1,760 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  ArrowLeft, User, Palette, Database, Link2, Mic, Eye, Bell, Lock, CreditCard, 
+  Save, Check, Code, Trash2, Download, AlertTriangle, Shield, Globe, Volume2, 
+  Moon, Sun, Monitor, Wifi, WifiOff
+} from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
+
+export default function SettingsPage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('general');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [backendStatus, setBackendStatus] = useState('checking');
+  
+  // Estado del perfil y configuración
+  const [profile, setProfile] = useState({
+    display_name: '',
+    email: '',
+    preferred_language: 'es',
+    timezone: 'America/Mexico_City',
+    theme: 'system',
+    role: 'USER'
+  });
+  
+  const [settings, setSettings] = useState({
+    ai_model: 'gpt-4',
+    ai_temperature: 0.7,
+    context_persistent: true,
+    voice_enabled: false
+  });
+
+  const tabs = [
+    { id: 'general', label: 'General', icon: <User size={18} /> },
+    { id: 'personalization', label: 'Personalización', icon: <Palette size={18} /> },
+    { id: 'voice', label: 'Voz', icon: <Mic size={18} /> },
+    { id: 'memory', label: 'Memoria', icon: <Database size={18} /> },
+    { id: 'integrations', label: 'Integraciones', icon: <Link2 size={18} /> },
+    { id: 'developer', label: 'Desarrollador', icon: <Code size={18} /> },
+    { id: 'notifications', label: 'Notificaciones', icon: <Bell size={18} /> },
+    { id: 'data', label: 'Datos y privacidad', icon: <Shield size={18} /> },
+  ];
+
+  // Verificar estado del backend
+  useEffect(() => {
+    checkBackendHealth();
+    const interval = setInterval(checkBackendHealth, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  async function checkBackendHealth() {
+    try {
+      const response = await fetch('https://api.al-entity.com/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'aleon', // ✅ AL-EON solo usa modo aleon
+          workspaceId: 'default',
+          userId: 'health-check',
+          messages: [{ role: 'user', content: 'ping' }]
+        })
+      });
+      setBackendStatus(response.ok ? 'online' : 'error');
+    } catch (error) {
+      setBackendStatus('offline');
+    }
+  }
+
+  // Cargar datos al montar
+  useEffect(() => {
+    loadUserData();
+  }, [user]);
+
+  async function loadUserData() {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      
+      // Cargar perfil
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      // SIEMPRE cargar datos, aunque no exista el perfil
+      setProfile({
+        display_name: profileData?.display_name || '',
+        email: profileData?.email || user?.email || '',
+        preferred_language: profileData?.preferred_language || 'es',
+        timezone: profileData?.timezone || 'America/Mexico_City',
+        theme: profileData?.theme || 'system',
+        role: profileData?.role || 'USER'
+      });
+      
+      // Cargar settings
+      const { data: settingsData } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      // SIEMPRE cargar settings
+      setSettings({
+        ai_model: settingsData?.ai_model || 'gpt-4',
+        ai_temperature: settingsData?.ai_temperature || 0.7,
+        context_persistent: settingsData?.context_persistent ?? true,
+        voice_enabled: settingsData?.voice_enabled ?? false
+      });
+    } catch (error) {
+      console.error('Error cargando datos:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function saveChanges() {
+    if (!user) return;
+    
+    try {
+      setSaving(true);
+      
+      // Guardar perfil
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .update({
+          display_name: profile.display_name,
+          preferred_language: profile.preferred_language,
+          timezone: profile.timezone,
+          theme: profile.theme
+        })
+        .eq('user_id', user.id);
+      
+      if (profileError) throw profileError;
+      
+      // Guardar settings
+      const { error: settingsError } = await supabase
+        .from('user_settings')
+        .update({
+          ai_model: settings.ai_model,
+          ai_temperature: settings.ai_temperature,
+          context_persistent: settings.context_persistent,
+          voice_enabled: settings.voice_enabled
+        })
+        .eq('user_id', user.id);
+      
+      if (settingsError) throw settingsError;
+      
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (error) {
+      console.error('Error guardando cambios:', error);
+      alert('Error al guardar cambios: ' + error.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+        <div style={{ color: 'var(--color-text-secondary)' }}>Cargando configuración...</div>
+      </div>
+    );
+  }
+
+  const isOwner = profile.role === 'ROOT' || profile.email === 'pgaribay@infinitykode.com';
+
+  return (
+    <div className="h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+      {/* Header */}
+      <div className="border-b" style={{ borderColor: 'var(--color-border)' }}>
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:opacity-80 transition-all" style={{ color: 'var(--color-text-secondary)' }}>
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="text-2xl font-semibold" style={{ color: 'var(--color-text-primary)' }}>Configuración</h1>
+            
+            {/* Status indicator */}
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs" style={{
+              backgroundColor: backendStatus === 'online' ? 'rgba(16, 185, 129, 0.1)' : 
+                              backendStatus === 'offline' ? 'rgba(239, 68, 68, 0.1)' : 
+                              'rgba(251, 191, 36, 0.1)',
+              color: backendStatus === 'online' ? '#10b981' : 
+                     backendStatus === 'offline' ? '#ef4444' : 
+                     '#fbbf24'
+            }}>
+              {backendStatus === 'online' ? <Wifi size={12} /> : <WifiOff size={12} />}
+              <span>{backendStatus === 'online' ? 'Conectado' : backendStatus === 'offline' ? 'Desconectado' : 'Verificando...'}</span>
+            </div>
+          </div>
+          
+          <button
+            onClick={saveChanges}
+            disabled={saving || saved}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all"
+            style={{
+              backgroundColor: saved ? '#10b981' : 'var(--color-accent)',
+              color: 'white',
+              opacity: saving ? 0.7 : 1,
+              cursor: (saving || saved) ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {saved ? <Check size={18} /> : <Save size={18} />}
+            {saving ? 'Guardando...' : saved ? '¡Guardado!' : 'Guardar cambios'}
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-hidden">
+        <div className="max-w-6xl mx-auto h-full flex gap-6 p-6">
+          {/* Sidebar */}
+          <div className="w-64 flex-shrink-0 space-y-1">
+            {tabs.map(tab => (
+              <button 
+                key={tab.id} 
+                onClick={() => setActiveTab(tab.id)} 
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left" 
+                style={{ 
+                  backgroundColor: activeTab === tab.id ? 'var(--color-bg-secondary)' : 'transparent', 
+                  color: activeTab === tab.id ? 'var(--color-text-primary)' : 'var(--color-text-secondary)', 
+                  fontWeight: activeTab === tab.id ? 500 : 400 
+                }}
+              >
+                {tab.icon}
+                <span className="text-sm">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Tab content */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="rounded-xl p-8 border" style={{ backgroundColor: 'var(--color-bg-secondary)', borderColor: 'var(--color-border)' }}>
+              <TabContent 
+                activeTab={activeTab} 
+                profile={profile} 
+                setProfile={setProfile}
+                settings={settings}
+                setSettings={setSettings}
+                isOwner={isOwner}
+                backendStatus={backendStatus}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TabContent({ activeTab, profile, setProfile, settings, setSettings, isOwner, backendStatus }) {
+  // ===== GENERAL =====
+  if (activeTab === 'general') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>General</h2>
+          <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            Configuración básica de tu cuenta
+          </p>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+            Nombre para mostrar
+          </label>
+          <input
+            type="text"
+            value={profile.display_name}
+            onChange={(e) => setProfile({ ...profile, display_name: e.target.value })}
+            className="w-full px-4 py-2 rounded-xl border outline-none focus:ring-2 focus:ring-offset-0 transition-all"
+            style={{
+              backgroundColor: 'var(--color-bg-tertiary)',
+              borderColor: 'var(--color-border)',
+              color: 'var(--color-text-primary)'
+            }}
+            placeholder="Tu nombre"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+            Email
+          </label>
+          <input
+            type="email"
+            value={profile.email}
+            disabled
+            className="w-full px-4 py-2 rounded-xl border opacity-60 cursor-not-allowed"
+            style={{
+              backgroundColor: 'var(--color-bg-tertiary)',
+              borderColor: 'var(--color-border)',
+              color: 'var(--color-text-secondary)'
+            }}
+          />
+          <p className="text-xs mt-1" style={{ color: 'var(--color-text-tertiary)' }}>
+            El email no se puede cambiar
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+            Idioma preferido
+          </label>
+          <select
+            value={profile.preferred_language}
+            onChange={(e) => setProfile({ ...profile, preferred_language: e.target.value })}
+            className="w-full px-4 py-2 rounded-xl border outline-none focus:ring-2 transition-all"
+            style={{
+              backgroundColor: 'var(--color-bg-tertiary)',
+              borderColor: 'var(--color-border)',
+              color: 'var(--color-text-primary)'
+            }}
+          >
+            <option value="es">Español</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+            Zona horaria
+          </label>
+          <select
+            value={profile.timezone}
+            onChange={(e) => setProfile({ ...profile, timezone: e.target.value })}
+            className="w-full px-4 py-2 rounded-xl border outline-none focus:ring-2 transition-all"
+            style={{
+              backgroundColor: 'var(--color-bg-tertiary)',
+              borderColor: 'var(--color-border)',
+              color: 'var(--color-text-primary)'
+            }}
+          >
+            <option value="America/Mexico_City">Ciudad de México (GMT-6)</option>
+            <option value="America/New_York">Nueva York (GMT-5)</option>
+            <option value="America/Los_Angeles">Los Ángeles (GMT-8)</option>
+            <option value="Europe/Madrid">Madrid (GMT+1)</option>
+          </select>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== PERSONALIZACIÓN =====
+  if (activeTab === 'personalization') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>Personalización</h2>
+          <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            Ajusta la apariencia y comportamiento de AL-EON
+          </p>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium mb-3" style={{ color: 'var(--color-text-primary)' }}>
+            Tema
+          </label>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { value: 'light', label: 'Claro', icon: <Sun size={20} /> },
+              { value: 'dark', label: 'Oscuro', icon: <Moon size={20} /> },
+              { value: 'system', label: 'Sistema', icon: <Monitor size={20} /> }
+            ].map(theme => (
+              <button
+                key={theme.value}
+                onClick={() => setProfile({ ...profile, theme: theme.value })}
+                className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all"
+                style={{
+                  backgroundColor: profile.theme === theme.value ? 'var(--color-accent-light)' : 'var(--color-bg-tertiary)',
+                  borderColor: profile.theme === theme.value ? 'var(--color-accent)' : 'var(--color-border)',
+                  color: profile.theme === theme.value ? 'var(--color-accent-bright)' : 'var(--color-text-primary)'
+                }}
+              >
+                {theme.icon}
+                <span className="text-sm font-medium">{theme.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+            Modelo de IA predeterminado
+          </label>
+          <select
+            value={settings.ai_model}
+            onChange={(e) => setSettings({ ...settings, ai_model: e.target.value })}
+            className="w-full px-4 py-2 rounded-xl border outline-none focus:ring-2 transition-all"
+            style={{
+              backgroundColor: 'var(--color-bg-tertiary)',
+              borderColor: 'var(--color-border)',
+              color: 'var(--color-text-primary)'
+            }}
+          >
+            <option value="gpt-4">GPT-4 (Recomendado)</option>
+            <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Más rápido)</option>
+          </select>
+          <p className="text-xs mt-1" style={{ color: 'var(--color-text-tertiary)' }}>
+            GPT-4 ofrece respuestas más precisas y contextuales
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+            Creatividad: {settings.ai_temperature.toFixed(1)}
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.1"
+            value={settings.ai_temperature}
+            onChange={(e) => setSettings({ ...settings, ai_temperature: parseFloat(e.target.value) })}
+            className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+            style={{
+              background: `linear-gradient(to right, var(--color-accent) 0%, var(--color-accent) ${settings.ai_temperature * 100}%, var(--color-border) ${settings.ai_temperature * 100}%, var(--color-border) 100%)`
+            }}
+          />
+          <div className="flex justify-between text-xs mt-1" style={{ color: 'var(--color-text-tertiary)' }}>
+            <span>Preciso</span>
+            <span>Balanceado</span>
+            <span>Creativo</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== VOZ =====
+  if (activeTab === 'voice') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>Voz</h2>
+          <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            Configura la síntesis y reconocimiento de voz
+          </p>
+        </div>
+        
+        <div className="p-5 rounded-xl border flex items-center justify-between" style={{ 
+          backgroundColor: 'var(--color-bg-tertiary)', 
+          borderColor: 'var(--color-border)' 
+        }}>
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--color-accent-light)' }}>
+              <Volume2 size={24} style={{ color: 'var(--color-accent)' }} />
+            </div>
+            <div>
+              <h3 className="font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                Respuestas por voz
+              </h3>
+              <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                Escucha las respuestas de AL-E automáticamente
+              </p>
+            </div>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.voice_enabled}
+              onChange={(e) => setSettings({ ...settings, voice_enabled: e.target.checked })}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all" 
+              style={{ 
+                backgroundColor: settings.voice_enabled ? 'var(--color-accent)' : '#6b7280' 
+              }}
+            />
+          </label>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== MEMORIA =====
+  if (activeTab === 'memory') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>Memoria</h2>
+          <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            Controla cómo AL-E recuerda información entre conversaciones
+          </p>
+        </div>
+        
+        <div className="p-5 rounded-xl border flex items-center justify-between" style={{ 
+          backgroundColor: 'var(--color-bg-tertiary)', 
+          borderColor: 'var(--color-border)' 
+        }}>
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--color-accent-light)' }}>
+              <Database size={24} style={{ color: 'var(--color-accent)' }} />
+            </div>
+            <div>
+              <h3 className="font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                Persistencia de contexto
+              </h3>
+              <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                AL-E recordará conversaciones previas
+              </p>
+            </div>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.context_persistent}
+              onChange={(e) => setSettings({ ...settings, context_persistent: e.target.checked })}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all" 
+              style={{ 
+                backgroundColor: settings.context_persistent ? 'var(--color-accent)' : '#6b7280' 
+              }}
+            />
+          </label>
+        </div>
+
+        <div className="p-4 rounded-xl border" style={{ 
+          backgroundColor: 'rgba(251, 191, 36, 0.1)', 
+          borderColor: 'rgba(251, 191, 36, 0.3)' 
+        }}>
+          <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            ⚠️ <strong>Nota:</strong> Desactivar la persistencia hará que cada conversación sea independiente. No se compartirá contexto entre sesiones.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== INTEGRACIONES =====
+  if (activeTab === 'integrations') {
+    const integrations = [
+      { 
+        name: 'AL-E Core', 
+        description: 'Motor de IA principal', 
+        status: backendStatus === 'online' ? 'connected' : 'error',
+        category: 'core'
+      },
+      { name: 'Supabase', description: 'Base de datos y autenticación', status: 'connected', category: 'core' },
+      { name: 'AWS', description: 'Infraestructura en la nube', status: 'not-configured', category: 'infrastructure' },
+      { name: 'GitHub', description: 'Repositorios y código', status: 'not-configured', category: 'development' },
+      { name: 'Netlify', description: 'Despliegue de frontend', status: 'not-configured', category: 'deployment' },
+      { name: 'OpenAI', description: 'Modelos de lenguaje', status: 'connected', category: 'ai' },
+      { name: 'Google Play', description: 'App Store para Android', status: 'not-configured', category: 'mobile' },
+      { name: 'App Store Connect', description: 'App Store para iOS', status: 'not-configured', category: 'mobile' },
+    ];
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>Integraciones</h2>
+          <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            Conecta servicios externos con AL-EON
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {integrations.map(integration => (
+            <div 
+              key={integration.name}
+              className="p-5 rounded-xl border flex items-center justify-between" 
+              style={{ 
+                backgroundColor: 'var(--color-bg-tertiary)', 
+                borderColor: 'var(--color-border)' 
+              }}
+            >
+              <div className="flex items-center gap-4">
+                <div className={`w-3 h-3 rounded-full`} style={{
+                  backgroundColor: integration.status === 'connected' ? '#10b981' : 
+                                 integration.status === 'error' ? '#ef4444' : '#6b7280'
+                }} />
+                <div>
+                  <h3 className="font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                    {integration.name}
+                  </h3>
+                  <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                    {integration.description}
+                  </p>
+                </div>
+              </div>
+              <div className="text-sm font-medium" style={{
+                color: integration.status === 'connected' ? '#10b981' : 
+                       integration.status === 'error' ? '#ef4444' : '#6b7280'
+              }}>
+                {integration.status === 'connected' ? 'Conectado' :
+                 integration.status === 'error' ? 'Error' : 'No configurado'}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {isOwner && (
+          <div className="p-4 rounded-xl border" style={{ 
+            backgroundColor: 'rgba(139, 92, 246, 0.1)', 
+            borderColor: 'rgba(139, 92, 246, 0.3)' 
+          }}>
+            <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+              👑 <strong>Modo Owner:</strong> Configura las integraciones desde el panel de administración
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ===== DESARROLLADOR =====
+  if (activeTab === 'developer') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>Desarrollador</h2>
+          <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            Herramientas y configuración avanzada
+          </p>
+        </div>
+
+        <div className="p-5 rounded-xl border" style={{ 
+          backgroundColor: 'var(--color-bg-tertiary)', 
+          borderColor: 'var(--color-border)' 
+        }}>
+          <h3 className="font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+            Estado del sistema
+          </h3>
+          <div className="space-y-2 text-sm font-mono">
+            <div className="flex justify-between">
+              <span style={{ color: 'var(--color-text-secondary)' }}>Backend:</span>
+              <span style={{ color: backendStatus === 'online' ? '#10b981' : '#ef4444' }}>
+                {backendStatus}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span style={{ color: 'var(--color-text-secondary)' }}>Endpoint:</span>
+              <span style={{ color: 'var(--color-text-primary)' }}>api.al-entity.com</span>
+            </div>
+            <div className="flex justify-between">
+              <span style={{ color: 'var(--color-text-secondary)' }}>Versión:</span>
+              <span style={{ color: 'var(--color-text-primary)' }}>1.0.0</span>
+            </div>
+          </div>
+        </div>
+
+        {isOwner && (
+          <div className="p-4 rounded-xl border" style={{ 
+            backgroundColor: 'rgba(139, 92, 246, 0.1)', 
+            borderColor: 'rgba(139, 92, 246, 0.3)' 
+          }}>
+            <p className="text-sm mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+              👑 <strong>Modo Owner:</strong> Acceso completo a herramientas de desarrollo
+            </p>
+            <button 
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+              style={{
+                backgroundColor: 'var(--color-accent)',
+                color: 'white'
+              }}
+            >
+              Abrir consola de administración
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ===== NOTIFICACIONES =====
+  if (activeTab === 'notifications') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>Notificaciones</h2>
+          <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            Gestiona cómo y cuándo recibes notificaciones
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== DATOS Y PRIVACIDAD =====
+  if (activeTab === 'data') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>Datos y privacidad</h2>
+          <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            Controla tus datos y configuración de privacidad
+          </p>
+        </div>
+
+        <div className="p-5 rounded-xl border" style={{ 
+          backgroundColor: 'var(--color-bg-tertiary)', 
+          borderColor: 'var(--color-border)' 
+        }}>
+          <div className="flex items-start gap-4">
+            <Shield size={24} style={{ color: 'var(--color-accent)', flexShrink: 0 }} />
+            <div>
+              <h3 className="font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                Tus datos están protegidos
+              </h3>
+              <p className="text-sm mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+                Usamos encriptación de extremo a extremo y políticas estrictas de Row Level Security (RLS) para proteger tu información.
+              </p>
+              <ul className="space-y-1 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                <li>✓ Solo tú puedes ver tus conversaciones</li>
+                <li>✓ Los datos se almacenan de forma segura</li>
+                <li>✓ Cumplimiento con GDPR y regulaciones de privacidad</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <button className="w-full p-4 rounded-xl border flex items-center justify-between hover:opacity-80 transition-all" style={{
+            backgroundColor: 'var(--color-bg-tertiary)',
+            borderColor: 'var(--color-border)'
+          }}>
+            <div className="flex items-center gap-3">
+              <Download size={20} style={{ color: 'var(--color-accent)' }} />
+              <div className="text-left">
+                <div className="font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                  Exportar mis datos
+                </div>
+                <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                  Descarga una copia de toda tu información
+                </div>
+              </div>
+            </div>
+          </button>
+
+          <button className="w-full p-4 rounded-xl border flex items-center justify-between hover:opacity-80 transition-all" style={{
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            borderColor: 'rgba(239, 68, 68, 0.3)'
+          }}>
+            <div className="flex items-center gap-3">
+              <Trash2 size={20} style={{ color: '#ef4444' }} />
+              <div className="text-left">
+                <div className="font-medium" style={{ color: '#ef4444' }}>
+                  Eliminar mi cuenta
+                </div>
+                <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                  Esta acción no se puede deshacer
+                </div>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}

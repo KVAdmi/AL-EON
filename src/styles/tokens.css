@@ -1,0 +1,96 @@
+
+:root {
+  /* AL-E Core Design Language - Dark Theme (default) */
+  --color-bg-primary: #0A0E12;
+  --color-bg-secondary: #15191F;
+  --color-bg-tertiary: #1F242C;
+  --color-bg-hover: #252A33;
+  
+  /* Glassmorphism backgrounds */
+  --color-glass-primary: rgba(21, 25, 31, 0.8);
+  --color-glass-secondary: rgba(31, 36, 44, 0.6);
+  
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #A8B2C1;
+  --color-text-tertiary: #6B7684;
+  
+  /* AL-E Petroleum/Teal Accent - Signature Color */
+  --color-accent: #15333E;
+  --color-accent-hover: #1D4554;
+  --color-accent-light: rgba(21, 51, 62, 0.15);
+  --color-accent-bright: #2FA4C7; /* For highlights/active states */
+  
+  --color-border: rgba(47, 164, 199, 0.1);
+  --color-border-hover: rgba(47, 164, 199, 0.2);
+  
+  --color-error: #EF4444;
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  
+  /* Typography - Professional Executive */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  
+  /* Borders - Rounded but professional */
+  --border-radius-sm: 0.5rem;
+  --border-radius-md: 0.75rem;
+  --border-radius-lg: 1rem;
+  --border-radius-xl: 1.5rem;
+  --border-radius-full: 9999px;
+  
+  /* Shadows - Subtle depth */
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 8px -2px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 20px -5px rgba(0, 0, 0, 0.3);
+  --shadow-glow: 0 0 20px rgba(47, 164, 199, 0.15);
+  
+  /* Transitions */
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 250ms ease-in-out;
+  --transition-slow: 400ms ease-in-out;
+  
+  /* Glassmorphism Effects */
+  --blur-sm: blur(8px);
+  --blur-md: blur(16px);
+  --blur-lg: blur(24px);
+}
+
+/* Light Theme - Minimal support (AL-E is dark-first) */
+:root.light {
+  --color-bg-primary: #F8F9FA;
+  --color-bg-secondary: #FFFFFF;
+  --color-bg-tertiary: #E9ECEF;
+  --color-bg-hover: #F1F3F5;
+  
+  --color-glass-primary: rgba(255, 255, 255, 0.8);
+  --color-glass-secondary: rgba(248, 249, 250, 0.6);
+  
+  --color-text-primary: #0A0E12;
+  --color-text-secondary: #495057;
+  --color-text-tertiary: #6C757D;
+  
+  --color-accent: #15333E;
+  --color-accent-hover: #1D4554;
+  --color-accent-light: rgba(21, 51, 62, 0.08);
+  --color-accent-bright: #2FA4C7;
+  
+  --color-border: rgba(21, 51, 62, 0.1);
+  --color-border-hover: rgba(21, 51, 62, 0.2);
+  
+  --color-error: #DC3545;
+  --color-success: #28A745;
+  --color-warning: #FFC107;
+}
