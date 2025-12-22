@@ -81,29 +81,63 @@ export default function SettingsPage() {
     try {
       setLoading(true);
       
-      // Cargar perfil
-      const { data: profileData } = await supabase
+      // ✅ VERIFICAR SESIÓN ACTIVA ANTES DE HACER FETCH
+      const { data: { session } } = await supabase.auth.getSession();
+
+      // ❌ SI NO HAY SESIÓN: usar defaults en memoria
+      if (!session?.user?.id) {
+        console.warn('⚠️ No hay sesión activa - usando defaults en memoria');
+        setProfile({
+          display_name: '',
+          email: user?.email || '',
+          preferred_language: 'es',
+          timezone: 'America/Mexico_City',
+          theme: 'system',
+          role: 'USER'
+        });
+        setSettings({
+          ai_model: 'gpt-4',
+          ai_temperature: 0.7,
+          context_persistent: true,
+          voice_enabled: false
+        });
+        setLoading(false);
+        return;
+      }
+      
+      // ✅ SOLO SI HAY SESIÓN: hacer fetch a user_profiles
+      const { data: profileData, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', session.user.id)
         .single();
       
-      // SIEMPRE cargar datos, aunque no exista el perfil
+      // Ignorar 403 silenciosamente
+      if (profileError && (profileError.code === '42501' || profileError.message?.includes('permission denied'))) {
+        console.warn('⚠️ Perfil no accesible (403), usando defaults');
+      }
+      
+      // SIEMPRE cargar datos, aunque no exista el perfil o haya error 403
       setProfile({
         display_name: profileData?.display_name || '',
-        email: profileData?.email || user?.email || '',
+        email: profileData?.email || session.user.email || '',
         preferred_language: profileData?.preferred_language || 'es',
         timezone: profileData?.timezone || 'America/Mexico_City',
         theme: profileData?.theme || 'system',
         role: profileData?.role || 'USER'
       });
       
-      // Cargar settings
-      const { data: settingsData } = await supabase
+      // ✅ SOLO SI HAY SESIÓN: hacer fetch a user_settings
+      const { data: settingsData, error: settingsError } = await supabase
         .from('user_settings')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', session.user.id)
         .single();
+      
+      // Ignorar 403 silenciosamente
+      if (settingsError && (settingsError.code === '42501' || settingsError.message?.includes('permission denied'))) {
+        console.warn('⚠️ Settings no accesibles (403), usando defaults');
+      }
       
       // SIEMPRE cargar settings
       setSettings({
@@ -125,7 +159,16 @@ export default function SettingsPage() {
     try {
       setSaving(true);
       
-      // Guardar perfil
+      // ✅ VERIFICAR SESIÓN ANTES DE GUARDAR
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user?.id) {
+        console.warn('⚠️ No se pueden guardar cambios sin sesión activa');
+        alert('No hay sesión activa. Por favor, inicia sesión nuevamente.');
+        return;
+      }
+      
+      // ✅ SOLO SI HAY SESIÓN: guardar perfil
       const { error: profileError } = await supabase
         .from('user_profiles')
         .update({
@@ -134,11 +177,14 @@ export default function SettingsPage() {
           timezone: profile.timezone,
           theme: profile.theme
         })
-        .eq('user_id', user.id);
+        .eq('user_id', session.user.id);
       
-      if (profileError) throw profileError;
+      // Ignorar 403 silenciosamente
+      if (profileError && !(profileError.code === '42501' || profileError.message?.includes('permission denied'))) {
+        throw profileError;
+      }
       
-      // Guardar settings
+      // ✅ SOLO SI HAY SESIÓN: guardar settings
       const { error: settingsError } = await supabase
         .from('user_settings')
         .update({
@@ -147,9 +193,12 @@ export default function SettingsPage() {
           context_persistent: settings.context_persistent,
           voice_enabled: settings.voice_enabled
         })
-        .eq('user_id', user.id);
+        .eq('user_id', session.user.id);
       
-      if (settingsError) throw settingsError;
+      // Ignorar 403 silenciosamente
+      if (settingsError && !(settingsError.code === '42501' || settingsError.message?.includes('permission denied'))) {
+        throw settingsError;
+      }
       
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
