@@ -39,13 +39,10 @@ function MessageComposer({ onSendMessage, isLoading, disabled, sessionId, onWebT
       return;
     }
 
-    const attachmentData = attachments.map(file => ({
-      name: file.name,
-      type: file.type,
-      size: file.size
-    }));
+    console.log('📤 SENDING MESSAGE WITH ATTACHMENTS:', attachments);
 
-    onSendMessage(message, attachmentData);
+    // ✅ AHORA PASAMOS LOS ARCHIVOS COMPLETOS (File objects)
+    onSendMessage(message, attachments);
     setMessage('');
     setAttachments([]);
     
@@ -70,6 +67,7 @@ function MessageComposer({ onSendMessage, isLoading, disabled, sessionId, onWebT
 
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files || []);
+    console.log('📎 FILES SELECTED:', files);
     setAttachments(prev => [...prev, ...files]);
     
     if (fileInputRef.current) {

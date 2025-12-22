@@ -88,6 +88,8 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
     console.log('🆕 Creando nueva sesión (sessionId = null)');
   }
 
+  console.log('📤 PAYLOAD TO CORE:', JSON.stringify(payload, null, 2));
+
   try {
     const res = await fetch(url, {
       method: "POST",
