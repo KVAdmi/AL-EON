@@ -65,11 +65,15 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
       // ✅ Crear AbortController para poder cancelar
       abortControllerRef.current = new AbortController();
 
+      // ✅ WorkspaceId obligatorio (localStorage → 'default')
+      const workspaceId = localStorage.getItem('workspaceId') || 'default';
+
       // Send to AL-E Core con JWT token, sessionId y archivos
       const response = await sendToAleCore({
         accessToken, // JWT de Supabase
         messages: apiMessages,
         sessionId: currentConversation.sessionId, // ✅ Enviar sessionId si existe
+        workspaceId, // ✅ CRÍTICO: SIEMPRE enviar workspaceId
         voiceMeta, // Pasar metadata de voz si existe
         files: uploadedFiles, // ✅ Enviar archivos subidos
         signal: abortControllerRef.current.signal // ✅ Señal para cancelar

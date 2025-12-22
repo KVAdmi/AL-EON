@@ -17,12 +17,13 @@ import { getRequestMetadata } from '@/config/identity';
  * @param {string} params.accessToken - JWT token de Supabase (REQUERIDO)
  * @param {Array} params.messages - Historial de mensajes [{role, content}]
  * @param {string} params.sessionId - ID de la sesión (opcional, null para crear nueva)
+ * @param {string} params.workspaceId - ID del workspace (opcional, default: 'default')
  * @param {Object} params.voiceMeta - Metadata de voz (opcional)
  * @param {Array} params.files - Archivos adjuntos (opcional, [{url, name, type, size}])
  * @param {AbortSignal} params.signal - Señal para cancelar request (opcional)
  * @returns {Promise<Object>} Respuesta de AL-E Core con session_id
  */
-export async function sendToAleCore({ accessToken, messages, sessionId, voiceMeta, files, signal }) {
+export async function sendToAleCore({ accessToken, messages, sessionId, workspaceId, voiceMeta, files, signal }) {
   const url = import.meta.env.VITE_ALE_CORE_URL;
   
   if (!url) {
@@ -32,6 +33,17 @@ export async function sendToAleCore({ accessToken, messages, sessionId, voiceMet
   if (!accessToken) {
     throw new Error("❌ Missing accessToken - Usuario no autenticado");
   }
+
+  // ✅ WorkspaceId obligatorio para AL-E Core
+  const finalWorkspaceId =
+    workspaceId ||
+    localStorage.getItem('workspaceId') ||
+    'default';
+  
+  // ✅ Persistir para futuras cargas
+  localStorage.setItem('workspaceId', finalWorkspaceId);
+  
+  console.log('🗂️ WorkspaceId:', finalWorkspaceId);
 
   // Extraer userId del JWT token (payload está en base64)
   let userId;
@@ -46,9 +58,9 @@ export async function sendToAleCore({ accessToken, messages, sessionId, voiceMet
   }
 
   const payload = {
-    mode: "aleon", // ✅ OBLIGATORIO: AL-EON siempre usa modo aleon (ChatGPT-like generalista)
-    workspaceId: workspaceId || "default",
+    workspaceId: finalWorkspaceId, // ✅ CRÍTICO: SIEMPRE definido
     userId: userId, // ✅ CRÍTICO: Enviar userId explícitamente
+    mode: "aleon", // ✅ OBLIGATORIO: AL-EON siempre usa modo aleon (ChatGPT-like generalista)
     messages,
     meta: {
       ...getRequestMetadata(),
