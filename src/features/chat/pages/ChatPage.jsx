@@ -23,7 +23,7 @@ function ChatPage() {
     addMessage
   } = useConversations();
 
-  const { sendMessage, stopResponse, isLoading } = useChat({
+  const { sendMessage, stopResponse, isLoading, isUploading } = useChat({
     currentConversation,
     addMessage,
     updateConversation, // ✅ Pasar updateConversation para guardar sessionId
@@ -112,6 +112,7 @@ function ChatPage() {
         <MessageComposer
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
+          isUploading={isUploading}
           disabled={voiceMode.mode === 'voice'}
         />
       </div>

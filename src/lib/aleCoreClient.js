@@ -12,6 +12,36 @@
 import { getRequestMetadata } from '@/config/identity';
 
 /**
+ * Fetch con reintentos automáticos para errores de timeout/502
+ * @param {string} url - URL del endpoint
+ * @param {object} options - Opciones del fetch
+ * @param {number} retries - Número de reintentos (default: 1)
+ * @returns {Promise<Response>}
+ */
+async function fetchWithRetry(url, options, retries = 1) {
+  try {
+    const res = await fetch(url, options);
+    
+    // Si es 502/504 (Gateway errors) y quedan reintentos, reintentar
+    if (!res.ok && (res.status === 502 || res.status === 504) && retries > 0) {
+      console.log(`⚠️ Error ${res.status}, reintentando... (${retries} reintentos restantes)`);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar 1 segundo
+      return fetchWithRetry(url, options, retries - 1);
+    }
+    
+    return res;
+  } catch (error) {
+    // Si es error de red/timeout y quedan reintentos, reintentar
+    if (retries > 0 && (error.name === 'TypeError' || error.message.includes('timeout'))) {
+      console.log(`⚠️ Error de red, reintentando... (${retries} reintentos restantes)`);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return fetchWithRetry(url, options, retries - 1);
+    }
+    throw error;
+  }
+}
+
+/**
  * Envía mensajes a AL-E Core
  * @param {Object} params
  * @param {string} params.accessToken - JWT token de Supabase (REQUERIDO)
@@ -45,6 +75,10 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
   
   console.log('🗂️ WorkspaceId:', finalWorkspaceId);
 
+  // ✅ RequestId único para correlación de logs
+  const requestId = crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  console.log('🧾 requestId:', requestId);
+
   // Extraer userId del JWT token (payload está en base64)
   let userId;
   try {
@@ -58,6 +92,7 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
   }
 
   const payload = {
+    requestId, // ✅ NUEVO: ID único para correlación
     workspaceId: finalWorkspaceId, // ✅ CRÍTICO: SIEMPRE definido
     userId: userId, // ✅ CRÍTICO: Enviar userId explícitamente
     mode: "universal", // ✅ OBLIGATORIO: AL-EON usa modo universal
@@ -74,9 +109,10 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
     }
   };
 
-  // Agregar archivos si existen
+  // ✅ CRÍTICO: Enviar archivos como "attachments" + "files" (compatibilidad)
   if (files && files.length > 0) {
-    payload.files = files;
+    payload.attachments = files; // ✅ Lo que Core espera
+    payload.files = files;        // ✅ Compat por si Core usa "files"
     console.log('📎 Enviando archivos:', files.map(f => f.name).join(', '));
   }
 
@@ -91,7 +127,8 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
   console.log('📤 PAYLOAD TO CORE:', JSON.stringify(payload, null, 2));
 
   try {
-    const res = await fetch(url, {
+    // ✅ NUEVO: Fetch con 1 reintento automático en caso de 502/504/timeout
+    const res = await fetchWithRetry(url, {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
@@ -99,7 +136,7 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
       },
       body: JSON.stringify(payload),
       signal // ✅ Pasar AbortSignal para poder cancelar
-    });
+    }, 1); // 1 reintento
 
     const text = await res.text();
     

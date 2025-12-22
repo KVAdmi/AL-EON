@@ -4,7 +4,7 @@ import { Send, Paperclip, X, Image as ImageIcon, Globe } from 'lucide-react';
 import { Button } from '@/ui/button';
 import { useToast } from '@/ui/use-toast';
 
-function MessageComposer({ onSendMessage, isLoading, disabled, sessionId, onWebToggle, webEnabled }) {
+function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sessionId, onWebToggle, webEnabled }) {
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState([]);
   const [showImagePrompt, setShowImagePrompt] = useState(false);
@@ -92,6 +92,19 @@ function MessageComposer({ onSendMessage, isLoading, disabled, sessionId, onWebT
   return (
     <div className="p-4">
       <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
+        {/* ✅ NUEVO: Indicador de "Procesando documento..." */}
+        {isUploading && (
+          <div className="mb-3 px-4 py-2 rounded-lg flex items-center gap-2 text-sm"
+            style={{
+              backgroundColor: 'var(--color-bg-tertiary)',
+              color: 'var(--color-text-secondary)'
+            }}
+          >
+            <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
+            <span>Procesando documentos...</span>
+          </div>
+        )}
+
         {/* Attachments */}
         {attachments.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-2">
@@ -139,7 +152,7 @@ function MessageComposer({ onSendMessage, isLoading, disabled, sessionId, onWebT
             variant="ghost"
             size="icon"
             onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading || disabled}
+            disabled={isLoading || isUploading || disabled}
             className="flex-shrink-0 rounded-xl"
           >
             <Paperclip size={20} style={{ color: 'var(--color-text-secondary)' }} />
@@ -150,8 +163,8 @@ function MessageComposer({ onSendMessage, isLoading, disabled, sessionId, onWebT
             value={message}
             onChange={handleTextareaChange}
             onKeyDown={handleKeyDown}
-            placeholder={disabled ? "Crea una nueva conversación para comenzar..." : "Escribe tu mensaje... (Shift+Enter para nueva línea)"}
-            disabled={isLoading || disabled}
+            placeholder={disabled ? "Crea una nueva conversación para comenzar..." : isUploading ? "Procesando documentos..." : "Escribe tu mensaje... (Shift+Enter para nueva línea)"}
+            disabled={isLoading || isUploading || disabled}
             rows={1}
             className="flex-1 bg-transparent resize-none outline-none px-2 py-2"
             style={{
@@ -164,7 +177,7 @@ function MessageComposer({ onSendMessage, isLoading, disabled, sessionId, onWebT
           <Button
             type="submit"
             size="icon"
-            disabled={(!message.trim() && attachments.length === 0) || isLoading || disabled}
+            disabled={(!message.trim() && attachments.length === 0) || isLoading || isUploading || disabled}
             className="flex-shrink-0 transition-all duration-200 rounded-xl"
             style={{
               backgroundColor: 'var(--color-accent)',

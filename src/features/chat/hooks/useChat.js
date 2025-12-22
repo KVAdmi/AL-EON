@@ -5,6 +5,7 @@ import { uploadFiles } from '@/lib/fileUpload';
 
 export function useChat({ currentConversation, addMessage, updateConversation, accessToken, userId }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false); // ✅ NUEVO: estado de upload
   const [error, setError] = useState(null);
   const abortControllerRef = useRef(null); // ✅ Para cancelar requests
 
@@ -24,9 +25,11 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
       // 1. Subir archivos si existen
       let uploadedFiles = [];
       if (attachments && attachments.length > 0) {
+        setIsUploading(true); // ✅ NUEVO: Mostrar "Procesando documentos..."
         console.log('📤 Subiendo archivos:', attachments.map(f => f.name));
         uploadedFiles = await uploadFiles(attachments, userId);
         console.log('✅ Archivos subidos:', uploadedFiles);
+        setIsUploading(false); // ✅ Upload completado
       }
 
       // 2. Add user message con archivos
@@ -68,23 +71,36 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
       // ✅ WorkspaceId obligatorio (localStorage → 'default')
       const workspaceId = localStorage.getItem('workspaceId') || 'default';
 
+      // ✅ NUEVO: sessionId persistente en localStorage (sobrevive refresh)
+      const storedSessionId = localStorage.getItem(`sessionId:${currentConversation.id}`);
+      const finalSessionId = currentConversation.sessionId || storedSessionId || null;
+      
+      if (finalSessionId) {
+        console.log('🔄 Usando sessionId persistente:', finalSessionId);
+      }
+
       // Send to AL-E Core con JWT token, sessionId y archivos
       const response = await sendToAleCore({
         accessToken, // JWT de Supabase
         messages: apiMessages,
-        sessionId: currentConversation.sessionId, // ✅ Enviar sessionId si existe
+        sessionId: finalSessionId, // ✅ sessionId desde estado O localStorage
         workspaceId, // ✅ CRÍTICO: SIEMPRE enviar workspaceId
         voiceMeta, // Pasar metadata de voz si existe
         files: uploadedFiles, // ✅ Enviar archivos subidos
         signal: abortControllerRef.current.signal // ✅ Señal para cancelar
       });
 
-      // ✅ CRÍTICO: Guardar session_id si es la primera vez
+      // ✅ CRÍTICO: Guardar session_id en estado Y localStorage
       if (response.session_id && !currentConversation.sessionId) {
         console.log('💾 Guardando session_id del backend:', response.session_id);
+        
+        // Guardar en estado
         updateConversation(currentConversation.id, {
           sessionId: response.session_id
         });
+        
+        // ✅ NUEVO: Persistir en localStorage (sobrevive refresh)
+        localStorage.setItem(`sessionId:${currentConversation.id}`, response.session_id);
       }
 
       // Extract reply text (SOLO el campo "answer")
@@ -128,6 +144,7 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
       return null;
     } finally {
       setIsLoading(false);
+      setIsUploading(false); // ✅ NUEVO: Asegurar que se limpie el estado
       abortControllerRef.current = null; // ✅ Limpiar referencia
     }
   };
@@ -138,6 +155,7 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
       setIsLoading(false);
+      setIsUploading(false); // ✅ NUEVO: Limpiar estado de upload también
     }
   };
 
@@ -145,6 +163,7 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
     sendMessage,
     stopResponse, // ✅ Nueva función para detener
     isLoading,
+    isUploading, // ✅ NUEVO: Exportar estado de upload
     error
   };
 }
