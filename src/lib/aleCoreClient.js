@@ -151,10 +151,10 @@ export function extractReply(data) {
   if (data.answer && typeof data.answer === 'string') {
     let answer = data.answer;
     
-    // 🚨 DETECTAR SI answer CONTIENE JSON STRINGIFICADO
+    // � DETECTAR SI answer CONTIENE JSON STRINGIFICADO
     if (answer.trim().startsWith('{') && answer.trim().endsWith('}')) {
       try {
-        console.warn('⚠️ CRÍTICO: String JSON detectado en el chat - intentando parsear');
+        console.log('🔍 String JSON detectado en el chat - intentando parsear');
         const parsed = JSON.parse(answer);
         
         // Si el JSON parseado tiene un campo "answer", usar ese
@@ -165,11 +165,11 @@ export function extractReply(data) {
           console.log('✅ JSON parseado exitosamente, extrayendo message');
           answer = parsed.message;
         } else {
-          console.error('❌ JSON parseado pero no tiene campo answer/message válido');
+          console.log('ℹ️ JSON parseado pero no tiene campo answer/message válido');
           // Mantener el JSON original como texto
         }
       } catch (e) {
-        console.warn('⚠️ String parece JSON pero no se pudo parsear, usando como texto');
+        console.log('ℹ️ String parece JSON pero no se pudo parsear, usando como texto');
         // Si falla el parse, usar el string original
       }
     }
