@@ -191,12 +191,16 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
       console.log(`📎 Adjuntando: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
     }
 
+    // ✅ Headers: SOLO incluir Authorization si accessToken existe
+    const headers = {};
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+    // NO incluir Content-Type, browser lo setea automático con boundary
+
     fetchOptions = {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${accessToken}`
-        // NO incluir Content-Type, browser lo setea automático con boundary
-      },
+      headers,
       body: formData,
       signal
     };
@@ -205,12 +209,15 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
     console.log('📤 WIRE PROTOCOL: JSON (sin archivos raw)');
     console.log('📤 PAYLOAD TO CORE:', JSON.stringify(payloadData, null, 2));
 
+    // ✅ Headers: SOLO incluir Authorization si accessToken existe
+    const headers = { "Content-Type": "application/json" };
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+
     fetchOptions = {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`
-      },
+      headers,
       body: JSON.stringify(payloadData),
       signal
     };

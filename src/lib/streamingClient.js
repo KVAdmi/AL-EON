@@ -63,13 +63,18 @@ export async function sendWithStreaming({
   };
 
   try {
+    // ✅ Headers: SOLO incluir Authorization si accessToken existe
+    const headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'text/event-stream' // ← Indicar que esperamos SSE
+    };
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-        'Accept': 'text/event-stream' // ← Indicar que esperamos SSE
-      },
+      headers,
       body: JSON.stringify(payload),
       signal
     });
