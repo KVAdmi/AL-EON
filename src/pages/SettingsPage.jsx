@@ -54,7 +54,12 @@ export default function SettingsPage() {
 
   async function checkBackendHealth() {
     try {
-      const response = await fetch('https://api.al-entity.com/api/ai/chat', {
+      const BASE_URL = import.meta.env.VITE_ALE_CORE_BASE || import.meta.env.VITE_ALE_CORE_URL || 'https://api.al-eon.com';
+      const url = `${BASE_URL}/api/ai/chat`;
+      
+      console.log("🏥 Health check URL =>", url);
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -687,7 +692,7 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
             </div>
             <div className="flex justify-between">
               <span style={{ color: 'var(--color-text-secondary)' }}>Endpoint:</span>
-              <span style={{ color: 'var(--color-text-primary)' }}>api.al-entity.com</span>
+              <span style={{ color: 'var(--color-text-primary)' }}>api.al-eon.com</span>
             </div>
             <div className="flex justify-between">
               <span style={{ color: 'var(--color-text-secondary)' }}>Versión:</span>

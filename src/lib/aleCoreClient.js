@@ -56,11 +56,16 @@ async function fetchWithRetry(url, options, retries = 1) {
  * @returns {Promise<Object>} Respuesta de AL-E Core con session_id
  */
 export async function sendToAleCore({ accessToken, messages, sessionId, workspaceId, voiceMeta, files, rawFiles, fileIds, signal }) {
-  const url = import.meta.env.VITE_ALE_CORE_URL;
+  // ✅ BASE URL desde env, SIN /api/ai/chat
+  const BASE_URL = import.meta.env.VITE_ALE_CORE_BASE || import.meta.env.VITE_ALE_CORE_URL?.replace('/api/ai/chat', '');
   
-  if (!url) {
-    throw new Error("❌ Missing VITE_ALE_CORE_URL - Verifica tu archivo .env");
+  if (!BASE_URL) {
+    throw new Error("❌ Missing VITE_ALE_CORE_BASE - Verifica tu archivo .env");
   }
+
+  const url = `${BASE_URL}/api/ai/chat`;
+  
+  console.log("✅ ALE CORE URL =>", url);
 
   if (!accessToken) {
     throw new Error("❌ Missing accessToken - Usuario no autenticado");

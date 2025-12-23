@@ -27,11 +27,14 @@ export async function sendWithStreaming({
   onError,
   signal 
 }) {
-  const url = `${import.meta.env.VITE_ALE_CORE_URL}/stream`; // ← Backend debe implementar este endpoint
+  const BASE_URL = import.meta.env.VITE_ALE_CORE_BASE || import.meta.env.VITE_ALE_CORE_URL;
   
-  if (!url) {
-    throw new Error("❌ Missing VITE_ALE_CORE_URL");
+  if (!BASE_URL) {
+    throw new Error("❌ Missing VITE_ALE_CORE_BASE");
   }
+
+  const url = `${BASE_URL}/api/ai/chat/stream`;
+  console.log("✅ STREAMING URL =>", url);
 
   // Extraer userId del JWT
   let userId;
