@@ -85,20 +85,34 @@ function ChatPage() {
 
   return (
     <div className="h-full flex" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
-      {/* SIDEBAR REDISEÑADO */}
-      <Sidebar
-        conversations={conversations}
-        currentConversationId={currentConversationId}
-        onNewConversation={handleNewConversation}
-        onSelectConversation={handleSelectConversation}
-        onDeleteConversation={deleteConversation}
-        isOpen={showSidebar}
-        currentUser={user?.email}
-        onLogout={logout}
-      />
+      {/* SIDEBAR REDISEÑADO - Desktop siempre visible, Mobile overlay */}
+      <div className={`
+        fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out
+        md:relative md:transform-none
+        ${showSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        <Sidebar
+          conversations={conversations}
+          currentConversationId={currentConversationId}
+          onNewConversation={handleNewConversation}
+          onSelectConversation={handleSelectConversation}
+          onDeleteConversation={deleteConversation}
+          isOpen={showSidebar}
+          currentUser={user?.email}
+          onLogout={logout}
+        />
+      </div>
+
+      {/* Overlay oscuro en mobile cuando sidebar está abierto */}
+      {showSidebar && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setShowSidebar(false)}
+        />
+      )}
 
       {/* ÁREA DE CHAT */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col w-full md:w-auto">
         <MessageThread
           conversation={currentConversation}
           isLoading={isLoading}

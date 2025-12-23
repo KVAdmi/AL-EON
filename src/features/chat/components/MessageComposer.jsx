@@ -90,50 +90,50 @@ function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sess
   };
 
   return (
-    <div className="p-4">
+    <div className="p-3 md:p-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
       <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
         {/* ✅ NUEVO: Indicador de "Procesando documento..." */}
         {isUploading && (
-          <div className="mb-3 px-4 py-2 rounded-lg flex items-center gap-2 text-sm"
+          <div className="mb-2 md:mb-3 px-3 md:px-4 py-2 rounded-lg flex items-center gap-2 text-xs md:text-sm"
             style={{
               backgroundColor: 'var(--color-bg-tertiary)',
               color: 'var(--color-text-secondary)'
             }}
           >
-            <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
+            <div className="animate-spin h-3 w-3 md:h-4 md:w-4 border-2 border-current border-t-transparent rounded-full"></div>
             <span>Procesando documentos...</span>
           </div>
         )}
 
         {/* Attachments */}
         {attachments.length > 0 && (
-          <div className="mb-3 flex flex-wrap gap-2">
+          <div className="mb-2 md:mb-3 flex flex-wrap gap-1.5 md:gap-2">
             {attachments.map((file, index) => (
               <div
                 key={index}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm"
+                className="inline-flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 rounded-full text-xs md:text-sm"
                 style={{
                   backgroundColor: 'var(--color-bg-secondary)',
                   color: 'var(--color-text-primary)'
                 }}
               >
-                <Paperclip size={14} />
-                <span className="truncate max-w-[150px]">{file.name}</span>
+                <Paperclip size={12} className="md:w-3.5 md:h-3.5 flex-shrink-0" />
+                <span className="truncate max-w-[100px] md:max-w-[150px]">{file.name}</span>
                 <button
                   type="button"
                   onClick={() => removeAttachment(index)}
-                  className="hover:opacity-70 transition-opacity"
+                  className="hover:opacity-70 transition-opacity flex-shrink-0"
                 >
-                  <X size={14} />
+                  <X size={12} className="md:w-3.5 md:h-3.5" />
                 </button>
               </div>
             ))}
           </div>
         )}
 
-        {/* Input Area */}
+        {/* Input Area - Optimizado para mobile */}
         <div 
-          className="flex items-end gap-2 p-2 rounded-xl transition-all duration-200"
+          className="flex items-end gap-1.5 md:gap-2 p-1.5 md:p-2 rounded-xl transition-all duration-200"
           style={{ 
             backgroundColor: 'var(--color-bg-secondary)',
             border: '1px solid var(--color-border)'
@@ -153,9 +153,9 @@ function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sess
             size="icon"
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading || isUploading || disabled}
-            className="flex-shrink-0 rounded-xl"
+            className="flex-shrink-0 rounded-xl h-9 w-9 md:h-10 md:w-10"
           >
-            <Paperclip size={20} style={{ color: 'var(--color-text-secondary)' }} />
+            <Paperclip size={18} className="md:w-5 md:h-5" style={{ color: 'var(--color-text-secondary)' }} />
           </Button>
 
           <textarea
@@ -163,14 +163,14 @@ function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sess
             value={message}
             onChange={handleTextareaChange}
             onKeyDown={handleKeyDown}
-            placeholder={disabled ? "Crea una nueva conversación para comenzar..." : isUploading ? "Procesando documentos..." : "Escribe tu mensaje... (Shift+Enter para nueva línea)"}
+            placeholder={disabled ? "Nueva conversación..." : isUploading ? "Procesando..." : "Escribe tu mensaje..."}
             disabled={isLoading || isUploading || disabled}
             rows={1}
-            className="flex-1 bg-transparent resize-none outline-none px-2 py-2"
+            className="flex-1 bg-transparent resize-none outline-none px-1 md:px-2 py-2 text-sm md:text-base"
             style={{
               color: 'var(--color-text-primary)',
               minHeight: '24px',
-              maxHeight: '200px'
+              maxHeight: '120px'
             }}
           />
 
@@ -178,18 +178,18 @@ function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sess
             type="submit"
             size="icon"
             disabled={(!message.trim() && attachments.length === 0) || isLoading || isUploading || disabled}
-            className="flex-shrink-0 transition-all duration-200 rounded-xl"
+            className="flex-shrink-0 transition-all duration-200 rounded-xl h-9 w-9 md:h-10 md:w-10"
             style={{
               backgroundColor: 'var(--color-accent)',
-              color: 'var(--color-text-primary)'
+              color: '#FFFFFF'
             }}
           >
-            <Send size={18} />
+            <Send size={16} className="md:w-[18px] md:h-[18px]" />
           </Button>
         </div>
 
-        {/* Helper Text */}
-        <p className="text-xs mt-2 text-center" style={{ color: 'var(--color-text-tertiary)' }}>
+        {/* Helper Text - Oculto en mobile */}
+        <p className="text-xs mt-2 text-center hidden md:block" style={{ color: 'var(--color-text-tertiary)' }}>
           Press Enter to send, Shift+Enter for new line
         </p>
       </form>

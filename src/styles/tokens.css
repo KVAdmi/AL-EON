@@ -14,11 +14,11 @@
   --color-text-secondary: #A8B2C1;
   --color-text-tertiary: #6B7684;
   
-  /* AL-E Petroleum/Teal Accent - Signature Color */
-  --color-accent: #15333E;
-  --color-accent-hover: #1D4554;
-  --color-accent-light: rgba(21, 51, 62, 0.15);
-  --color-accent-bright: #2FA4C7; /* For highlights/active states */
+  /* AL-E Blue Accent - Logo Blue Dot */
+  --color-accent: #2FA4C7;
+  --color-accent-hover: #3DB5D6;
+  --color-accent-light: rgba(47, 164, 199, 0.15);
+  --color-accent-bright: #4FC3E0; /* For highlights/active states */
   
   --color-border: rgba(47, 164, 199, 0.1);
   --color-border-hover: rgba(47, 164, 199, 0.2);

@@ -58,11 +58,17 @@ function Sidebar({
   };
 
   return (
-    <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+    <div 
+      className="h-full flex flex-col w-[280px] md:w-[300px] border-r" 
+      style={{ 
+        backgroundColor: 'var(--color-bg-primary)',
+        borderColor: 'var(--color-border)'
+      }}
+    >
       {/* Header con Logo y botón nuevo chat */}
       <div className="p-3 space-y-3">
         <div className="flex items-center justify-between">
-          <Logo className="h-6 w-auto" />
+          <Logo className="h-5 md:h-6 w-auto" />
           <ThemeToggle />
         </div>
 
