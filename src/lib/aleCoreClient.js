@@ -50,10 +50,12 @@ async function fetchWithRetry(url, options, retries = 1) {
  * @param {string} params.workspaceId - ID del workspace (opcional, default: 'default')
  * @param {Object} params.voiceMeta - Metadata de voz (opcional)
  * @param {Array} params.files - Archivos adjuntos (opcional, [{url, name, type, size}])
+ * @param {Array} params.rawFiles - Archivos File objects para enviar via FormData (opcional)
+ * @param {Array} params.fileIds - IDs de archivos ya ingestados (opcional, para contexto)
  * @param {AbortSignal} params.signal - Señal para cancelar request (opcional)
  * @returns {Promise<Object>} Respuesta de AL-E Core con session_id
  */
-export async function sendToAleCore({ accessToken, messages, sessionId, workspaceId, voiceMeta, files, signal }) {
+export async function sendToAleCore({ accessToken, messages, sessionId, workspaceId, voiceMeta, files, rawFiles, fileIds, signal }) {
   const url = import.meta.env.VITE_ALE_CORE_URL;
   
   if (!url) {
@@ -91,16 +93,19 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
     throw new Error('Token inválido - no se pudo extraer userId');
   }
 
-  const payload = {
-    requestId, // ✅ NUEVO: ID único para correlación
-    workspaceId: finalWorkspaceId, // ✅ CRÍTICO: SIEMPRE definido
-    userId: userId, // ✅ CRÍTICO: Enviar userId explícitamente
-    mode: "universal", // ✅ OBLIGATORIO: AL-EON usa modo universal
+  // ✅ WIRE PROTOCOL: Decidir entre JSON o FormData
+  const hasRawFiles = rawFiles && rawFiles.length > 0;
+
+  // Construir payload base
+  const payloadData = {
+    requestId,
+    workspaceId: finalWorkspaceId,
+    userId: userId,
+    mode: "universal",
     messages,
     meta: {
       ...getRequestMetadata(),
       timestamp: new Date().toISOString(),
-      // Agregar metadata de voz si existe
       ...(voiceMeta && {
         inputMode: voiceMeta.inputMode || 'text',
         localeHint: voiceMeta.localeHint || 'es-MX',
@@ -109,34 +114,90 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
     }
   };
 
-  // ✅ CRÍTICO: Enviar archivos como "attachments" + "files" (compatibilidad)
-  if (files && files.length > 0) {
-    payload.attachments = files; // ✅ Lo que Core espera
-    payload.files = files;        // ✅ Compat por si Core usa "files"
-    console.log('📎 Enviando archivos:', files.map(f => f.name).join(', '));
-  }
-
-  // Agregar sessionId si existe (null o undefined = crear nueva sesión)
+  // Agregar sessionId si existe
   if (sessionId) {
-    payload.sessionId = sessionId;
+    payloadData.sessionId = sessionId;
     console.log('🔄 Continuando sesión:', sessionId);
   } else {
     console.log('🆕 Creando nueva sesión (sessionId = null)');
   }
 
-  console.log('📤 PAYLOAD TO CORE:', JSON.stringify(payload, null, 2));
+  // Agregar contexto con fileIds si existen (para recuperación de chunks)
+  if (fileIds && fileIds.length > 0) {
+    payloadData.context = { fileIds };
+    console.log('📚 Contexto con fileIds:', fileIds);
+  }
+
+  // Agregar URLs de archivos ya subidos
+  if (files && files.length > 0) {
+    payloadData.attachments = files;
+    payloadData.files = files; // Compatibilidad
+    console.log('📎 Archivos ya subidos:', files.map(f => f.name).join(', '));
+  }
+
+  let fetchOptions;
+
+  if (hasRawFiles) {
+    // ✅ WIRE PROTOCOL: Multipart/form-data cuando hay archivos raw
+    console.log('📤 WIRE PROTOCOL: Multipart (archivos raw)');
+    const formData = new FormData();
+    
+    // Campos obligatorios
+    formData.append('workspaceId', payloadData.workspaceId);
+    formData.append('userId', payloadData.userId);
+    formData.append('mode', payloadData.mode);
+    formData.append('requestId', payloadData.requestId);
+    formData.append('messages', JSON.stringify(payloadData.messages));
+    
+    // Opcional: sessionId
+    if (payloadData.sessionId) {
+      formData.append('sessionId', payloadData.sessionId);
+    }
+    
+    // Opcional: context
+    if (payloadData.context) {
+      formData.append('context', JSON.stringify(payloadData.context));
+    }
+    
+    // Opcional: meta
+    if (payloadData.meta) {
+      formData.append('meta', JSON.stringify(payloadData.meta));
+    }
+    
+    // Archivos raw
+    for (const file of rawFiles) {
+      formData.append('files', file);
+      console.log(`📎 Adjuntando: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
+    }
+
+    fetchOptions = {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${accessToken}`
+        // NO incluir Content-Type, browser lo setea automático con boundary
+      },
+      body: formData,
+      signal
+    };
+  } else {
+    // ✅ WIRE PROTOCOL: JSON cuando NO hay archivos raw
+    console.log('📤 WIRE PROTOCOL: JSON (sin archivos raw)');
+    console.log('📤 PAYLOAD TO CORE:', JSON.stringify(payloadData, null, 2));
+
+    fetchOptions = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`
+      },
+      body: JSON.stringify(payloadData),
+      signal
+    };
+  }
 
   try {
     // ✅ NUEVO: Fetch con 1 reintento automático en caso de 502/504/timeout
-    const res = await fetchWithRetry(url, {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}` // JWT de Supabase
-      },
-      body: JSON.stringify(payload),
-      signal // ✅ Pasar AbortSignal para poder cancelar
-    }, 1); // 1 reintento
+    const res = await fetchWithRetry(url, fetchOptions, 1);
 
     const text = await res.text();
     
