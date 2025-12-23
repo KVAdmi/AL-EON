@@ -46,9 +46,12 @@ export async function sendWithStreaming({
     throw new Error('Token inválido - no se pudo extraer userId');
   }
 
+  // ✅ FORZAR workspaceId="core" para AL-E Core
+  const WORKSPACE_ID = import.meta.env.VITE_WORKSPACE_ID === "core" ? "core" : "core";
+
   const payload = {
     mode: "universal",
-    workspaceId: "default",
+    workspaceId: WORKSPACE_ID,
     userId,
     messages,
     sessionId: sessionId || null,

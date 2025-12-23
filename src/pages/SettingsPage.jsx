@@ -64,7 +64,7 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mode: 'universal', // ✅ AL-EON usa modo universal
-          workspaceId: 'default',
+          workspaceId: 'core',
           userId: 'health-check',
           messages: [{ role: 'user', content: 'ping' }]
         })

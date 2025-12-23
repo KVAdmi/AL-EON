@@ -71,11 +71,10 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
     throw new Error("❌ Missing accessToken - Usuario no autenticado");
   }
 
-  // ✅ WorkspaceId obligatorio para AL-E Core
-  const finalWorkspaceId =
-    workspaceId ||
-    localStorage.getItem('workspaceId') ||
-    'default';
+  // ✅ FORZAR workspaceId="core" para AL-E Core (no interpretativo)
+  const WORKSPACE_ID = import.meta.env.VITE_WORKSPACE_ID === "core" ? "core" : "core";
+  
+  const finalWorkspaceId = WORKSPACE_ID;
   
   // ✅ Persistir para futuras cargas
   localStorage.setItem('workspaceId', finalWorkspaceId);
@@ -101,13 +100,30 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
   // ✅ WIRE PROTOCOL: Decidir entre JSON o FormData
   const hasRawFiles = rawFiles && rawFiles.length > 0;
 
+  // ✅ LIMPIAR mensajes contaminados ANTES de enviar
+  const cleanedMessages = messages.filter(msg => {
+    if (msg.role === 'assistant') {
+      const content = msg.content || '';
+      // Eliminar mensajes de error, HTML, y failed fetches
+      if (
+        content.startsWith('Error:') ||
+        content.startsWith('Failed to fetch') ||
+        content.includes('<!DOCTYPE html>')
+      ) {
+        console.warn('🧹 Mensaje contaminado eliminado:', content.substring(0, 50));
+        return false;
+      }
+    }
+    return true;
+  });
+
   // Construir payload base
   const payloadData = {
     requestId,
     workspaceId: finalWorkspaceId,
     userId: userId,
     mode: "universal",
-    messages,
+    messages: cleanedMessages,
     meta: {
       ...getRequestMetadata(),
       timestamp: new Date().toISOString(),

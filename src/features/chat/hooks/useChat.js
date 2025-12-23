@@ -68,8 +68,9 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
       // ✅ Crear AbortController para poder cancelar
       abortControllerRef.current = new AbortController();
 
-      // ✅ WorkspaceId obligatorio (localStorage → 'default')
-      const workspaceId = localStorage.getItem('workspaceId') || 'default';
+      // ✅ FORZAR workspaceId="core" para AL-E Core
+      const WORKSPACE_ID = import.meta.env.VITE_WORKSPACE_ID === "core" ? "core" : "core";
+      const workspaceId = WORKSPACE_ID;
 
       // ✅ NUEVO: sessionId persistente en localStorage (sobrevive refresh)
       const storedSessionId = localStorage.getItem(`sessionId:${currentConversation.id}`);

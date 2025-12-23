@@ -33,7 +33,7 @@ export const AL_EON_IDENTITY = {
   
   // Meta información
   meta: {
-    workspace: "default",
+    workspace: "core",
     mode: "universal", // ✅ AL-EON = modo universal
     privacy: "private",
     usageType: "training-and-production"
