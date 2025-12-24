@@ -153,7 +153,7 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
   if (files && files.length > 0) {
     payloadData.attachments = files;
     payloadData.files = files; // Compatibilidad
-    console.log('📎 Archivos ya subidos:', files.map(f => f.name).join(', '));
+    console.log('📎 Attachments enviados a AL-E Core:', JSON.stringify(files, null, 2));
   }
 
   let fetchOptions;

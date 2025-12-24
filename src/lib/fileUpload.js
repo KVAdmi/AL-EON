@@ -30,8 +30,9 @@ export async function uploadFile(file, userId) {
       .getPublicUrl(filePath);
 
     return {
-      url: publicUrl,
-      path: filePath,
+      bucket: 'user-files', // ✅ AL-E Core necesita bucket
+      path: filePath,       // ✅ AL-E Core necesita path
+      url: publicUrl,       // Opcional (backward compatibility)
       name: file.name,
       type: file.type,
       size: file.size

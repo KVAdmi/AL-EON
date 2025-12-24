@@ -38,8 +38,10 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
         role: 'user',
         content: content.trim(),
         attachments: uploadedFiles.map(f => ({
+          bucket: f.bucket,  // ✅ AL-E Core necesita bucket
+          path: f.path,      // ✅ AL-E Core necesita path
           name: f.name,
-          url: f.url,
+          url: f.url,        // Opcional (backward compatibility)
           type: f.type,
           size: f.size
         })),
