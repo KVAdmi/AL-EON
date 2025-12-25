@@ -117,6 +117,17 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
     return true;
   });
 
+  // ✅ DETECCIÓN DE DOCUMENTOS LARGOS (> 3000 chars)
+  // Si el último mensaje del usuario contiene un documento/auditoría/reporte largo,
+  // activamos el modo de análisis estructurado con evidencias
+  const lastUserMessage = cleanedMessages.findLast(msg => msg.role === 'user');
+  const isLongDocument = lastUserMessage && lastUserMessage.content.length > 3000;
+  
+  if (isLongDocument) {
+    console.log('📄 DOCUMENTO LARGO DETECTADO:', lastUserMessage.content.length, 'caracteres');
+    console.log('🔍 Modo análisis estructurado: activado');
+  }
+
   // Construir payload base
   const payloadData = {
     requestId,
@@ -131,6 +142,12 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
         inputMode: voiceMeta.inputMode || 'text',
         localeHint: voiceMeta.localeHint || 'es-MX',
         handsFree: voiceMeta.handsFree || false
+      }),
+      // ✅ Señal para el backend: documento largo requiere análisis estructurado
+      ...(isLongDocument && {
+        isLongDocument: true,
+        documentLength: lastUserMessage.content.length,
+        responseFormat: 'structured-audit' // Indica al backend que debe responder con formato estructurado
       })
     }
   };
