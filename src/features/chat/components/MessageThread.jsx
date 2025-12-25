@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Menu, AlertCircle, Mic, Volume2, Waves, MessageSquare, StopCircle, RefreshCw } from 'lucide-react';
 import MarkdownRenderer from '@/lib/markdownRenderer';
 import TypingIndicator from '@/features/chat/components/TypingIndicator';
@@ -221,15 +221,81 @@ function Message({ message }) {
 }
 
 function AttachmentChip({ attachment }) {
+  const [signedUrl, setSignedUrl] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getFileIcon = (type) => {
+    if (!type) return '📄';
+    if (type.includes('pdf')) return '📕';
+    if (type.includes('image')) return '🖼️';
+    if (type.includes('video')) return '🎬';
+    if (type.includes('audio')) return '🎵';
+    if (type.includes('word') || type.includes('doc')) return '📘';
+    if (type.includes('sheet') || type.includes('xls') || type.includes('csv')) return '📊';
+    if (type.includes('presentation') || type.includes('ppt')) return '📽️';
+    if (type.includes('zip') || type.includes('rar') || type.includes('7z')) return '📦';
+    if (type.includes('text')) return '📝';
+    return '📄';
+  };
+
+  const handleOpen = async () => {
+    setLoading(true);
+    try {
+      let urlToOpen = attachment.url;
+
+      // Si no hay URL o necesitamos signed URL
+      if (!urlToOpen && attachment.bucket && attachment.path) {
+        const { supabase } = await import('@/lib/supabase');
+        const { data, error } = await supabase.storage
+          .from(attachment.bucket)
+          .createSignedUrl(attachment.path, 3600); // 1 hour
+
+        if (error) throw error;
+        urlToOpen = data.signedUrl;
+        setSignedUrl(urlToOpen); // Cache it
+      }
+
+      if (urlToOpen) {
+        window.open(urlToOpen, '_blank');
+      }
+    } catch (error) {
+      console.error('Error opening attachment:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div 
-      className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm"
+      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs md:text-sm border transition-all hover:opacity-80"
       style={{ 
-        backgroundColor: 'var(--color-accent-light)',
-        color: 'var(--color-accent)' 
+        backgroundColor: 'var(--color-bg-tertiary)',
+        borderColor: 'var(--color-border)',
+        color: 'var(--color-text-secondary)'
       }}
     >
-      <span className="truncate max-w-[200px]">{attachment.name || 'Attachment'}</span>
+      <span className="text-base">{getFileIcon(attachment.type)}</span>
+      <span className="truncate max-w-[120px] md:max-w-[200px] font-medium" style={{ color: 'var(--color-text-primary)' }}>
+        {attachment.name || 'Archivo'}
+      </span>
+      {attachment.size && (
+        <span className="text-xs opacity-70">· {formatFileSize(attachment.size)}</span>
+      )}
+      <button
+        onClick={handleOpen}
+        disabled={loading}
+        className="ml-1 text-xs font-medium underline hover:no-underline"
+        style={{ color: 'var(--color-accent)' }}
+      >
+        {loading ? '...' : 'Abrir'}
+      </button>
     </div>
   );
 }
