@@ -16,6 +16,7 @@ function Sidebar({
   currentConversationId,
   onNewConversation,
   onSelectConversation,
+  onUpdateConversation,
   onDeleteConversation,
   isOpen,
   currentUser,
@@ -129,6 +130,7 @@ function Sidebar({
                 conversation={conversation}
                 isActive={conversation.id === currentConversationId}
                 onSelect={() => onSelectConversation(conversation.id)}
+                onUpdate={(title) => onUpdateConversation(conversation.id, { title })}
                 onDelete={() => onDeleteConversation(conversation.id)}
               />
             ))}
@@ -144,6 +146,7 @@ function Sidebar({
                 onToggle={() => toggleSection('today')}
                 currentConversationId={currentConversationId}
                 onSelectConversation={onSelectConversation}
+                onUpdateConversation={onUpdateConversation}
                 onDeleteConversation={onDeleteConversation}
               />
             )}
@@ -156,6 +159,7 @@ function Sidebar({
                 onToggle={() => toggleSection('yesterday')}
                 currentConversationId={currentConversationId}
                 onSelectConversation={onSelectConversation}
+                onUpdateConversation={onUpdateConversation}
                 onDeleteConversation={onDeleteConversation}
               />
             )}
@@ -168,6 +172,7 @@ function Sidebar({
                 onToggle={() => toggleSection('last7days')}
                 currentConversationId={currentConversationId}
                 onSelectConversation={onSelectConversation}
+                onUpdateConversation={onUpdateConversation}
                 onDeleteConversation={onDeleteConversation}
               />
             )}
@@ -180,6 +185,7 @@ function Sidebar({
                 onToggle={() => toggleSection('last30days')}
                 currentConversationId={currentConversationId}
                 onSelectConversation={onSelectConversation}
+                onUpdateConversation={onUpdateConversation}
                 onDeleteConversation={onDeleteConversation}
               />
             )}
@@ -192,6 +198,7 @@ function Sidebar({
                 onToggle={() => toggleSection('older')}
                 currentConversationId={currentConversationId}
                 onSelectConversation={onSelectConversation}
+                onUpdateConversation={onUpdateConversation}
                 onDeleteConversation={onDeleteConversation}
               />
             )}
@@ -250,7 +257,7 @@ function groupConversationsByDate(conversations) {
 }
 
 // Componente para grupo de conversaciones
-function ConversationGroup({ title, conversations, isExpanded, onToggle, currentConversationId, onSelectConversation, onDeleteConversation }) {
+function ConversationGroup({ title, conversations, isExpanded, onToggle, currentConversationId, onSelectConversation, onUpdateConversation, onDeleteConversation }) {
   return (
     <div className="mb-2">
       <button
@@ -271,6 +278,7 @@ function ConversationGroup({ title, conversations, isExpanded, onToggle, current
               conversation={conversation}
               isActive={conversation.id === currentConversationId}
               onSelect={() => onSelectConversation(conversation.id)}
+              onUpdate={(title) => onUpdateConversation(conversation.id, { title })}
               onDelete={() => onDeleteConversation(conversation.id)}
             />
           ))}
@@ -281,7 +289,7 @@ function ConversationGroup({ title, conversations, isExpanded, onToggle, current
 }
 
 
-function ConversationItem({ conversation, isActive, onSelect, onDelete }) {
+function ConversationItem({ conversation, isActive, onSelect, onUpdate, onDelete }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(conversation.title);
   const [isHovered, setIsHovered] = useState(false);
@@ -300,7 +308,9 @@ function ConversationItem({ conversation, isActive, onSelect, onDelete }) {
 
   const handleSave = (e) => {
     e.stopPropagation();
-    // TODO: Implementar actualización de título
+    if (editedTitle.trim() && editedTitle !== conversation.title) {
+      onUpdate(editedTitle.trim());
+    }
     setIsEditing(false);
   };
 

@@ -103,6 +103,7 @@ function ChatPage() {
           currentConversationId={currentConversationId}
           onNewConversation={handleNewConversation}
           onSelectConversation={handleSelectConversation}
+          onUpdateConversation={updateConversation}
           onDeleteConversation={deleteConversation}
           isOpen={showSidebar}
           currentUser={user?.email}

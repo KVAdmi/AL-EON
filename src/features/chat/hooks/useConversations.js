@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { storage } from '@/lib/storage';
 import { generateId, generateTitle } from '@/lib/utils';
+import { deleteSession } from '@/services/sessionsService';
 
 export function useConversations() {
   const [conversations, setConversations] = useState([]);
@@ -25,9 +26,7 @@ export function useConversations() {
 
   // Save conversations to localStorage whenever they change
   useEffect(() => {
-    if (conversations.length > 0) {
-      storage.saveConversations(conversations);
-    }
+    storage.saveConversations(conversations);
   }, [conversations]);
 
   // Save current conversation ID
@@ -61,7 +60,19 @@ export function useConversations() {
     ));
   };
 
-  const deleteConversation = (id) => {
+  const deleteConversation = async (id) => {
+    try {
+      // Delete from backend if this conversation has a sessionId
+      const conversation = conversations.find(conv => conv.id === id);
+      if (conversation?.sessionId) {
+        await deleteSession(conversation.sessionId);
+        console.log('✅ Sesión eliminada del backend:', conversation.sessionId);
+      }
+    } catch (error) {
+      console.error('⚠️ Error eliminando sesión del backend:', error);
+      // Continue with local deletion even if backend fails
+    }
+
     setConversations(prev => {
       const filtered = prev.filter(conv => conv.id !== id);
       
