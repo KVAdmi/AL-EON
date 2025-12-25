@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Menu, AlertCircle, Mic, Volume2, Waves, MessageSquare, StopCircle, RefreshCw } from 'lucide-react';
+import { Menu, AlertCircle, Mic, Volume2, Waves, MessageSquare, StopCircle, RefreshCw, Copy, Check } from 'lucide-react';
 import MarkdownRenderer from '@/lib/markdownRenderer';
 import TypingIndicator from '@/features/chat/components/TypingIndicator';
 
@@ -154,9 +154,20 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
 function Message({ message }) {
   const isUser = message.role === 'user';
   const isError = message.isError;
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error('❌ Error copiando texto:', error);
+    }
+  };
 
   return (
-    <div className={`flex gap-2 md:gap-4 ${isUser ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex gap-2 md:gap-4 ${isUser ? 'justify-end' : 'justify-start'} group`}>
       {!isUser && (
         <div 
           className="w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center flex-shrink-0"
@@ -170,12 +181,29 @@ function Message({ message }) {
       
       <div className={`flex-1 max-w-[85%] md:max-w-3xl ${isUser ? 'text-right' : ''}`}>
         <div
-          className={`inline-block p-3 md:p-4 rounded-xl ${isUser ? 'text-left' : ''}`}
+          className={`inline-block p-3 md:p-4 rounded-xl relative ${isUser ? 'text-left' : ''}`}
           style={{
             backgroundColor: isUser ? 'var(--color-accent)' : isError ? 'rgba(239, 68, 68, 0.1)' : 'var(--color-bg-secondary)',
             color: 'var(--color-text-primary)'
           }}
         >
+          {/* Botón copiar (aparece on hover) */}
+          <button
+            onClick={handleCopy}
+            className="absolute top-2 right-2 p-1.5 rounded-md transition-all opacity-0 group-hover:opacity-100"
+            style={{
+              backgroundColor: 'var(--color-bg-tertiary)',
+              border: '1px solid var(--color-border)'
+            }}
+            title={copied ? 'Copiado!' : 'Copiar mensaje'}
+          >
+            {copied ? (
+              <Check size={14} className="text-green-500" />
+            ) : (
+              <Copy size={14} style={{ color: 'var(--color-text-secondary)' }} />
+            )}
+          </button>
+
           {isError && (
             <div className="flex items-center gap-2 mb-2 text-red-400">
               <AlertCircle size={14} md:size={16} />
