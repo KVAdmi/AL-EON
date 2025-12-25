@@ -81,21 +81,13 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
   
   console.log('🗂️ WorkspaceId:', finalWorkspaceId);
 
-  // ✅ RequestId único para correlación de logs
+  // ✅ RequestId único para correlación de logs (trazabilidad, NO identidad)
   const requestId = crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   console.log('🧾 requestId:', requestId);
 
-  // Extraer userId del JWT token (payload está en base64)
-  let userId;
-  try {
-    const tokenParts = accessToken.split('.');
-    const payload = JSON.parse(atob(tokenParts[1]));
-    userId = payload.sub || payload.email; // UUID de Supabase auth.users
-    console.log('👤 UserId extraído del token:', userId);
-  } catch (error) {
-    console.error('❌ Error extrayendo userId del token:', error);
-    throw new Error('Token inválido - no se pudo extraer userId');
-  }
+  // ❌ REMOVIDO: Frontend NO debe extraer userId del JWT
+  // ✅ REGLA: Core valida JWT y define user_uuid = payload.sub
+  // ✅ Frontend solo manda el token en Authorization header
 
   // ✅ WIRE PROTOCOL: Decidir entre JSON o FormData
   const hasRawFiles = rawFiles && rawFiles.length > 0;
@@ -117,11 +109,10 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
     return true;
   });
 
-  // Construir payload base
+  // Construir payload base (SIN userId - Core lo extrae del JWT)
   const payloadData = {
-    requestId,
+    requestId, // Solo para trazabilidad
     workspaceId: finalWorkspaceId,
-    userId: userId,
     mode: "universal",
     messages: cleanedMessages,
     meta: {
@@ -163,9 +154,8 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
     console.log('📤 WIRE PROTOCOL: Multipart (archivos raw)');
     const formData = new FormData();
     
-    // Campos obligatorios
+    // Campos obligatorios (SIN userId - Core lo extrae del JWT)
     formData.append('workspaceId', payloadData.workspaceId);
-    formData.append('userId', payloadData.userId);
     formData.append('mode', payloadData.mode);
     formData.append('requestId', payloadData.requestId);
     formData.append('messages', JSON.stringify(payloadData.messages));

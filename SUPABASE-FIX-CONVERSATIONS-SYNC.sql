@@ -41,6 +41,12 @@ CREATE INDEX IF NOT EXISTS idx_user_conversations_updated_at
 -- 3. ROW LEVEL SECURITY
 ALTER TABLE user_conversations ENABLE ROW LEVEL SECURITY;
 
+-- Borrar políticas existentes si existen
+DROP POLICY IF EXISTS "Usuarios ven solo sus conversaciones" ON user_conversations;
+DROP POLICY IF EXISTS "Usuarios insertan solo sus conversaciones" ON user_conversations;
+DROP POLICY IF EXISTS "Usuarios actualizan solo sus conversaciones" ON user_conversations;
+DROP POLICY IF EXISTS "Usuarios borran solo sus conversaciones" ON user_conversations;
+
 -- Políticas: Cada usuario solo ve sus conversaciones
 CREATE POLICY "Usuarios ven solo sus conversaciones"
   ON user_conversations FOR SELECT
