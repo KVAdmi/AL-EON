@@ -40,14 +40,34 @@ export function AuthProvider({ children }) {
   };
 
   const signup = async (email, password) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
-    if (error) throw error;
-    
-    return data;
+      if (error) throw error;
+      
+      // Verificar que se creó el perfil (wait 2 segundos para que el trigger ejecute)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', data.user?.id)
+        .single();
+      
+      if (profileError || !profile) {
+        console.error('❌ Error: Perfil no creado automáticamente', profileError);
+        throw new Error('Error creando perfil de usuario. Por favor contacta a soporte.');
+      }
+      
+      console.log('✅ Usuario registrado correctamente con perfil');
+      return data;
+    } catch (err) {
+      console.error('❌ Error en signup:', err);
+      throw err;
+    }
   };
 
   const logout = async () => {

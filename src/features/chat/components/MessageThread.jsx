@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Menu, AlertCircle, Mic, Volume2, Waves, MessageSquare, StopCircle, RefreshCw, FileSearch } from 'lucide-react';
+import { Menu, AlertCircle, Mic, Volume2, Waves, MessageSquare, StopCircle, RefreshCw } from 'lucide-react';
 import MarkdownRenderer from '@/lib/markdownRenderer';
 import TypingIndicator from '@/features/chat/components/TypingIndicator';
 
@@ -180,14 +180,6 @@ function Message({ message }) {
             <div className="flex items-center gap-2 mb-2 text-red-400">
               <AlertCircle size={14} md:size={16} />
               <span className="text-xs md:text-sm font-medium">Error</span>
-            </div>
-          )}
-          
-          {/* Badge para documentos largos (análisis estructurado) */}
-          {isUser && message.isLongDocument && (
-            <div className="flex items-center gap-2 mb-2 px-2 py-1 rounded-md text-xs font-medium" style={{ backgroundColor: 'rgba(47, 164, 199, 0.2)', color: 'var(--color-accent)' }}>
-              <FileSearch size={14} />
-              <span>Análisis Profundo Activado • {Math.round(message.content.length / 1000)}K caracteres</span>
             </div>
           )}
           

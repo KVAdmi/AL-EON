@@ -3,31 +3,95 @@ import { useState, useEffect } from 'react';
 import { storage } from '@/lib/storage';
 import { generateId, generateTitle } from '@/lib/utils';
 import { deleteSession } from '@/services/sessionsService';
+import {
+  loadConversationsFromSupabase,
+  saveConversationToSupabase,
+  deleteConversationFromSupabase,
+  migrateLocalStorageToSupabase,
+  mergeConversations
+} from '@/services/conversationsService';
 
 export function useConversations() {
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationId] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  // Load conversations from localStorage on mount
+  // 🔄 SYNC: Load conversations from Supabase + localStorage on mount
   useEffect(() => {
-    // 🧹 MIGRACIÓN: Limpiar cualquier JSON que se haya guardado por error
-    storage.cleanMessagesFromJSON();
+    const initConversations = async () => {
+      setIsSyncing(true);
+      
+      try {
+        // 🧹 Limpiar JSON de localStorage
+        storage.cleanMessagesFromJSON();
+        
+        // Cargar de localStorage
+        const localConversations = storage.getConversations();
+        console.log(`📱 localStorage: ${localConversations.length} conversaciones`);
+        
+        // Cargar de Supabase
+        const supabaseConversations = await loadConversationsFromSupabase();
+        
+        if (supabaseConversations) {
+          console.log(`☁️ Supabase: ${supabaseConversations.length} conversaciones`);
+          
+          // Estrategia: Last Write Wins (merge por timestamp)
+          const merged = mergeConversations(localConversations, supabaseConversations);
+          console.log(`✅ Merged: ${merged.length} conversaciones`);
+          
+          setConversations(merged);
+          
+          // Guardar merged en localStorage (para offline)
+          storage.saveConversations(merged);
+          
+          // Si hay conversaciones locales que no están en Supabase, migrarlas
+          if (localConversations.length > supabaseConversations.length) {
+            console.log('🔄 Migrando conversaciones locales a Supabase...');
+            await migrateLocalStorageToSupabase(merged);
+          }
+        } else {
+          // Sin Supabase (offline o no autenticado), usar localStorage
+          console.log('⚠️ Modo offline - usando solo localStorage');
+          setConversations(localConversations);
+        }
+        
+        // Restaurar conversación actual
+        const savedCurrentId = storage.getCurrentConversationId();
+        if (savedCurrentId && conversations.find(c => c.id === savedCurrentId)) {
+          setCurrentConversationId(savedCurrentId);
+        } else if (conversations.length > 0) {
+          setCurrentConversationId(conversations[0].id);
+        }
+        
+      } catch (error) {
+        console.error('❌ Error inicializando conversaciones:', error);
+        // Fallback a localStorage
+        const localConversations = storage.getConversations();
+        setConversations(localConversations);
+      } finally {
+        setIsSyncing(false);
+      }
+    };
     
-    const savedConversations = storage.getConversations();
-    setConversations(savedConversations);
-    
-    const savedCurrentId = storage.getCurrentConversationId();
-    if (savedCurrentId && savedConversations.find(c => c.id === savedCurrentId)) {
-      setCurrentConversationId(savedCurrentId);
-    } else if (savedConversations.length > 0) {
-      setCurrentConversationId(savedConversations[0].id);
-    }
+    initConversations();
   }, []);
 
-  // Save conversations to localStorage whenever they change
+  // 💾 SYNC: Save conversations to Supabase + localStorage whenever they change
   useEffect(() => {
+    if (conversations.length === 0 || isSyncing) return;
+    
+    // Guardar en localStorage (inmediato)
     storage.saveConversations(conversations);
-  }, [conversations]);
+    
+    // Guardar en Supabase (async)
+    const syncToSupabase = async () => {
+      for (const conv of conversations) {
+        await saveConversationToSupabase(conv);
+      }
+    };
+    
+    syncToSupabase();
+  }, [conversations, isSyncing]);
 
   // Save current conversation ID
   useEffect(() => {
@@ -68,8 +132,12 @@ export function useConversations() {
         await deleteSession(conversation.sessionId);
         console.log('✅ Sesión eliminada del backend:', conversation.sessionId);
       }
+      
+      // ☁️ Delete from Supabase
+      await deleteConversationFromSupabase(id);
+      
     } catch (error) {
-      console.error('⚠️ Error eliminando sesión del backend:', error);
+      console.error('⚠️ Error eliminando sesión:', error);
       // Continue with local deletion even if backend fails
     }
 

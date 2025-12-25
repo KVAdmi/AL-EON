@@ -45,9 +45,7 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
           type: f.type,
           size: f.size
         })),
-        timestamp: Date.now(),
-        // ✅ NUEVO: Flag para UI (mostrar badge "Análisis Profundo")
-        isLongDocument: content.trim().length > 3000
+        timestamp: Date.now()
       };
 
       addMessage(currentConversation.id, userMessage);
