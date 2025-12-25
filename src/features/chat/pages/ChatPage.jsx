@@ -10,7 +10,14 @@ import { useAuth } from '@/contexts/AuthContext';
 function ChatPage() {
   const { user, accessToken, logout } = useAuth();
   const [handsFree, setHandsFree] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(true);
+  
+  // ✅ Sidebar cerrado por default en móvil, abierto en desktop
+  const [showSidebar, setShowSidebar] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 768; // md breakpoint
+    }
+    return false;
+  });
   
   const {
     conversations,

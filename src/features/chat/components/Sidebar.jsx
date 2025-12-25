@@ -68,7 +68,7 @@ function Sidebar({
       {/* Header con Logo y botón nuevo chat */}
       <div className="p-3 space-y-3">
         <div className="flex items-center justify-between">
-          <Logo className="h-5 md:h-6 w-auto" />
+          <Logo className="h-8 md:h-10 w-auto" />
           <ThemeToggle />
         </div>
 
