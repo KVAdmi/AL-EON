@@ -6,6 +6,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevenir scroll horizontal en toda la app */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  position: relative;
+}
+
 body {
     @apply bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 bg-slate-900 text-white;
     font-family: 'DM Sans', sans-serif;

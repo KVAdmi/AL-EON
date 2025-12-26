@@ -94,7 +94,7 @@ function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sess
       <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
         {/* ✅ NUEVO: Indicador de "Procesando documento..." */}
         {isUploading && (
-          <div className="mb-2 md:mb-3 px-3 md:px-4 py-2 rounded-lg flex items-center gap-2 text-xs md:text-sm"
+          <div className="mb-2 md:mb-3 px-3 md:px-4 py-2 rounded-2xl flex items-center gap-2 text-xs md:text-sm"
             style={{
               backgroundColor: 'var(--color-bg-tertiary)',
               color: 'var(--color-text-secondary)'
@@ -133,7 +133,7 @@ function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sess
 
         {/* Input Area - Optimizado para mobile */}
         <div 
-          className="flex items-end gap-1.5 md:gap-2 p-1.5 md:p-2 rounded-xl transition-all duration-200"
+          className="flex items-end gap-1.5 md:gap-2 p-1.5 md:p-2 rounded-2xl transition-all duration-200"
           style={{ 
             backgroundColor: 'var(--color-bg-secondary)',
             border: '1px solid var(--color-border)'
@@ -153,7 +153,7 @@ function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sess
             size="icon"
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading || isUploading || disabled}
-            className="flex-shrink-0 rounded-xl h-9 w-9 md:h-10 md:w-10"
+            className="flex-shrink-0 rounded-2xl h-9 w-9 md:h-10 md:w-10"
           >
             <Paperclip size={18} className="md:w-5 md:h-5" style={{ color: 'var(--color-text-secondary)' }} />
           </Button>
@@ -178,7 +178,7 @@ function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sess
             type="submit"
             size="icon"
             disabled={(!message.trim() && attachments.length === 0) || isLoading || isUploading || disabled}
-            className="flex-shrink-0 transition-all duration-200 rounded-xl h-9 w-9 md:h-10 md:w-10"
+            className="flex-shrink-0 transition-all duration-200 rounded-2xl h-9 w-9 md:h-10 md:w-10"
             style={{
               backgroundColor: 'var(--color-accent)',
               color: '#FFFFFF'

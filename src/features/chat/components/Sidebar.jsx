@@ -10,6 +10,9 @@ import { formatDate } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
 import ThemeToggle from '@/components/ThemeToggle';
+import { ProjectModal } from '@/features/projects/components/ProjectModal';
+import { createProject } from '@/services/projectsService';
+import { useToast } from '@/ui/use-toast';
 
 function Sidebar({
   conversations,
@@ -24,7 +27,9 @@ function Sidebar({
 }) {
   const scrollRef = useRef(null);
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     today: true,
     yesterday: true,
@@ -58,33 +63,76 @@ function Sidebar({
     }));
   };
 
+  const handleCreateProject = async (projectData) => {
+    try {
+      await createProject(projectData);
+      toast({
+        title: "Proyecto creado",
+        description: `${projectData.icon} ${projectData.name} ha sido creado exitosamente`,
+        duration: 3000,
+      });
+      setShowCreateProjectModal(false);
+      // TODO: Recargar proyectos
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "No se pudo crear el proyecto",
+        duration: 5000,
+      });
+    }
+  };
+
   return (
-    <div 
-      className="h-full flex flex-col w-[280px] md:w-[300px] border-r" 
-      style={{ 
-        backgroundColor: 'var(--color-bg-primary)',
-        borderColor: 'var(--color-border)'
-      }}
-    >
-      {/* Header con Logo y botón nuevo chat */}
-      <div className="p-3 space-y-3">
+    <>
+      {/* Modal de crear proyecto */}
+      <ProjectModal
+        isOpen={showCreateProjectModal}
+        onClose={() => setShowCreateProjectModal(false)}
+        onSave={handleCreateProject}
+      />
+      
+      <div 
+        className="h-full flex flex-col w-[280px] md:w-[300px] border-r" 
+        style={{ 
+          backgroundColor: 'var(--color-bg-primary)',
+          borderColor: 'var(--color-border)'
+        }}
+      >
+        {/* Header con Logo y botón nuevo chat */}
+        <div className="p-3 space-y-3">
         <div className="flex items-center justify-between">
-          <Logo className="h-8 md:h-10 w-auto" />
+          <Logo className="h-16 md:h-20 w-auto" />
           <ThemeToggle />
         </div>
 
-        {/* Botón Nuevo Chat */}
-        <button
-          onClick={onNewConversation}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg transition-all duration-200 hover:opacity-90"
-          style={{
-            backgroundColor: 'var(--color-accent)',
-            color: 'var(--color-text-primary)'
-          }}
-        >
-          <Plus size={18} strokeWidth={2.5} />
-          <span className="font-medium">Nuevo chat</span>
-        </button>
+        {/* Botones: Nuevo Chat + Nuevo Proyecto */}
+        <div className="flex gap-2">
+          <button
+            onClick={onNewConversation}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl transition-all duration-200 hover:opacity-90"
+            style={{
+              backgroundColor: 'var(--color-accent)',
+              color: '#FFFFFF'
+            }}
+          >
+            <Plus size={18} strokeWidth={2.5} />
+            <span className="font-medium" style={{ color: '#FFFFFF' }}>Nuevo chat</span>
+          </button>
+          
+          <button
+            onClick={() => setShowCreateProjectModal(true)}
+            className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl transition-all duration-200"
+            style={{
+              backgroundColor: 'var(--color-bg-secondary)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-primary)'
+            }}
+            title="Nuevo proyecto"
+          >
+            <FolderPlus size={18} />
+          </button>
+        </div>
 
         {/* Barra de búsqueda */}
         <div className="relative">
@@ -98,7 +146,7 @@ function Sidebar({
             placeholder="Buscar chats..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-lg text-sm transition-all focus:outline-none"
+            className="w-full pl-9 pr-3 py-2 rounded-2xl text-sm transition-all focus:outline-none"
             style={{
               backgroundColor: 'var(--color-bg-secondary)',
               color: 'var(--color-text-primary)',
@@ -206,21 +254,10 @@ function Sidebar({
         )}
       </div>
 
-      {/* Sección Explorar (como ChatGPT) */}
-      <div className="px-2 py-2 border-t" style={{ borderColor: 'var(--color-border)' }}>
-        <button
-          onClick={() => navigate('/explore')}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all hover:bg-[var(--color-bg-secondary)]"
-          style={{ color: 'var(--color-text-secondary)' }}
-        >
-          <Sparkles size={18} />
-          <span className="text-sm font-medium">Explorar GPTs</span>
-        </button>
-      </div>
-
       {/* User Info */}
       {currentUser && <UserInfo currentUser={currentUser} onLogout={onLogout} navigate={navigate} />}
     </div>
+    </>
   );
 }
 
@@ -326,7 +363,7 @@ function ConversationItem({ conversation, isActive, onSelect, onUpdate, onDelete
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={cn(
-        'group relative px-3 py-2 rounded-lg cursor-pointer transition-all duration-150',
+        'group relative px-3 py-2 rounded-2xl cursor-pointer transition-all duration-150',
         'hover:bg-[var(--color-bg-secondary)]'
       )}
       style={{
@@ -342,7 +379,7 @@ function ConversationItem({ conversation, isActive, onSelect, onUpdate, onDelete
               type="text"
               value={editedTitle}
               onChange={(e) => setEditedTitle(e.target.value)}
-              className="flex-1 px-2 py-1 text-sm rounded bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] focus:outline-none focus:border-[var(--color-accent)]"
+              className="flex-1 px-2 py-1 text-sm rounded-xl bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] focus:outline-none focus:border-[var(--color-accent)]"
               style={{ color: 'var(--color-text-primary)' }}
               autoFocus
               onKeyDown={(e) => {
@@ -350,10 +387,10 @@ function ConversationItem({ conversation, isActive, onSelect, onUpdate, onDelete
                 if (e.key === 'Escape') handleCancel(e);
               }}
             />
-            <button onClick={handleSave} className="p-1 hover:bg-[var(--color-bg-tertiary)] rounded">
+            <button onClick={handleSave} className="p-1 hover:bg-[var(--color-bg-tertiary)] rounded-xl">
               <Check size={14} style={{ color: 'var(--color-accent)' }} />
             </button>
-            <button onClick={handleCancel} className="p-1 hover:bg-[var(--color-bg-tertiary)] rounded">
+            <button onClick={handleCancel} className="p-1 hover:bg-[var(--color-bg-tertiary)] rounded-xl">
               <X size={14} style={{ color: 'var(--color-text-tertiary)' }} />
             </button>
           </div>
@@ -370,7 +407,7 @@ function ConversationItem({ conversation, isActive, onSelect, onUpdate, onDelete
               <div className="flex items-center gap-1">
                 <button
                   onClick={handleEdit}
-                  className="p-1.5 rounded hover:bg-[var(--color-bg-tertiary)] transition-all"
+                  className="p-1.5 rounded-xl hover:bg-[var(--color-bg-tertiary)] transition-all"
                   style={{ color: 'var(--color-text-tertiary)' }}
                   title="Renombrar"
                 >
@@ -378,7 +415,7 @@ function ConversationItem({ conversation, isActive, onSelect, onUpdate, onDelete
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="p-1.5 rounded hover:bg-red-500/10 transition-all"
+                  className="p-1.5 rounded-xl hover:bg-red-500/10 transition-all"
                   style={{ color: 'var(--color-text-tertiary)' }}
                   title="Eliminar"
                 >
@@ -401,7 +438,7 @@ function UserInfo({ currentUser, onLogout, navigate }) {
       <div className="relative">
         <button
           onClick={() => setShowMenu(!showMenu)}
-          className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-[var(--color-bg-secondary)] transition-all"
+          className="w-full flex items-center gap-3 p-2.5 rounded-2xl hover:bg-[var(--color-bg-secondary)] transition-all"
         >
           {/* Avatar */}
           <div 

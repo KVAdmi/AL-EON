@@ -10,7 +10,7 @@ import { supabase } from '../lib/supabase';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const [activeTab, setActiveTab] = useState('general');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -207,6 +207,11 @@ export default function SettingsPage() {
       
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+      
+      // Refresh del perfil en AuthContext para actualizar sidebar
+      if (refreshProfile) {
+        await refreshProfile();
+      }
     } catch (error) {
       console.error('Error guardando cambios:', error);
       alert('Error al guardar cambios: ' + error.message);
@@ -231,7 +236,7 @@ export default function SettingsPage() {
       <div className="border-b" style={{ borderColor: 'var(--color-border)' }}>
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:opacity-80 transition-all" style={{ color: 'var(--color-text-secondary)' }}>
+            <button onClick={() => navigate(-1)} className="p-2 rounded-2xl hover:opacity-80 transition-all" style={{ color: 'var(--color-text-secondary)' }}>
               <ArrowLeft size={20} />
             </button>
             <h1 className="text-2xl font-semibold" style={{ color: 'var(--color-text-primary)' }}>Configuración</h1>
@@ -253,7 +258,7 @@ export default function SettingsPage() {
           <button
             onClick={saveChanges}
             disabled={saving || saved}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all"
+            className="flex items-center gap-2 px-4 py-2 rounded-2xl font-medium transition-all"
             style={{
               backgroundColor: saved ? '#10b981' : 'var(--color-accent)',
               color: 'white',
@@ -269,29 +274,52 @@ export default function SettingsPage() {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        <div className="max-w-6xl mx-auto h-full flex gap-6 p-6">
-          {/* Sidebar */}
-          <div className="w-64 flex-shrink-0 space-y-1">
-            {tabs.map(tab => (
-              <button 
-                key={tab.id} 
-                onClick={() => setActiveTab(tab.id)} 
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left" 
-                style={{ 
-                  backgroundColor: activeTab === tab.id ? 'var(--color-bg-secondary)' : 'transparent', 
-                  color: activeTab === tab.id ? 'var(--color-text-primary)' : 'var(--color-text-secondary)', 
-                  fontWeight: activeTab === tab.id ? 500 : 400 
-                }}
-              >
-                {tab.icon}
-                <span className="text-sm">{tab.label}</span>
-              </button>
-            ))}
+        <div className="max-w-6xl mx-auto h-full flex flex-col md:flex-row gap-4 md:gap-6 p-4 md:p-6">
+          {/* Sidebar - Horizontal scroll en móvil, vertical en desktop */}
+          <div className="md:w-64 flex-shrink-0">
+            {/* Móvil: Scroll horizontal */}
+            <div className="flex md:hidden overflow-x-auto gap-2 pb-2 -mx-4 px-4">
+              {tabs.map(tab => (
+                <button 
+                  key={tab.id} 
+                  onClick={() => setActiveTab(tab.id)} 
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-2xl transition-all whitespace-nowrap flex-shrink-0" 
+                  style={{ 
+                    backgroundColor: activeTab === tab.id ? 'var(--color-accent)' : 'var(--color-bg-secondary)', 
+                    color: activeTab === tab.id ? '#FFFFFF' : 'var(--color-text-secondary)', 
+                    fontWeight: activeTab === tab.id ? 600 : 400,
+                    border: activeTab === tab.id ? 'none' : '1px solid var(--color-border)'
+                  }}
+                >
+                  {tab.icon}
+                  <span className="text-sm">{tab.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Desktop: Lista vertical */}
+            <div className="hidden md:block space-y-1">
+              {tabs.map(tab => (
+                <button 
+                  key={tab.id} 
+                  onClick={() => setActiveTab(tab.id)} 
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all text-left" 
+                  style={{ 
+                    backgroundColor: activeTab === tab.id ? 'var(--color-bg-secondary)' : 'transparent', 
+                    color: activeTab === tab.id ? 'var(--color-text-primary)' : 'var(--color-text-secondary)', 
+                    fontWeight: activeTab === tab.id ? 500 : 400 
+                  }}
+                >
+                  {tab.icon}
+                  <span className="text-sm">{tab.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Tab content */}
           <div className="flex-1 overflow-y-auto">
-            <div className="rounded-xl p-8 border" style={{ backgroundColor: 'var(--color-bg-secondary)', borderColor: 'var(--color-border)' }}>
+            <div className="rounded-2xl p-4 md:p-8 border" style={{ backgroundColor: 'var(--color-bg-secondary)', borderColor: 'var(--color-border)' }}>
               <TabContent 
                 activeTab={activeTab} 
                 profile={profile} 
@@ -411,6 +439,29 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
           <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
             Ajusta la apariencia y comportamiento de AL-EON
           </p>
+        </div>
+        
+        {/* Nombre de usuario */}
+        <div>
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+            Nombre para mostrar
+          </label>
+          <p className="text-xs mb-3" style={{ color: 'var(--color-text-tertiary)' }}>
+            Este nombre se mostrará en lugar de tu email en la barra lateral
+          </p>
+          <input
+            type="text"
+            value={profile.display_name || ''}
+            onChange={(e) => setProfile({ ...profile, display_name: e.target.value })}
+            placeholder="Tu nombre"
+            className="w-full px-4 py-3 rounded-2xl border focus:outline-none focus:ring-2 focus:ring-offset-2"
+            style={{
+              backgroundColor: 'var(--color-bg-secondary)',
+              borderColor: 'var(--color-border)',
+              color: 'var(--color-text-primary)'
+            }}
+            maxLength={50}
+          />
         </div>
         
         <div>
@@ -596,15 +647,63 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
         name: 'AL-E Core', 
         description: 'Motor de IA principal', 
         status: backendStatus === 'online' ? 'connected' : 'error',
-        category: 'core'
+        category: 'core',
+        configurable: false
       },
-      { name: 'Supabase', description: 'Base de datos y autenticación', status: 'connected', category: 'core' },
-      { name: 'AWS', description: 'Infraestructura en la nube', status: 'not-configured', category: 'infrastructure' },
-      { name: 'GitHub', description: 'Repositorios y código', status: 'not-configured', category: 'development' },
-      { name: 'Netlify', description: 'Despliegue de frontend', status: 'not-configured', category: 'deployment' },
-      { name: 'OpenAI', description: 'Modelos de lenguaje', status: 'connected', category: 'ai' },
-      { name: 'Google Play', description: 'App Store para Android', status: 'not-configured', category: 'mobile' },
-      { name: 'App Store Connect', description: 'App Store para iOS', status: 'not-configured', category: 'mobile' },
+      { 
+        name: 'Supabase', 
+        description: 'Base de datos y autenticación', 
+        status: 'connected', 
+        category: 'core',
+        configurable: false
+      },
+      { 
+        name: 'AWS', 
+        description: 'Infraestructura en la nube', 
+        status: profile?.aws_configured ? 'connected' : 'not-configured', 
+        category: 'infrastructure',
+        configurable: true,
+        fields: ['aws_access_key', 'aws_secret_key', 'aws_region']
+      },
+      { 
+        name: 'GitHub', 
+        description: 'Repositorios y código', 
+        status: profile?.github_configured ? 'connected' : 'not-configured', 
+        category: 'development',
+        configurable: true,
+        fields: ['github_token']
+      },
+      { 
+        name: 'Netlify', 
+        description: 'Despliegue de frontend', 
+        status: profile?.netlify_configured ? 'connected' : 'not-configured', 
+        category: 'deployment',
+        configurable: true,
+        fields: ['netlify_token']
+      },
+      { 
+        name: 'OpenAI', 
+        description: 'Modelos de lenguaje', 
+        status: 'connected', 
+        category: 'ai',
+        configurable: false
+      },
+      { 
+        name: 'Google Play', 
+        description: 'App Store para Android', 
+        status: profile?.google_play_configured ? 'connected' : 'not-configured', 
+        category: 'mobile',
+        configurable: true,
+        fields: ['google_play_key']
+      },
+      { 
+        name: 'App Store Connect', 
+        description: 'App Store para iOS', 
+        status: profile?.app_store_configured ? 'connected' : 'not-configured', 
+        category: 'mobile',
+        configurable: true,
+        fields: ['app_store_key']
+      },
     ];
 
     return (
@@ -612,7 +711,7 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
         <div>
           <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>Integraciones</h2>
           <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            Conecta servicios externos con AL-EON
+            Conecta servicios externos con AL-EON. Configura tus claves API aquí.
           </p>
         </div>
 
@@ -620,18 +719,18 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
           {integrations.map(integration => (
             <div 
               key={integration.name}
-              className="p-5 rounded-xl border flex items-center justify-between" 
+              className="p-5 rounded-2xl border flex items-center justify-between" 
               style={{ 
                 backgroundColor: 'var(--color-bg-tertiary)', 
                 borderColor: 'var(--color-border)' 
               }}
             >
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-1">
                 <div className={`w-3 h-3 rounded-full`} style={{
                   backgroundColor: integration.status === 'connected' ? '#10b981' : 
                                  integration.status === 'error' ? '#ef4444' : '#6b7280'
                 }} />
-                <div>
+                <div className="flex-1">
                   <h3 className="font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
                     {integration.name}
                   </h3>
@@ -640,12 +739,26 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
                   </p>
                 </div>
               </div>
-              <div className="text-sm font-medium" style={{
-                color: integration.status === 'connected' ? '#10b981' : 
-                       integration.status === 'error' ? '#ef4444' : '#6b7280'
-              }}>
-                {integration.status === 'connected' ? 'Conectado' :
-                 integration.status === 'error' ? 'Error' : 'No configurado'}
+              <div className="flex items-center gap-3">
+                <div className="text-sm font-medium" style={{
+                  color: integration.status === 'connected' ? '#10b981' : 
+                         integration.status === 'error' ? '#ef4444' : '#6b7280'
+                }}>
+                  {integration.status === 'connected' ? 'Conectado' :
+                   integration.status === 'error' ? 'Error' : 'No configurado'}
+                </div>
+                {integration.configurable && (
+                  <button
+                    onClick={() => alert(`Configurar ${integration.name} - Próximamente`)}
+                    className="px-4 py-2 rounded-2xl text-sm font-medium transition-all"
+                    style={{
+                      backgroundColor: 'var(--color-accent)',
+                      color: '#FFFFFF'
+                    }}
+                  >
+                    Configurar
+                  </button>
+                )}
               </div>
             </div>
           ))}

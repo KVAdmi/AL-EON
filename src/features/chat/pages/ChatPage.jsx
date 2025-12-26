@@ -8,7 +8,7 @@ import { useVoiceMode } from '@/hooks/useVoiceMode';
 import { useAuth } from '@/contexts/AuthContext';
 
 function ChatPage() {
-  const { user, accessToken, logout } = useAuth();
+  const { user, userProfile, accessToken, logout } = useAuth();
   const [handsFree, setHandsFree] = useState(false);
   
   // ✅ Sidebar cerrado por default en móvil, abierto en desktop
@@ -106,7 +106,7 @@ function ChatPage() {
           onUpdateConversation={updateConversation}
           onDeleteConversation={deleteConversation}
           isOpen={showSidebar}
-          currentUser={user?.email}
+          currentUser={userProfile?.display_name || user?.email}
           onLogout={logout}
         />
       </div>
@@ -130,6 +130,7 @@ function ChatPage() {
           onToggleSidebar={() => setShowSidebar(!showSidebar)}
           onStopResponse={handleStopResponse}
           onRegenerateResponse={handleRegenerateResponse}
+          currentUser={userProfile?.display_name || user?.email || 'Usuario'}
         />
         <MessageComposer
           onSendMessage={handleSendMessage}

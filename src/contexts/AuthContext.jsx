@@ -5,21 +5,54 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
   const [accessToken, setAccessToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const loadUserProfile = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+      
+      if (error) {
+        console.error('❌ Error cargando perfil:', error);
+        return null;
+      }
+      
+      setUserProfile(data);
+      return data;
+    } catch (err) {
+      console.error('❌ Error en loadUserProfile:', err);
+      return null;
+    }
+  };
+
   useEffect(() => {
     // Verificar sesión actual
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null);
       setAccessToken(session?.access_token ?? null);
+      
+      if (session?.user) {
+        await loadUserProfile(session.user.id);
+      }
+      
       setLoading(false);
     });
 
     // Escuchar cambios de autenticación
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null);
       setAccessToken(session?.access_token ?? null);
+      
+      if (session?.user) {
+        await loadUserProfile(session.user.id);
+      } else {
+        setUserProfile(null);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -75,6 +108,7 @@ export function AuthProvider({ children }) {
     if (error) throw error;
     
     setUser(null);
+    setUserProfile(null);
     setAccessToken(null);
   };
 
@@ -86,14 +120,31 @@ export function AuthProvider({ children }) {
     if (error) throw error;
   };
 
+  const updateDisplayName = async (newDisplayName) => {
+    if (!user) return;
+    
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({ display_name: newDisplayName })
+      .eq('user_id', user.id);
+    
+    if (error) throw error;
+    
+    // Actualizar el estado local
+    setUserProfile(prev => ({ ...prev, display_name: newDisplayName }));
+  };
+
   const value = {
     user,
+    userProfile,
     accessToken,
     loading,
     login,
     signup,
     logout,
     resetPassword,
+    updateDisplayName,
+    refreshProfile: () => user && loadUserProfile(user.id)
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

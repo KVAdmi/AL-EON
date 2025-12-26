@@ -6,7 +6,7 @@ import { SaveMemoryModal } from './SaveMemoryModal';
 import { saveMemory } from '@/services/memoryService';
 import { useToast } from '@/ui/use-toast';
 
-function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggleHandsFree, onToggleSidebar, onStopResponse, onRegenerateResponse }) {
+function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggleHandsFree, onToggleSidebar, onStopResponse, onRegenerateResponse, currentUser }) {
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -108,7 +108,7 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
         ) : (
           <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto">
             {conversation.messages.map((message) => (
-              <Message key={message.id} message={message} />
+              <Message key={message.id} message={message} currentUser={currentUser} />
             ))}
             {isLoading && (
               <div className="space-y-3">
@@ -154,13 +154,19 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
   );
 }
 
-function Message({ message }) {
+function Message({ message, currentUser }) {
   const isUser = message.role === 'user';
   const isError = message.isError;
   const [copied, setCopied] = useState(false);
   const [showMemoryModal, setShowMemoryModal] = useState(false);
   const [memoryType, setMemoryType] = useState(null);
   const { toast } = useToast();
+
+  // Obtener la inicial del usuario
+  const getUserInitial = () => {
+    if (!currentUser) return 'U';
+    return currentUser.charAt(0).toUpperCase();
+  };
 
   const handleCopy = async () => {
     try {
@@ -226,7 +232,7 @@ function Message({ message }) {
           className={`inline-block p-3 md:p-4 rounded-xl relative ${isUser ? 'text-left' : ''}`}
           style={{
             backgroundColor: isUser ? 'var(--color-accent)' : isError ? 'rgba(239, 68, 68, 0.1)' : 'var(--color-bg-secondary)',
-            color: 'var(--color-text-primary)'
+            color: isUser ? '#FFFFFF' : 'var(--color-text-primary)'
           }}
         >
           {/* Botón copiar (aparece on hover) */}
@@ -331,7 +337,7 @@ function Message({ message }) {
           style={{ backgroundColor: 'var(--color-bg-secondary)' }}
         >
           <span className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-            U
+            {getUserInitial()}
           </span>
         </div>
       )}
