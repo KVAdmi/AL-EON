@@ -32,6 +32,14 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
+    // ✅ SOLUCIÓN 3: Listener global para resetear loading en back navigation
+    const handlePopState = () => {
+      console.log('🔙 Popstate detected - resetting loading states');
+      setLoading(false);
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    
     // Verificar sesión actual
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -42,6 +50,9 @@ export function AuthProvider({ children }) {
       }
       
       setLoading(false);
+    }).catch(err => {
+      console.error('Error getting session:', err);
+      setLoading(false); // ✅ CRÍTICO: Always set loading to false
     });
 
     // Escuchar cambios de autenticación
@@ -56,7 +67,10 @@ export function AuthProvider({ children }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email, password) => {

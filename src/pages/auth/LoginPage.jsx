@@ -56,7 +56,9 @@ function LoginPage() {
         title: "¡Bienvenido!",
         description: "Sesión iniciada correctamente",
       });
-      navigate('/');
+      
+      // ✅ CRÍTICO: Usar replace:true para evitar que el back vuelva al login
+      navigate('/', { replace: true });
     } catch (error) {
       console.error('Error en login:', error);
       toast({
