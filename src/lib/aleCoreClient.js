@@ -71,10 +71,8 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
     throw new Error("❌ Missing accessToken - Usuario no autenticado");
   }
 
-  // ✅ FORZAR workspaceId="core" para AL-E Core (no interpretativo)
-  const WORKSPACE_ID = import.meta.env.VITE_WORKSPACE_ID === "core" ? "core" : "core";
-  
-  const finalWorkspaceId = WORKSPACE_ID;
+  // ✅ WorkspaceId desde env (NO hardcodear "core")
+  const finalWorkspaceId = import.meta.env.VITE_WORKSPACE_ID || workspaceId || 'al-eon';
   
   // ✅ Persistir para futuras cargas
   localStorage.setItem('workspaceId', finalWorkspaceId);
@@ -89,11 +87,21 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
   // ✅ REGLA: Core valida JWT y define user_uuid = payload.sub
   // ✅ Frontend solo manda el token en Authorization header
 
+  // 🔥 LIMITAR mensajes para evitar context overflow y reducir costo
+  const MAX_MESSAGES = 12;
+  const trimmedMessages = messages.slice(-MAX_MESSAGES);
+  
+  if (messages.length > MAX_MESSAGES) {
+    console.warn(`⚠️ Historial recortado: ${messages.length} → ${trimmedMessages.length} mensajes`);
+  }
+  
+  console.log(`📊 Enviando ${trimmedMessages.length} mensajes (de ${messages.length} totales)`);
+
   // ✅ WIRE PROTOCOL: Decidir entre JSON o FormData
   const hasRawFiles = rawFiles && rawFiles.length > 0;
 
-  // ✅ LIMPIAR mensajes contaminados ANTES de enviar
-  const cleanedMessages = messages.filter(msg => {
+  // ✅ LIMPIAR mensajes contaminados ANTES de enviar (sobre mensajes ya recortados)
+  const cleanedMessages = trimmedMessages.filter(msg => {
     if (msg.role === 'assistant') {
       const content = msg.content || '';
       // Eliminar mensajes de error, HTML, y failed fetches
@@ -114,7 +122,7 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
     requestId, // Solo para trazabilidad
     workspaceId: finalWorkspaceId,
     mode: "universal",
-    messages: cleanedMessages,
+    messages: cleanedMessages, // ✅ SOLO últimos 12 mensajes limpios
     meta: {
       ...getRequestMetadata(),
       timestamp: new Date().toISOString(),
