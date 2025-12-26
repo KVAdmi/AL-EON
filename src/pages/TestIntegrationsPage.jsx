@@ -9,12 +9,14 @@ import {
   sendEmail, 
   createCalendarEvent, 
   listCalendarEvents,
-  checkIntegrationsStatus 
+  checkUserIntegrationsStatus 
 } from '../services/integrationsService';
 import { ArrowLeft, Mail, Calendar, Send, CheckCircle, XCircle, Loader } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function TestIntegrationsPage() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -38,12 +40,17 @@ export default function TestIntegrationsPage() {
 
   // Verificar estado de integraciones
   const handleCheckStatus = async () => {
+    if (!user) {
+      setError('Usuario no autenticado');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setResult(null);
 
     try {
-      const status = await checkIntegrationsStatus();
+      const status = await checkUserIntegrationsStatus(user.id);
       setIntegrationsStatus(status);
       setResult({
         type: 'status',
@@ -59,12 +66,18 @@ export default function TestIntegrationsPage() {
   // Enviar email de prueba
   const handleSendEmail = async (e) => {
     e.preventDefault();
+    
+    if (!user) {
+      setError('Usuario no autenticado');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setResult(null);
 
     try {
-      const response = await sendEmail({
+      const response = await sendEmail(user.id, {
         to: emailForm.to,
         subject: emailForm.subject,
         body: emailForm.body,
@@ -85,6 +98,12 @@ export default function TestIntegrationsPage() {
   // Crear evento de calendario
   const handleCreateEvent = async (e) => {
     e.preventDefault();
+    
+    if (!user) {
+      setError('Usuario no autenticado');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setResult(null);
@@ -95,7 +114,7 @@ export default function TestIntegrationsPage() {
         .map(email => email.trim())
         .filter(email => email);
 
-      const response = await createCalendarEvent({
+      const response = await createCalendarEvent(user.id, {
         summary: calendarForm.summary,
         description: calendarForm.description,
         startDateTime: new Date(calendarForm.startDateTime).toISOString(),
@@ -117,12 +136,17 @@ export default function TestIntegrationsPage() {
 
   // Listar próximos eventos
   const handleListEvents = async () => {
+    if (!user) {
+      setError('Usuario no autenticado');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setResult(null);
 
     try {
-      const events = await listCalendarEvents({ maxResults: 5 });
+      const events = await listCalendarEvents(user.id, { maxResults: 5 });
       setResult({
         type: 'list',
         data: events,
