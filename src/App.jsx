@@ -13,6 +13,8 @@ import SecurityPage from '@/pages/SecurityPage';
 import IntegrationsPage from '@/pages/IntegrationsPage';
 import PlatformsPage from '@/pages/PlatformsPage';
 import HistoryPage from '@/pages/HistoryPage';
+import PrivacyPolicyPage from '@/pages/PrivacyPolicyPage';
+import TermsOfServicePage from '@/pages/TermsOfServicePage';
 
 // ✅ GLOBAL: AbortController para cancelar requests pendientes
 let globalAbortController = null;
@@ -291,6 +293,10 @@ function App() {
               </PublicRoute>
             } 
           />
+
+          {/* Páginas legales (públicas) */}
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsOfServicePage />} />
 
           {/* Fallback */}
           <Route path="/" element={<Navigate to="/chat" replace />} />

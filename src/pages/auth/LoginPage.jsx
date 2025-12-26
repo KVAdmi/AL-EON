@@ -207,8 +207,27 @@ function LoginPage() {
           </Link>
         </div>
 
+        {/* Links legales */}
+        <div className="mt-6 flex items-center justify-center gap-3 text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
+          <Link 
+            to="/privacy" 
+            className="hover:underline"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Privacidad
+          </Link>
+          <span>•</span>
+          <Link 
+            to="/terms" 
+            className="hover:underline"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Términos
+          </Link>
+        </div>
+
         {/* Footer */}
-        <div className="mt-8 text-center text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
+        <div className="mt-4 text-center text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
           Creado por <span style={{ color: 'var(--color-accent)' }}>Infinity Kode</span> • 2025
         </div>
       </div>
