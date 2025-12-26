@@ -34,7 +34,65 @@ export function getGlobalAbortSignal() {
 
 // Componente para proteger rutas que requieren autenticación
 function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth();
+  const { user, loading, bootError, retryBoot } = useAuth();
+
+  // 🔥 PANTALLA DE ERROR CON REINTENTAR
+  if (bootError) {
+    return (
+      <div 
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ backgroundColor: 'var(--color-bg-primary)' }}
+      >
+        <div 
+          className="max-w-md w-full p-8 rounded-2xl text-center space-y-6"
+          style={{ 
+            backgroundColor: 'var(--color-bg-secondary)',
+            border: '1px solid var(--color-border)'
+          }}
+        >
+          <div className="text-6xl mb-4">⚠️</div>
+          <h2 
+            className="text-2xl font-bold"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
+            Error de Conexión
+          </h2>
+          <p style={{ color: 'var(--color-text-secondary)' }}>
+            No se pudo inicializar la aplicación.
+          </p>
+          <p 
+            className="text-sm font-mono p-3 rounded"
+            style={{ 
+              backgroundColor: 'var(--color-bg-tertiary)',
+              color: 'var(--color-text-tertiary)'
+            }}
+          >
+            {bootError}
+          </p>
+          <button
+            onClick={retryBoot}
+            className="w-full py-3 px-6 rounded-xl font-medium transition-all hover:opacity-90"
+            style={{
+              backgroundColor: 'var(--color-accent)',
+              color: 'var(--color-text-primary)'
+            }}
+          >
+            🔄 Reintentar
+          </button>
+          <button
+            onClick={() => window.location.href = '/login'}
+            className="w-full py-2 px-6 rounded-xl font-medium transition-all"
+            style={{
+              color: 'var(--color-text-secondary)',
+              border: '1px solid var(--color-border)'
+            }}
+          >
+            Ir al Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -57,7 +115,55 @@ function ProtectedRoute({ children }) {
 
 // Componente para rutas públicas (redirige a / si ya está autenticado)
 function PublicRoute({ children }) {
-  const { user, loading } = useAuth();
+  const { user, loading, bootError, retryBoot } = useAuth();
+
+  // 🔥 PANTALLA DE ERROR CON REINTENTAR
+  if (bootError) {
+    return (
+      <div 
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ backgroundColor: 'var(--color-bg-primary)' }}
+      >
+        <div 
+          className="max-w-md w-full p-8 rounded-2xl text-center space-y-6"
+          style={{ 
+            backgroundColor: 'var(--color-bg-secondary)',
+            border: '1px solid var(--color-border)'
+          }}
+        >
+          <div className="text-6xl mb-4">⚠️</div>
+          <h2 
+            className="text-2xl font-bold"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
+            Error de Conexión
+          </h2>
+          <p style={{ color: 'var(--color-text-secondary)' }}>
+            No se pudo inicializar la aplicación.
+          </p>
+          <p 
+            className="text-sm font-mono p-3 rounded"
+            style={{ 
+              backgroundColor: 'var(--color-bg-tertiary)',
+              color: 'var(--color-text-tertiary)'
+            }}
+          >
+            {bootError}
+          </p>
+          <button
+            onClick={retryBoot}
+            className="w-full py-3 px-6 rounded-xl font-medium transition-all hover:opacity-90"
+            style={{
+              backgroundColor: 'var(--color-accent)',
+              color: 'var(--color-text-primary)'
+            }}
+          >
+            🔄 Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -79,7 +185,7 @@ function App() {
 
   // ✅ SOLUCIÓN 1: Reset de loading en cada cambio de ruta
   useEffect(() => {
-    console.log('🔄 Route changed to:', location.pathname);
+    console.log('[APP] 🔄 Route changed to:', location.pathname);
     
     // Abortar todos los requests pendientes
     abortAllPendingRequests();
@@ -92,7 +198,7 @@ function App() {
   // ✅ SOLUCIÓN 3: Manejo explícito de popstate (botón BACK)
   useEffect(() => {
     const handlePopState = () => {
-      console.log('⬅️ BACK button pressed - cleaning up');
+      console.log('[APP] ⬅️ BACK button pressed - cleaning up');
       abortAllPendingRequests();
     };
 
