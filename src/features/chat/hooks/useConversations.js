@@ -49,18 +49,26 @@ export function useConversations() {
             console.log('🔄 Migrando conversaciones locales a Supabase...');
             await migrateLocalStorageToSupabase(merged);
           }
+          
+          // Restaurar conversación actual (USAR merged, NO conversations)
+          const savedCurrentId = storage.getCurrentConversationId();
+          if (savedCurrentId && merged.find(c => c.id === savedCurrentId)) {
+            setCurrentConversationId(savedCurrentId);
+          } else if (merged.length > 0) {
+            setCurrentConversationId(merged[0].id);
+          }
         } else {
           // Sin Supabase (offline o no autenticado), usar localStorage
           console.log('⚠️ Modo offline - usando solo localStorage');
           setConversations(localConversations);
-        }
-        
-        // Restaurar conversación actual
-        const savedCurrentId = storage.getCurrentConversationId();
-        if (savedCurrentId && conversations.find(c => c.id === savedCurrentId)) {
-          setCurrentConversationId(savedCurrentId);
-        } else if (conversations.length > 0) {
-          setCurrentConversationId(conversations[0].id);
+          
+          // Restaurar conversación actual
+          const savedCurrentId = storage.getCurrentConversationId();
+          if (savedCurrentId && localConversations.find(c => c.id === savedCurrentId)) {
+            setCurrentConversationId(savedCurrentId);
+          } else if (localConversations.length > 0) {
+            setCurrentConversationId(localConversations[0].id);
+          }
         }
         
       } catch (error) {
