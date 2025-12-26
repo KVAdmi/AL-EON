@@ -104,12 +104,29 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    
-    setUser(null);
-    setUserProfile(null);
-    setAccessToken(null);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      // Limpiar estado
+      setUser(null);
+      setUserProfile(null);
+      setAccessToken(null);
+      
+      // Limpiar localStorage
+      localStorage.clear();
+      
+      // Redirigir a login
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('❌ Error al cerrar sesión:', error);
+      // Forzar limpieza y redirección incluso si hay error
+      setUser(null);
+      setUserProfile(null);
+      setAccessToken(null);
+      localStorage.clear();
+      window.location.href = '/login';
+    }
   };
 
   const resetPassword = async (email) => {

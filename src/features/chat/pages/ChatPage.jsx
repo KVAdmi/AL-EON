@@ -91,7 +91,7 @@ function ChatPage() {
   };
 
   return (
-    <div className="h-full flex" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+    <div className="h-full flex overflow-hidden" style={{ backgroundColor: 'var(--color-bg-primary)', width: '100vw', maxWidth: '100vw' }}>
       {/* SIDEBAR REDISEÑADO - Desktop siempre visible, Mobile overlay */}
       <div className={`
         fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out
@@ -120,7 +120,7 @@ function ChatPage() {
       )}
 
       {/* ÁREA DE CHAT */}
-      <div className="flex-1 flex flex-col w-full md:w-auto">
+      <div className="flex-1 flex flex-col overflow-hidden" style={{ width: '100%', maxWidth: '100%' }}>
         <MessageThread
           conversation={currentConversation}
           isLoading={isLoading}
