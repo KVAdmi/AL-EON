@@ -883,19 +883,19 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
         </div>
 
         {/* Botón: Mis Integraciones (Gmail, Calendar, Meet) */}
-        <div 
+        <button 
           onClick={() => {
             console.log('🔗 Click en Mis Integraciones - navegando a /settings/integrations');
             navigate('/settings/integrations');
           }}
-          className="p-6 rounded-2xl border cursor-pointer hover:shadow-lg transition-all group" 
+          className="w-full p-6 rounded-2xl border cursor-pointer hover:shadow-lg transition-all group text-left" 
           style={{ 
             backgroundColor: 'var(--color-bg-tertiary)', 
             borderColor: 'var(--color-accent)',
             borderWidth: '2px'
           }}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pointer-events-none">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-blue-500 text-white text-2xl">
                 🔗
@@ -924,7 +924,7 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
               →
             </div>
           </div>
-        </div>
+        </button>
 
         {/* Integraciones de Desarrollador (solo ROOT) */}
         {profile?.role === 'ROOT' && (
