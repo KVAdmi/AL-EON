@@ -14,6 +14,22 @@ export default function IntegrationsPage() {
 
   const availableIntegrations = [
     {
+      type: 'gmail',
+      name: 'Gmail',
+      icon: '📧',
+      description: 'Envío de emails, notificaciones, recordatorios',
+      fields: ['client_id', 'client_secret', 'refresh_token'],
+      capabilities: ['email', 'notifications']
+    },
+    {
+      type: 'google_calendar',
+      name: 'Google Calendar',
+      icon: '📅',
+      description: 'Agendar eventos, recordatorios, reuniones',
+      fields: ['client_id', 'client_secret', 'refresh_token'],
+      capabilities: ['calendar', 'scheduling', 'reminders']
+    },
+    {
       type: 'netlify',
       name: 'Netlify',
       icon: 'NET',
@@ -50,9 +66,9 @@ export default function IntegrationsPage() {
     },
     {
       type: 'google',
-      name: 'Google',
+      name: 'Google APIs',
       icon: 'GO',
-      description: 'Play Store, APIs, Maps',
+      description: 'Play Store, Maps, Drive',
       fields: ['credentials_json'],
     },
     {
@@ -62,11 +78,36 @@ export default function IntegrationsPage() {
       description: 'App Store, TestFlight, certificados',
       fields: ['team_id', 'key_id', 'private_key'],
     },
+    {
+      type: 'slack',
+      name: 'Slack',
+      icon: '💬',
+      description: 'Notificaciones a canales, alertas',
+      fields: ['webhook_url', 'bot_token'],
+      capabilities: ['notifications', 'messaging']
+    },
   ];
 
   async function handleConnect(integrationType) {
     const integration = availableIntegrations.find((i) => i.type === integrationType);
     if (!integration) return;
+
+    // Instrucciones especiales para Gmail y Google Calendar
+    if (integrationType === 'gmail' || integrationType === 'google_calendar') {
+      const instructions = `
+📧 Para conectar ${integration.name}:
+
+1. Ve a: https://console.cloud.google.com/
+2. Crea/selecciona un proyecto
+3. Habilita la API: ${integrationType === 'gmail' ? 'Gmail API' : 'Google Calendar API'}
+4. Crea credenciales OAuth 2.0
+5. Copia: Client ID, Client Secret
+6. Genera un Refresh Token usando OAuth Playground
+
+¿Quieres continuar?`;
+      
+      if (!confirm(instructions)) return;
+    }
 
     // Mostrar prompt simple (después harás modal)
     const config = {};
@@ -126,6 +167,19 @@ export default function IntegrationsPage() {
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       {integration.description}
                     </p>
+                    {/* Capacidades/Tags */}
+                    {integration.capabilities && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {integration.capabilities.map(cap => (
+                          <span 
+                            key={cap}
+                            className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                          >
+                            {cap}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div
