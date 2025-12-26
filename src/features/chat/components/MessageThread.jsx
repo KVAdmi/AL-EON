@@ -1,7 +1,10 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Menu, AlertCircle, Mic, Volume2, Waves, MessageSquare, StopCircle, RefreshCw, Copy, Check } from 'lucide-react';
+import { Menu, AlertCircle, Mic, Volume2, Waves, MessageSquare, StopCircle, RefreshCw, Copy, Check, BookmarkPlus, FileText } from 'lucide-react';
 import MarkdownRenderer from '@/lib/markdownRenderer';
 import TypingIndicator from '@/features/chat/components/TypingIndicator';
+import { SaveMemoryModal } from './SaveMemoryModal';
+import { saveMemory } from '@/services/memoryService';
+import { useToast } from '@/ui/use-toast';
 
 function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggleHandsFree, onToggleSidebar, onStopResponse, onRegenerateResponse }) {
   const scrollRef = useRef(null);
@@ -155,6 +158,9 @@ function Message({ message }) {
   const isUser = message.role === 'user';
   const isError = message.isError;
   const [copied, setCopied] = useState(false);
+  const [showMemoryModal, setShowMemoryModal] = useState(false);
+  const [memoryType, setMemoryType] = useState(null);
+  const { toast } = useToast();
 
   const handleCopy = async () => {
     try {
@@ -166,18 +172,54 @@ function Message({ message }) {
     }
   };
 
+  const handleSaveMemoryClick = (type) => {
+    setMemoryType(type);
+    setShowMemoryModal(true);
+  };
+
+  const handleSaveMemory = async ({ content, type, scope }) => {
+    try {
+      await saveMemory({ content, type, scope });
+      
+      toast({
+        title: "Memoria guardada",
+        description: `${type === 'agreement' ? 'Acuerdo' : 'Hecho'} guardado exitosamente. AL-E lo recordará.`,
+        duration: 3000,
+      });
+
+      setShowMemoryModal(false);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "No se pudo guardar la memoria",
+        duration: 5000,
+      });
+      throw error;
+    }
+  };
+
   return (
-    <div className={`flex gap-2 md:gap-4 ${isUser ? 'justify-end' : 'justify-start'} group`}>
-      {!isUser && (
-        <div 
-          className="w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: 'var(--color-accent)' }}
-        >
-          <span className="text-xs md:text-sm font-semibold" style={{ color: '#FFFFFF' }}>
-            AL
-          </span>
-        </div>
-      )}
+    <>
+      <SaveMemoryModal
+        isOpen={showMemoryModal}
+        onClose={() => setShowMemoryModal(false)}
+        initialContent={message.content}
+        messageType={memoryType}
+        onSave={handleSaveMemory}
+      />
+
+      <div className={`flex gap-2 md:gap-4 ${isUser ? 'justify-end' : 'justify-start'} group`}>
+        {!isUser && (
+          <div 
+            className="w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: 'var(--color-accent)' }}
+          >
+            <span className="text-xs md:text-sm font-semibold" style={{ color: '#FFFFFF' }}>
+              AL
+            </span>
+          </div>
+        )}
       
       <div className={`flex-1 max-w-[85%] md:max-w-3xl ${isUser ? 'text-right' : ''}`}>
         <div
@@ -226,6 +268,55 @@ function Message({ message }) {
           {/* TODO: Agregar soporte para imágenes, fuentes web, citas y acciones */}
         </div>
         
+        {/* Botones de memoria (aparecen on hover) - Solo para mensajes de AL-E */}
+        {!isUser && !isError && (
+          <div className="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+            <button
+              onClick={() => handleSaveMemoryClick('agreement')}
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-all"
+              style={{
+                backgroundColor: 'var(--color-bg-tertiary)',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-text-secondary)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-accent)';
+                e.currentTarget.style.color = '#FFFFFF';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-bg-tertiary)';
+                e.currentTarget.style.color = 'var(--color-text-secondary)';
+              }}
+              title="Guardar este acuerdo o decisión para recordarlo después"
+            >
+              <BookmarkPlus size={12} />
+              <span>Guardar acuerdo</span>
+            </button>
+            
+            <button
+              onClick={() => handleSaveMemoryClick('fact')}
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-all"
+              style={{
+                backgroundColor: 'var(--color-bg-tertiary)',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-text-secondary)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-accent)';
+                e.currentTarget.style.color = '#FFFFFF';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-bg-tertiary)';
+                e.currentTarget.style.color = 'var(--color-text-secondary)';
+              }}
+              title="Guardar este hecho importante para el contexto del proyecto"
+            >
+              <FileText size={12} />
+              <span>Guardar hecho</span>
+            </button>
+          </div>
+        )}
+        
         <div className="mt-1 text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
           {new Date(message.timestamp).toLocaleTimeString('en-US', { 
             hour: '2-digit', 
@@ -245,6 +336,7 @@ function Message({ message }) {
         </div>
       )}
     </div>
+    </>
   );
 }
 
