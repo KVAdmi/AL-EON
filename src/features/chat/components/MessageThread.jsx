@@ -6,7 +6,7 @@ import { SaveMemoryModal } from './SaveMemoryModal';
 import { saveMemory } from '@/services/memoryService';
 import { useToast } from '@/ui/use-toast';
 
-function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggleHandsFree, onToggleSidebar, onStopResponse, onRegenerateResponse, currentUser }) {
+function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggleHandsFree, onToggleSidebar, onStopResponse, onRegenerateResponse, currentUser, assistantName }) {
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -108,7 +108,7 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
         ) : (
           <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto">
             {conversation.messages.map((message) => (
-              <Message key={message.id} message={message} currentUser={currentUser} />
+              <Message key={message.id} message={message} currentUser={currentUser} assistantName={assistantName} />
             ))}
             {isLoading && (
               <div className="space-y-3">
@@ -154,7 +154,7 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
   );
 }
 
-function Message({ message, currentUser }) {
+function Message({ message, currentUser, assistantName = 'Luma' }) {
   const isUser = message.role === 'user';
   const isError = message.isError;
   const [copied, setCopied] = useState(false);
@@ -166,6 +166,18 @@ function Message({ message, currentUser }) {
   const getUserInitial = () => {
     if (!currentUser) return 'U';
     return currentUser.charAt(0).toUpperCase();
+  };
+
+  // Obtener la inicial del asistente
+  const getAssistantInitial = () => {
+    if (!assistantName) return 'AL';
+    const words = assistantName.trim().split(' ');
+    if (words.length >= 2) {
+      // Si tiene 2 o más palabras, usar iniciales de primeras 2
+      return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+    }
+    // Si es una palabra, usar primeras 2 letras
+    return assistantName.substring(0, 2).toUpperCase();
   };
 
   const handleCopy = async () => {
@@ -222,7 +234,7 @@ function Message({ message, currentUser }) {
             style={{ backgroundColor: 'var(--color-accent)' }}
           >
             <span className="text-xs md:text-sm font-semibold" style={{ color: '#FFFFFF' }}>
-              AL
+              {getAssistantInitial()}
             </span>
           </div>
         )}

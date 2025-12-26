@@ -3,7 +3,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { 
   Plus, MessageSquare, Trash2, Edit3, Check, X, Search,
   LogOut, User, Settings, ChevronDown, ChevronRight,
-  Folder, FolderPlus, Calendar, Sparkles, Zap, Users
+  Folder, FolderPlus, Calendar, Sparkles, Zap, Users, MoreVertical
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils';
@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
 import ThemeToggle from '@/components/ThemeToggle';
 import { ProjectModal } from '@/features/projects/components/ProjectModal';
-import { createProject } from '@/services/projectsService';
+import { createProject, getProjects, deleteProject } from '@/services/projectsService';
 import { useToast } from '@/ui/use-toast';
 
 function Sidebar({
@@ -30,6 +30,8 @@ function Sidebar({
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const [selectedProject, setSelectedProject] = useState(null);
   const [expandedSections, setExpandedSections] = useState({
     today: true,
     yesterday: true,
@@ -44,10 +46,28 @@ function Sidebar({
     }
   }, [conversations.length]);
 
+  // Cargar proyectos al montar el componente
+  useEffect(() => {
+    loadProjects();
+  }, []);
+
+  const loadProjects = async () => {
+    try {
+      const projectsList = await getProjects();
+      setProjects(projectsList || []);
+    } catch (error) {
+      console.error('Error cargando proyectos:', error);
+    }
+  };
+
   if (!isOpen) return null;
 
-  // Agrupar conversaciones por fecha
-  const groupedConversations = groupConversationsByDate(conversations);
+  // Separar conversaciones con y sin proyecto
+  const conversationsWithoutProject = conversations.filter(c => !c.project_id);
+  const conversationsWithProject = conversations.filter(c => c.project_id);
+
+  // Agrupar conversaciones sin proyecto por fecha
+  const groupedConversations = groupConversationsByDate(conversationsWithoutProject);
   
   // Filtrar por búsqueda
   const filteredConversations = searchQuery
@@ -72,7 +92,8 @@ function Sidebar({
         duration: 3000,
       });
       setShowCreateProjectModal(false);
-      // TODO: Recargar proyectos
+      // Recargar proyectos
+      await loadProjects();
     } catch (error) {
       toast({
         variant: "destructive",
@@ -81,6 +102,33 @@ function Sidebar({
         duration: 5000,
       });
     }
+  };
+
+  const handleDeleteProject = async (projectId) => {
+    if (!confirm('¿Eliminar este proyecto? Las conversaciones se mantendrán pero quedarán sin proyecto.')) {
+      return;
+    }
+    try {
+      await deleteProject(projectId);
+      toast({
+        title: "Proyecto eliminado",
+        description: "El proyecto ha sido eliminado",
+        duration: 3000,
+      });
+      await loadProjects();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "No se pudo eliminar el proyecto",
+        duration: 5000,
+      });
+    }
+  };
+
+  const handleNewChatInProject = (projectId) => {
+    // Llamar a onNewConversation pasando el projectId
+    onNewConversation(projectId);
   };
 
   return (
@@ -156,7 +204,41 @@ function Sidebar({
         </div>
       </div>
 
-      {/* Lista de conversaciones agrupadas */}
+      {/* Sección de Proyectos */}
+      {projects.length > 0 && (
+        <div className="px-2 py-2 border-b" style={{ borderColor: 'var(--color-border)' }}>
+          <button
+            onClick={() => toggleSection('projects')}
+            className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-[var(--color-bg-secondary)] transition-all"
+            style={{ color: 'var(--color-text-tertiary)' }}
+          >
+            {expandedSections.projects ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            <Folder size={14} />
+            <span className="text-xs font-semibold uppercase tracking-wide">Proyectos</span>
+            <span className="text-xs">({projects.length})</span>
+          </button>
+
+          {expandedSections.projects && (
+            <div className="mt-2 space-y-1">
+              {projects.map((project) => (
+                <ProjectItem
+                  key={project.id}
+                  project={project}
+                  conversations={conversations.filter(c => c.project_id === project.id)}
+                  currentConversationId={currentConversationId}
+                  onSelectConversation={onSelectConversation}
+                  onUpdateConversation={onUpdateConversation}
+                  onDeleteConversation={onDeleteConversation}
+                  onNewChatInProject={() => handleNewChatInProject(project.id)}
+                  onDeleteProject={() => handleDeleteProject(project.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Lista de conversaciones agrupadas (sin proyecto) */}
       <div 
         ref={scrollRef}
         className="flex-1 overflow-y-auto px-2"
@@ -534,6 +616,98 @@ function MenuButton({ icon, label, onClick, danger = false }) {
       {icon}
       <span className="text-sm">{label}</span>
     </button>
+  );
+}
+
+// Componente para mostrar un proyecto con sus conversaciones
+function ProjectItem({ project, conversations, currentConversationId, onSelectConversation, onUpdateConversation, onDeleteConversation, onNewChatInProject, onDeleteProject }) {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [showMenu, setShowMenu] = useState(false);
+
+  return (
+    <div className="mb-2">
+      <div className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-[var(--color-bg-secondary)] transition-all group">
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-2 flex-1 text-left"
+        >
+          {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          <span className="text-lg">{project.icon || '📁'}</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>
+              {project.name}
+            </p>
+            <p className="text-xs truncate" style={{ color: 'var(--color-text-tertiary)' }}>
+              {conversations.length} chat{conversations.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+        </button>
+
+        {/* Botones de acción */}
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={onNewChatInProject}
+            className="p-1.5 rounded-xl hover:bg-[var(--color-bg-tertiary)] transition-all"
+            style={{ color: 'var(--color-text-tertiary)' }}
+            title="Nuevo chat en este proyecto"
+          >
+            <Plus size={14} />
+          </button>
+          
+          <div className="relative">
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-1.5 rounded-xl hover:bg-[var(--color-bg-tertiary)] transition-all"
+              style={{ color: 'var(--color-text-tertiary)' }}
+              title="Más opciones"
+            >
+              <MoreVertical size={14} />
+            </button>
+            
+            {showMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+                <div 
+                  className="absolute right-0 top-full mt-1 rounded-xl shadow-lg overflow-hidden z-20 border"
+                  style={{
+                    backgroundColor: 'var(--color-bg-secondary)',
+                    borderColor: 'var(--color-border)',
+                    minWidth: '150px'
+                  }}
+                >
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      onDeleteProject();
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--color-bg-tertiary)] transition-all"
+                    style={{ color: 'var(--color-error, #ef4444)' }}
+                  >
+                    Eliminar proyecto
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Conversaciones del proyecto */}
+      {isExpanded && conversations.length > 0 && (
+        <div className="ml-6 mt-1 space-y-0.5">
+          {conversations.map((conversation) => (
+            <ConversationItem
+              key={conversation.id}
+              conversation={conversation}
+              isActive={conversation.id === currentConversationId}
+              onSelect={() => onSelectConversation(conversation.id)}
+              onUpdate={(title) => onUpdateConversation(conversation.id, { title })}
+              onDelete={() => onDeleteConversation(conversation.id)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

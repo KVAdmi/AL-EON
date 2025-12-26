@@ -51,8 +51,8 @@ function ChatPage() {
     handsFreeEnabled: handsFree
   });
 
-  const handleNewConversation = () => {
-    createConversation();
+  const handleNewConversation = (projectId = null) => {
+    createConversation(projectId);
   };
 
   const handleSelectConversation = (id) => {
@@ -131,6 +131,7 @@ function ChatPage() {
           onStopResponse={handleStopResponse}
           onRegenerateResponse={handleRegenerateResponse}
           currentUser={userProfile?.display_name || user?.email || 'Usuario'}
+          assistantName={userProfile?.assistant_name || 'Luma'}
         />
         <MessageComposer
           onSendMessage={handleSendMessage}

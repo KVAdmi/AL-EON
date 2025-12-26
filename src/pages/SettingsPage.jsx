@@ -129,7 +129,11 @@ export default function SettingsPage() {
         preferred_language: profileData?.preferred_language || 'es',
         timezone: profileData?.timezone || 'America/Mexico_City',
         theme: profileData?.theme || 'system',
-        role: profileData?.role || 'USER'
+        role: profileData?.role || 'USER',
+        // Nuevos campos de personalización
+        preferred_name: profileData?.preferred_name || '',
+        assistant_name: profileData?.assistant_name || 'Luma',
+        tone_pref: profileData?.tone_pref || 'barrio'
       });
       
       // ✅ SOLO SI HAY SESIÓN: hacer fetch a user_settings
@@ -180,7 +184,11 @@ export default function SettingsPage() {
           display_name: profile.display_name,
           preferred_language: profile.preferred_language,
           timezone: profile.timezone,
-          theme: profile.theme
+          theme: profile.theme,
+          // Nuevos campos de personalización
+          preferred_name: profile.preferred_name,
+          assistant_name: profile.assistant_name,
+          tone_pref: profile.tone_pref
         })
         .eq('user_id', session.user.id);
       
@@ -437,11 +445,101 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
         <div>
           <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>Personalización</h2>
           <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            Ajusta la apariencia y comportamiento de AL-EON
+            Personaliza tu identidad y cómo AL-E interactúa contigo
           </p>
         </div>
+
+        {/* SECCIÓN: Identidad del Usuario */}
+        <div className="p-5 rounded-2xl border" style={{ 
+          backgroundColor: 'var(--color-bg-tertiary)', 
+          borderColor: 'var(--color-border)' 
+        }}>
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--color-text-primary)' }}>
+            <User size={20} />
+            Tu Identidad
+          </h3>
+
+          <div className="space-y-4">
+            {/* Nombre preferido */}
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                ¿Cómo quieres que te diga?
+              </label>
+              <p className="text-xs mb-3" style={{ color: 'var(--color-text-tertiary)' }}>
+                El nombre que AL-E usará para dirigirse a ti en las conversaciones
+              </p>
+              <input
+                type="text"
+                value={profile.preferred_name || ''}
+                onChange={(e) => setProfile({ ...profile, preferred_name: e.target.value })}
+                placeholder="Ej: Patto, Jefe, Boss"
+                className="w-full px-4 py-3 rounded-2xl border focus:outline-none focus:ring-2 focus:ring-offset-2"
+                style={{
+                  backgroundColor: 'var(--color-bg-secondary)',
+                  borderColor: 'var(--color-border)',
+                  color: 'var(--color-text-primary)'
+                }}
+                maxLength={30}
+              />
+            </div>
+
+            {/* Nombre del asistente */}
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                ¿Cómo se llama tu IA?
+              </label>
+              <p className="text-xs mb-3" style={{ color: 'var(--color-text-tertiary)' }}>
+                Dale un nombre personalizado a tu asistente de IA
+              </p>
+              <input
+                type="text"
+                value={profile.assistant_name || 'Luma'}
+                onChange={(e) => setProfile({ ...profile, assistant_name: e.target.value })}
+                placeholder="Ej: Luma, Jarvis, Nova"
+                className="w-full px-4 py-3 rounded-2xl border focus:outline-none focus:ring-2 focus:ring-offset-2"
+                style={{
+                  backgroundColor: 'var(--color-bg-secondary)',
+                  borderColor: 'var(--color-border)',
+                  color: 'var(--color-text-primary)'
+                }}
+                maxLength={30}
+              />
+            </div>
+
+            {/* Tono de conversación */}
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                Tono de conversación
+              </label>
+              <p className="text-xs mb-3" style={{ color: 'var(--color-text-tertiary)' }}>
+                Cómo quieres que hable contigo
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {[
+                  { value: 'barrio', label: 'Directo', desc: 'Sin rodeos, al grano' },
+                  { value: 'pro', label: 'Profesional', desc: 'Formal y corporativo' },
+                  { value: 'neutral', label: 'Equilibrado', desc: 'Natural y conversacional' }
+                ].map(tone => (
+                  <button
+                    key={tone.value}
+                    onClick={() => setProfile({ ...profile, tone_pref: tone.value })}
+                    className="flex flex-col items-start gap-2 p-4 rounded-2xl border-2 transition-all text-left"
+                    style={{
+                      backgroundColor: profile.tone_pref === tone.value ? 'var(--color-accent-light)' : 'var(--color-bg-secondary)',
+                      borderColor: profile.tone_pref === tone.value ? 'var(--color-accent)' : 'var(--color-border)',
+                      color: 'var(--color-text-primary)'
+                    }}
+                  >
+                    <span className="font-medium">{tone.label}</span>
+                    <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{tone.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
         
-        {/* Nombre de usuario */}
+        {/* Nombre de usuario (para mostrar en sidebar) */}
         <div>
           <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
             Nombre para mostrar

@@ -108,12 +108,13 @@ export function useConversations() {
     }
   }, [currentConversationId]);
 
-  const createConversation = () => {
+  const createConversation = (projectId = null) => {
     const newConversation = {
       id: generateId(),
       title: 'New conversation',
       messages: [],
       sessionId: null, // ✅ NUEVO: Guardará el session_id del backend
+      project_id: projectId, // ✅ Asociar con proyecto si se proporciona
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
