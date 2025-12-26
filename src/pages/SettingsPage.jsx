@@ -881,6 +881,47 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
           </p>
         </div>
 
+        {/* Botón: Mis Integraciones (Gmail, Calendar, Meet) */}
+        <div 
+          onClick={() => navigate('/settings/integrations')}
+          className="p-6 rounded-2xl border cursor-pointer hover:shadow-lg transition-all group" 
+          style={{ 
+            backgroundColor: 'var(--color-bg-tertiary)', 
+            borderColor: 'var(--color-accent)',
+            borderWidth: '2px'
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-blue-500 text-white text-2xl">
+                🔗
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                  Mis Integraciones
+                </h3>
+                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                  Conecta tu Gmail, Google Calendar y Google Meet
+                </p>
+                <div className="flex gap-2 mt-2">
+                  <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
+                    Gmail
+                  </span>
+                  <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
+                    Calendar
+                  </span>
+                  <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
+                    Meet
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="text-2xl group-hover:translate-x-1 transition-transform">
+              →
+            </div>
+          </div>
+        </div>
+
         <div className="space-y-3">
           {integrations.map(integration => (
             <div 

@@ -1,22 +1,24 @@
 /**
  * integrationsService.js
  * 
- * Servicio para gestionar integraciones OAuth globales (Gmail, Calendar, etc.)
- * Lee las credenciales de la tabla global_integrations en Supabase
+ * Servicio para gestionar integraciones OAuth por usuario (Gmail, Calendar, etc.)
+ * Lee las credenciales de la tabla user_integrations en Supabase
  */
 
 import { supabase } from '../lib/supabase';
 
 /**
- * Obtiene la configuración de una integración global
+ * Obtiene la configuración de una integración del usuario actual
+ * @param {string} userId - ID del usuario
  * @param {string} integrationType - Tipo de integración ('gmail', 'google_calendar', etc.)
  * @returns {Promise<Object>} Configuración de la integración
  */
-export async function getGlobalIntegration(integrationType) {
+export async function getUserIntegration(userId, integrationType) {
   try {
     const { data, error } = await supabase
-      .from('global_integrations')
+      .from('user_integrations')
       .select('config, is_active')
+      .eq('user_id', userId)
       .eq('integration_type', integrationType)
       .eq('is_active', true)
       .single();
@@ -27,7 +29,7 @@ export async function getGlobalIntegration(integrationType) {
     }
 
     if (!data) {
-      throw new Error(`Integración ${integrationType} no encontrada o inactiva`);
+      throw new Error(`Integración ${integrationType} no encontrada o inactiva. Por favor conéctala desde Configuración > Integraciones.`);
     }
 
     return data.config;
@@ -74,7 +76,8 @@ async function getAccessToken(clientId, clientSecret, refreshToken) {
 }
 
 /**
- * Envía un email usando Gmail API
+ * Envía un email usando Gmail API con la cuenta del usuario
+ * @param {string} userId - ID del usuario que envía el email
  * @param {Object} options - Opciones del email
  * @param {string} options.to - Destinatario
  * @param {string} options.subject - Asunto
@@ -82,12 +85,12 @@ async function getAccessToken(clientId, clientSecret, refreshToken) {
  * @param {string} [options.from] - Remitente (opcional, usa el email de la cuenta OAuth)
  * @returns {Promise<Object>} Respuesta de Gmail API
  */
-export async function sendEmail({ to, subject, body, from }) {
+export async function sendEmail(userId, { to, subject, body, from }) {
   try {
     console.log('[IntegrationsService] Enviando email a:', to);
 
-    // Obtener credenciales de Gmail
-    const gmailConfig = await getGlobalIntegration('gmail');
+    // Obtener credenciales de Gmail del usuario
+    const gmailConfig = await getUserIntegration(userId, 'gmail');
     const { client_id, client_secret, refresh_token } = gmailConfig;
 
     // Obtener access token fresco
@@ -139,7 +142,8 @@ export async function sendEmail({ to, subject, body, from }) {
 }
 
 /**
- * Crea un evento en Google Calendar
+ * Crea un evento en Google Calendar del usuario
+ * @param {string} userId - ID del usuario
  * @param {Object} options - Opciones del evento
  * @param {string} options.summary - Título del evento
  * @param {string} options.description - Descripción del evento
@@ -149,7 +153,7 @@ export async function sendEmail({ to, subject, body, from }) {
  * @param {Array<string>} [options.attendees] - Lista de emails de asistentes
  * @returns {Promise<Object>} Respuesta de Calendar API
  */
-export async function createCalendarEvent({
+export async function createCalendarEvent(userId, {
   summary,
   description,
   startDateTime,
@@ -160,8 +164,8 @@ export async function createCalendarEvent({
   try {
     console.log('[IntegrationsService] Creando evento:', summary);
 
-    // Obtener credenciales de Calendar
-    const calendarConfig = await getGlobalIntegration('google_calendar');
+    // Obtener credenciales de Calendar del usuario
+    const calendarConfig = await getUserIntegration(userId, 'google_calendar');
     const { client_id, client_secret, refresh_token } = calendarConfig;
 
     // Obtener access token fresco
@@ -218,18 +222,19 @@ export async function createCalendarEvent({
 }
 
 /**
- * Lista próximos eventos del calendario
+ * Lista próximos eventos del calendario del usuario
+ * @param {string} userId - ID del usuario
  * @param {Object} options - Opciones de búsqueda
  * @param {number} [options.maxResults] - Máximo de eventos a retornar (default: 10)
  * @param {string} [options.timeMin] - Fecha mínima ISO 8601 (default: ahora)
  * @returns {Promise<Array>} Lista de eventos
  */
-export async function listCalendarEvents({ maxResults = 10, timeMin } = {}) {
+export async function listCalendarEvents(userId, { maxResults = 10, timeMin } = {}) {
   try {
     console.log('[IntegrationsService] Listando eventos del calendario');
 
-    // Obtener credenciales de Calendar
-    const calendarConfig = await getGlobalIntegration('google_calendar');
+    // Obtener credenciales de Calendar del usuario
+    const calendarConfig = await getUserIntegration(userId, 'google_calendar');
     const { client_id, client_secret, refresh_token } = calendarConfig;
 
     // Obtener access token fresco
@@ -270,14 +275,16 @@ export async function listCalendarEvents({ maxResults = 10, timeMin } = {}) {
 }
 
 /**
- * Verifica si las integraciones están configuradas
+ * Verifica si el usuario tiene integraciones configuradas
+ * @param {string} userId - ID del usuario
  * @returns {Promise<Object>} Estado de las integraciones
  */
-export async function checkIntegrationsStatus() {
+export async function checkUserIntegrationsStatus(userId) {
   try {
     const { data, error } = await supabase
-      .from('global_integrations')
+      .from('user_integrations')
       .select('integration_type, integration_name, is_active')
+      .eq('user_id', userId)
       .eq('is_active', true);
 
     if (error) {
@@ -290,7 +297,7 @@ export async function checkIntegrationsStatus() {
       integrations: data || [],
     };
   } catch (error) {
-    console.error('[IntegrationsService] Error en checkIntegrationsStatus:', error);
+    console.error('[IntegrationsService] Error en checkUserIntegrationsStatus:', error);
     return { available: false, integrations: [] };
   }
 }

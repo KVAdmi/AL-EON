@@ -16,6 +16,8 @@ import HistoryPage from '@/pages/HistoryPage';
 import PrivacyPolicyPage from '@/pages/PrivacyPolicyPage';
 import TermsOfServicePage from '@/pages/TermsOfServicePage';
 import TestIntegrationsPage from '@/pages/TestIntegrationsPage';
+import UserIntegrationsPage from '@/pages/UserIntegrationsPage';
+import OAuthCallbackPage from '@/pages/OAuthCallbackPage';
 
 // ✅ GLOBAL: AbortController para cancelar requests pendientes
 let globalAbortController = null;
@@ -241,6 +243,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <SettingsPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/settings/integrations" 
+            element={
+              <ProtectedRoute>
+                <UserIntegrationsPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/integrations/oauth-callback" 
+            element={
+              <ProtectedRoute>
+                <OAuthCallbackPage />
               </ProtectedRoute>
             } 
           />
