@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import IntegrationModal from '../components/IntegrationModal';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -26,12 +27,17 @@ export default function SettingsPage() {
     theme: 'system',
     role: 'USER'
   });
-  
   const [settings, setSettings] = useState({
     ai_model: 'gpt-4',
     ai_temperature: 0.7,
     context_persistent: true,
     voice_enabled: false
+  });
+
+  // Estado del modal de integraciones
+  const [integrationModal, setIntegrationModal] = useState({
+    isOpen: false,
+    integration: null
   });
 
   const tabs = [
@@ -228,6 +234,32 @@ export default function SettingsPage() {
     }
   }
 
+  // Guardar configuración de integración
+  async function saveIntegration(integrationName, formData) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) return;
+
+    // Mapear campos a columnas de la base de datos
+    const updates = {};
+    Object.keys(formData).forEach(key => {
+      updates[key] = formData[key];
+    });
+
+    // Agregar flag de configuración
+    const configKey = `${integrationName.toLowerCase().replace(/\s+/g, '_')}_configured`;
+    updates[configKey] = true;
+
+    const { error } = await supabase
+      .from('user_profiles')
+      .update(updates)
+      .eq('user_id', session.user.id);
+
+    if (error) throw error;
+
+    // Recargar perfil
+    await loadUserData();
+  }
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
@@ -336,16 +368,25 @@ export default function SettingsPage() {
                 setSettings={setSettings}
                 isOwner={isOwner}
                 backendStatus={backendStatus}
+                setIntegrationModal={setIntegrationModal}
               />
             </div>
           </div>
         </div>
       </div>
+
+      {/* Modal de integración */}
+      <IntegrationModal 
+        integration={integrationModal.integration}
+        isOpen={integrationModal.isOpen}
+        onClose={() => setIntegrationModal({ isOpen: false, integration: null })}
+        onSave={saveIntegration}
+      />
     </div>
   );
 }
 
-function TabContent({ activeTab, profile, setProfile, settings, setSettings, isOwner, backendStatus }) {
+function TabContent({ activeTab, profile, setProfile, settings, setSettings, isOwner, backendStatus, setIntegrationModal }) {
   // ===== GENERAL =====
   if (activeTab === 'general') {
     return (
@@ -847,7 +888,7 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
                 </div>
                 {integration.configurable && (
                   <button
-                    onClick={() => alert(`Configurar ${integration.name} - Próximamente`)}
+                    onClick={() => setIntegrationModal({ isOpen: true, integration })}
                     className="px-4 py-2 rounded-2xl text-sm font-medium transition-all"
                     style={{
                       backgroundColor: 'var(--color-accent)',
@@ -1016,6 +1057,95 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
               </div>
             </div>
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== NOTIFICACIONES =====
+  if (activeTab === 'notifications') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>Notificaciones</h2>
+          <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            Gestiona cómo y cuándo recibes notificaciones
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          {/* Push Notifications */}
+          <div className="p-5 rounded-2xl border flex items-center justify-between" style={{ 
+            backgroundColor: 'var(--color-bg-tertiary)', 
+            borderColor: 'var(--color-border)' 
+          }}>
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--color-accent-light)' }}>
+                <Bell size={24} style={{ color: 'var(--color-accent)' }} />
+              </div>
+              <div>
+                <h3 className="font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                  Notificaciones push
+                </h3>
+                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                  Recibe alertas en tiempo real
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={async () => {
+                if ('Notification' in window) {
+                  const permission = await Notification.requestPermission();
+                  alert(permission === 'granted' ? '✅ Notificaciones activadas' : '❌ Notificaciones bloqueadas');
+                } else {
+                  alert('⚠️ Tu navegador no soporta notificaciones');
+                }
+              }}
+              className="px-4 py-2 rounded-2xl text-sm font-medium"
+              style={{
+                backgroundColor: 'var(--color-accent)',
+                color: 'white'
+              }}
+            >
+              Activar
+            </button>
+          </div>
+
+          {/* Email Notifications */}
+          <div className="p-5 rounded-2xl border flex items-center justify-between" style={{ 
+            backgroundColor: 'var(--color-bg-tertiary)', 
+            borderColor: 'var(--color-border)' 
+          }}>
+            <div className="flex items-center gap-4">
+              <div>
+                <h3 className="font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                  Notificaciones por email
+                </h3>
+                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                  Recibe resúmenes diarios en tu correo
+                </p>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                defaultChecked={true}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all" 
+                style={{ backgroundColor: '#3b82f6' }}
+              />
+            </label>
+          </div>
+        </div>
+
+        <div className="p-4 rounded-xl border" style={{ 
+          backgroundColor: 'rgba(59, 130, 246, 0.1)', 
+          borderColor: 'rgba(59, 130, 246, 0.3)' 
+        }}>
+          <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            💡 <strong>Tip:</strong> Puedes personalizar qué tipo de notificaciones recibes desde cada sección.
+          </p>
         </div>
       </div>
     );
