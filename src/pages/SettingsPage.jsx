@@ -808,7 +808,8 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
 
   // ===== INTEGRACIONES =====
   if (activeTab === 'integrations') {
-    const integrations = [
+    // Integraciones de desarrollador (solo ROOT)
+    const developerIntegrations = [
       { 
         name: 'AL-E Core', 
         description: 'Motor de IA principal', 
@@ -922,31 +923,48 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
           </div>
         </div>
 
-        <div className="space-y-3">
-          {integrations.map(integration => (
-            <div 
-              key={integration.name}
-              className="p-5 rounded-2xl border flex items-center justify-between" 
-              style={{ 
-                backgroundColor: 'var(--color-bg-tertiary)', 
-                borderColor: 'var(--color-border)' 
-              }}
-            >
-              <div className="flex items-center gap-4 flex-1">
-                <div className={`w-3 h-3 rounded-full`} style={{
-                  backgroundColor: integration.status === 'connected' ? '#10b981' : 
-                                 integration.status === 'error' ? '#ef4444' : '#6b7280'
-                }} />
-                <div className="flex-1">
-                  <h3 className="font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
-                    {integration.name}
-                  </h3>
-                  <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                    {integration.description}
-                  </p>
-                </div>
+        {/* Integraciones de Desarrollador (solo ROOT) */}
+        {profile?.role === 'ROOT' && (
+          <>
+            <div className="mt-8 pt-8 border-t" style={{ borderColor: 'var(--color-border)' }}>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-full text-xs font-semibold">
+                  👑 SOLO ROOT
+                </span>
+                <h3 className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                  Integraciones de Desarrollador
+                </h3>
               </div>
-              <div className="flex items-center gap-3">
+              <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+                Configura APIs y servicios de infraestructura
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {developerIntegrations.map(integration => (
+                <div 
+                  key={integration.name}
+                  className="p-5 rounded-2xl border flex items-center justify-between" 
+                  style={{ 
+                    backgroundColor: 'var(--color-bg-tertiary)', 
+                    borderColor: 'var(--color-border)' 
+                  }}
+                >
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className={`w-3 h-3 rounded-full`} style={{
+                      backgroundColor: integration.status === 'connected' ? '#10b981' : 
+                                     integration.status === 'error' ? '#ef4444' : '#6b7280'
+                    }} />
+                    <div className="flex-1">
+                      <h3 className="font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                        {integration.name}
+                      </h3>
+                      <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                        {integration.description}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
                 <div className="text-sm font-medium" style={{
                   color: integration.status === 'connected' ? '#10b981' : 
                          integration.status === 'error' ? '#ef4444' : '#6b7280'
@@ -970,8 +988,11 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
             </div>
           ))}
         </div>
+        </>
+        )}
 
-        {isOwner && (
+        {/* Mensaje para usuarios ROOT */}
+        {profile?.role === 'ROOT' && (
           <div className="p-4 rounded-xl border" style={{ 
             backgroundColor: 'rgba(139, 92, 246, 0.1)', 
             borderColor: 'rgba(139, 92, 246, 0.3)' 
