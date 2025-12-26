@@ -884,7 +884,10 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
 
         {/* Botón: Mis Integraciones (Gmail, Calendar, Meet) */}
         <div 
-          onClick={() => navigate('/settings/integrations')}
+          onClick={() => {
+            console.log('🔗 Click en Mis Integraciones - navegando a /settings/integrations');
+            navigate('/settings/integrations');
+          }}
           className="p-6 rounded-2xl border cursor-pointer hover:shadow-lg transition-all group" 
           style={{ 
             backgroundColor: 'var(--color-bg-tertiary)', 
