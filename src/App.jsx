@@ -15,6 +15,7 @@ import PlatformsPage from '@/pages/PlatformsPage';
 import HistoryPage from '@/pages/HistoryPage';
 import PrivacyPolicyPage from '@/pages/PrivacyPolicyPage';
 import TermsOfServicePage from '@/pages/TermsOfServicePage';
+import TestIntegrationsPage from '@/pages/TestIntegrationsPage';
 
 // ✅ GLOBAL: AbortController para cancelar requests pendientes
 let globalAbortController = null;
@@ -256,6 +257,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <IntegrationsPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/integrations/test" 
+            element={
+              <ProtectedRoute>
+                <TestIntegrationsPage />
               </ProtectedRoute>
             } 
           />

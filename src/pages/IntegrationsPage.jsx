@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useUserProfile } from '../contexts/UserProfileContext';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
+import { TestTube } from 'lucide-react';
 
 export default function IntegrationsPage() {
   const { isRoot, integrations, connectIntegration, disconnectIntegration, hasIntegration } = useUserProfile();
@@ -148,6 +149,17 @@ export default function IntegrationsPage() {
       <p className="text-gray-600 dark:text-gray-400 mb-6">
         👑 Solo tú (ROOT) puedes ver y gestionar estas integraciones
       </p>
+
+      {/* Botón de pruebas */}
+      <div className="mb-6">
+        <Link
+          to="/integrations/test"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+        >
+          <TestTube size={18} />
+          Probar Gmail y Calendar
+        </Link>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {availableIntegrations.map((integration) => {
