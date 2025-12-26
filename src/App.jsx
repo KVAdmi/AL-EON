@@ -1,5 +1,5 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { UserProfileProvider } from '@/contexts/UserProfileContext';
 import MainLayout from '@/components/MainLayout';
@@ -13,6 +13,24 @@ import SecurityPage from '@/pages/SecurityPage';
 import IntegrationsPage from '@/pages/IntegrationsPage';
 import PlatformsPage from '@/pages/PlatformsPage';
 import HistoryPage from '@/pages/HistoryPage';
+
+// ✅ GLOBAL: AbortController para cancelar requests pendientes
+let globalAbortController = null;
+
+export function abortAllPendingRequests() {
+  if (globalAbortController) {
+    console.log('🛑 Aborting all pending requests');
+    globalAbortController.abort();
+  }
+  globalAbortController = new AbortController();
+}
+
+export function getGlobalAbortSignal() {
+  if (!globalAbortController) {
+    globalAbortController = new AbortController();
+  }
+  return globalAbortController.signal;
+}
 
 // Componente para proteger rutas que requieren autenticación
 function ProtectedRoute({ children }) {
@@ -57,9 +75,33 @@ function PublicRoute({ children }) {
 }
 
 function App() {
+  const location = useLocation();
+
+  // ✅ SOLUCIÓN 1: Reset de loading en cada cambio de ruta
+  useEffect(() => {
+    console.log('🔄 Route changed to:', location.pathname);
+    
+    // Abortar todos los requests pendientes
+    abortAllPendingRequests();
+    
+    // Limpiar estados globales que puedan quedar colgados
+    // (loading, modals, etc. se limpian en cada componente)
+    
+  }, [location.pathname, location.search]);
+
+  // ✅ SOLUCIÓN 3: Manejo explícito de popstate (botón BACK)
+  useEffect(() => {
+    const handlePopState = () => {
+      console.log('⬅️ BACK button pressed - cleaning up');
+      abortAllPendingRequests();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   return (
-    <AuthProvider>
-      <Routes>
+    <Routes>
         {/* Rutas protegidas */}
         <Route 
           path="/chat" 
@@ -148,8 +190,14 @@ function App() {
           <Route path="/" element={<Navigate to="/chat" replace />} />
           <Route path="*" element={<Navigate to="/chat" replace />} />
         </Routes>
-    </AuthProvider>
   );
 }
 
-export default App;
+// Wrapper con AuthProvider
+export default function AppWrapper() {
+  return (
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  );
+}

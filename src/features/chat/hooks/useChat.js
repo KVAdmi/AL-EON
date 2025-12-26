@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { sendToAleCore, extractReply } from '@/lib/aleCoreClient';
 import { generateId } from '@/lib/utils';
 import { uploadFiles } from '@/lib/fileUpload';
@@ -8,6 +8,16 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
   const [isUploading, setIsUploading] = useState(false); // ✅ NUEVO: estado de upload
   const [error, setError] = useState(null);
   const abortControllerRef = useRef(null); // ✅ Para cancelar requests
+
+  // ✅ SOLUCIÓN 2: Limpiar requests al desmontar componente
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        console.log('🛑 useChat: Aborting request on unmount');
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   const sendMessage = async (content, attachments = [], voiceMeta = null) => {
     if (!currentConversation || !content.trim()) {

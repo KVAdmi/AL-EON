@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Menu, AlertCircle, Mic, Volume2, Waves, MessageSquare, StopCircle, RefreshCw, Copy, Check, BookmarkPlus, FileText } from 'lucide-react';
+import { Menu, AlertCircle, Mic, Volume2, Waves, MessageSquare, StopCircle, RefreshCw, Copy, Check, BookmarkPlus, FileText, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import MarkdownRenderer from '@/lib/markdownRenderer';
 import TypingIndicator from '@/features/chat/components/TypingIndicator';
 import { SaveMemoryModal } from './SaveMemoryModal';
@@ -8,6 +9,14 @@ import { useToast } from '@/ui/use-toast';
 
 function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggleHandsFree, onToggleSidebar, onStopResponse, onRegenerateResponse, currentUser, assistantName }) {
   const scrollRef = useRef(null);
+  const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -15,13 +24,21 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
     }
   }, [conversation?.messages, isLoading]);
 
+  const handleBackButton = () => {
+    if (isMobile) {
+      navigate('/');
+    } else {
+      onToggleSidebar();
+    }
+  };
+
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col" style={{ maxWidth: '100vw', width: '100%', overflowX: 'hidden' }}>
       {/* Header con modo de voz - Optimizado para mobile */}
-      <div className="p-3 md:p-4 border-b flex items-center justify-between gap-2 md:gap-3 flex-wrap" style={{ borderColor: 'var(--color-border)' }}>
+      <div className="p-3 md:p-4 border-b flex items-center justify-between gap-2 md:gap-3 flex-wrap" style={{ borderColor: 'var(--color-border)', maxWidth: '100%' }}>
         <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
           <button
-            onClick={onToggleSidebar}
+            onClick={handleBackButton}
             className="p-2 rounded-lg transition-all flex-shrink-0"
             style={{ color: 'var(--color-text-secondary)' }}
             onMouseEnter={(e) => {
@@ -31,7 +48,7 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            <Menu size={20} />
+            {isMobile ? <ArrowLeft size={20} /> : <Menu size={20} />}
           </button>
           <span className="font-semibold text-base md:text-lg truncate" style={{ color: 'var(--color-text-primary)' }}>
             {conversation?.title || 'AL-E Chat'}
@@ -88,7 +105,7 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
       </div>
 
       {/* Messages - Optimizado para mobile */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 md:p-4 scroll-smooth">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-4 scroll-smooth" style={{ maxWidth: '100%' }}>
         {!conversation || conversation.messages.length === 0 ? (
           <div className="h-full flex items-center justify-center px-4">
             <div className="text-center max-w-md w-full">
@@ -227,7 +244,7 @@ function Message({ message, currentUser, assistantName = 'Luma' }) {
         onSave={handleSaveMemory}
       />
 
-      <div className={`flex gap-2 md:gap-4 ${isUser ? 'justify-end' : 'justify-start'} group`}>
+      <div className={`flex gap-2 md:gap-4 ${isUser ? 'justify-end' : 'justify-start'} group`} style={{ maxWidth: '100%' }}>
         {!isUser && (
           <div 
             className="w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center flex-shrink-0"
@@ -239,12 +256,15 @@ function Message({ message, currentUser, assistantName = 'Luma' }) {
           </div>
         )}
       
-      <div className={`flex-1 max-w-[85%] md:max-w-3xl ${isUser ? 'text-right' : ''}`}>
+      <div className={`flex-1 max-w-[85%] md:max-w-3xl ${isUser ? 'text-right' : ''}`} style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>
         <div
           className={`inline-block p-3 md:p-4 rounded-xl relative ${isUser ? 'text-left' : ''}`}
           style={{
             backgroundColor: isUser ? 'var(--color-accent)' : isError ? 'rgba(239, 68, 68, 0.1)' : 'var(--color-bg-secondary)',
-            color: isUser ? '#FFFFFF' : 'var(--color-text-primary)'
+            color: isUser ? '#FFFFFF' : 'var(--color-text-primary)',
+            maxWidth: '100%',
+            overflowWrap: 'break-word',
+            wordBreak: 'break-word'
           }}
         >
           {/* Botón copiar (aparece on hover) */}

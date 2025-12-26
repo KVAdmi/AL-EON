@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 
 const AuthContext = createContext(null);
@@ -102,7 +103,6 @@ export function AuthProvider({ children }) {
       throw err;
     }
   };
-
   const logout = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -112,20 +112,23 @@ export function AuthProvider({ children }) {
       setUser(null);
       setUserProfile(null);
       setAccessToken(null);
+      setLoading(false); // ✅ CRÍTICO: Asegurar que loading quede en false
       
       // Limpiar localStorage
       localStorage.clear();
       
-      // Redirigir a login
-      window.location.href = '/login';
+      // ✅ SOLUCIÓN 4: Usar replace para evitar loops en history
+      // NO usar window.location.href (deja historia)
+      window.location.replace('/login');
     } catch (error) {
       console.error('❌ Error al cerrar sesión:', error);
       // Forzar limpieza y redirección incluso si hay error
       setUser(null);
       setUserProfile(null);
       setAccessToken(null);
+      setLoading(false); // ✅ CRÍTICO
       localStorage.clear();
-      window.location.href = '/login';
+      window.location.replace('/login'); // ✅ replace, no href
     }
   };
 

@@ -90,8 +90,8 @@ function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sess
   };
 
   return (
-    <div className="p-3 md:p-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
-      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
+    <div className="p-3 md:p-4 border-t" style={{ borderColor: 'var(--color-border)', maxWidth: '100vw', overflowX: 'hidden' }}>
+      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto" style={{ maxWidth: '100%' }}>
         {/* ✅ NUEVO: Indicador de "Procesando documento..." */}
         {isUploading && (
           <div className="mb-2 md:mb-3 px-3 md:px-4 py-2 rounded-2xl flex items-center gap-2 text-xs md:text-sm"

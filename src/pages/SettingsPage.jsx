@@ -387,6 +387,33 @@ export default function SettingsPage() {
 }
 
 function TabContent({ activeTab, profile, setProfile, settings, setSettings, isOwner, backendStatus, setIntegrationModal }) {
+  // Estados para notificaciones
+  const [notifSettings, setNotifSettings] = useState({
+    push_enabled: false,
+    email_daily: true,
+    email_mentions: true,
+    notify_responses: false,
+    notify_errors: true,
+  });
+
+  useEffect(() => {
+    // Actualizar estado de notificaciones al cargar
+    if (typeof Notification !== 'undefined') {
+      setNotifSettings(prev => ({
+        ...prev,
+        push_enabled: Notification.permission === 'granted'
+      }));
+    }
+  }, []);
+
+  const handleToggleNotif = (key, value) => {
+    setNotifSettings(prev => ({ ...prev, [key]: value }));
+    setSettings(prev => ({ 
+      ...prev, 
+      [`${key}`]: value
+    }));
+  };
+
   // ===== GENERAL =====
   if (activeTab === 'general') {
     return (
@@ -976,20 +1003,6 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
     );
   }
 
-  // ===== NOTIFICACIONES =====
-  if (activeTab === 'notifications') {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>Notificaciones</h2>
-          <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            Gestiona cómo y cuándo recibes notificaciones
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   // ===== DATOS Y PRIVACIDAD =====
   if (activeTab === 'data') {
     return (
@@ -1075,67 +1088,129 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
 
         <div className="space-y-4">
           {/* Push Notifications */}
-          <div className="p-5 rounded-2xl border flex items-center justify-between" style={{ 
+          <div className="p-5 rounded-2xl border" style={{ 
             backgroundColor: 'var(--color-bg-tertiary)', 
             borderColor: 'var(--color-border)' 
           }}>
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--color-accent-light)' }}>
-                <Bell size={24} style={{ color: 'var(--color-accent)' }} />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--color-accent-light)' }}>
+                  <Bell size={24} style={{ color: 'var(--color-accent)' }} />
+                </div>
+                <div>
+                  <h3 className="font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                    Notificaciones push
+                  </h3>
+                  <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                    Recibe alertas en tiempo real
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
-                  Notificaciones push
-                </h3>
-                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                  Recibe alertas en tiempo real
-                </p>
-              </div>
+              <button
+                onClick={async () => {
+                  if ('Notification' in window) {
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                      handleToggleNotif('push_enabled', true);
+                      alert('✅ Notificaciones activadas correctamente');
+                    } else {
+                      alert('❌ Necesitas dar permisos en tu navegador para recibir notificaciones');
+                    }
+                  } else {
+                    alert('⚠️ Tu navegador no soporta notificaciones push');
+                  }
+                }}
+                className="px-4 py-2 rounded-2xl text-sm font-medium"
+                style={{
+                  backgroundColor: notifSettings.push_enabled ? '#10b981' : 'var(--color-accent)',
+                  color: 'white'
+                }}
+              >
+                {notifSettings.push_enabled ? 'Activado' : 'Activar'}
+              </button>
             </div>
-            <button
-              onClick={async () => {
-                if ('Notification' in window) {
-                  const permission = await Notification.requestPermission();
-                  alert(permission === 'granted' ? '✅ Notificaciones activadas' : '❌ Notificaciones bloqueadas');
-                } else {
-                  alert('⚠️ Tu navegador no soporta notificaciones');
-                }
-              }}
-              className="px-4 py-2 rounded-2xl text-sm font-medium"
-              style={{
-                backgroundColor: 'var(--color-accent)',
-                color: 'white'
-              }}
-            >
-              Activar
-            </button>
           </div>
 
           {/* Email Notifications */}
-          <div className="p-5 rounded-2xl border flex items-center justify-between" style={{ 
-            backgroundColor: 'var(--color-bg-tertiary)', 
-            borderColor: 'var(--color-border)' 
-          }}>
-            <div className="flex items-center gap-4">
+          <div className="space-y-3">
+            <h3 className="font-medium" style={{ color: 'var(--color-text-primary)' }}>
+              Notificaciones por email
+            </h3>
+            
+            <div className="p-4 rounded-2xl border flex items-center justify-between" style={{ 
+              backgroundColor: 'var(--color-bg-tertiary)', 
+              borderColor: 'var(--color-border)' 
+            }}>
               <div>
-                <h3 className="font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
-                  Notificaciones por email
-                </h3>
+                <h4 className="font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                  Resumen diario
+                </h4>
                 <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                  Recibe resúmenes diarios en tu correo
+                  Recibe un resumen de tus conversaciones cada día
                 </p>
               </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={notifSettings.email_daily}
+                  onChange={(e) => handleToggleNotif('email_daily', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all" 
+                  style={{ backgroundColor: notifSettings.email_daily ? 'var(--color-accent)' : '#6b7280' }}
+                />
+              </label>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                defaultChecked={true}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all" 
-                style={{ backgroundColor: '#3b82f6' }}
-              />
-            </label>
+
+            <div className="p-4 rounded-2xl border flex items-center justify-between" style={{ 
+              backgroundColor: 'var(--color-bg-tertiary)', 
+              borderColor: 'var(--color-border)' 
+            }}>
+              <div>
+                <h4 className="font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                  Menciones y respuestas
+                </h4>
+                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                  Cuando AL-E responda a tus mensajes importantes
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={notifSettings.email_mentions}
+                  onChange={(e) => handleToggleNotif('email_mentions', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all" 
+                  style={{ backgroundColor: notifSettings.email_mentions ? 'var(--color-accent)' : '#6b7280' }}
+                />
+              </label>
+            </div>
+
+            <div className="p-4 rounded-2xl border flex items-center justify-between" style={{ 
+              backgroundColor: 'var(--color-bg-tertiary)', 
+              borderColor: 'var(--color-border)' 
+            }}>
+              <div>
+                <h4 className="font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                  Alertas de errores
+                </h4>
+                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                  Notificaciones cuando ocurra un error en el sistema
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={notifSettings.notify_errors}
+                  onChange={(e) => handleToggleNotif('notify_errors', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all" 
+                  style={{ backgroundColor: notifSettings.notify_errors ? 'var(--color-accent)' : '#6b7280' }}
+                />
+              </label>
+            </div>
           </div>
         </div>
 
@@ -1144,7 +1219,7 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
           borderColor: 'rgba(59, 130, 246, 0.3)' 
         }}>
           <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            💡 <strong>Tip:</strong> Puedes personalizar qué tipo de notificaciones recibes desde cada sección.
+            💡 <strong>Tip:</strong> Las notificaciones te mantienen informado sobre la actividad de tu asistente IA.
           </p>
         </div>
       </div>
@@ -1153,3 +1228,4 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
 
   return null;
 }
+

@@ -36,24 +36,24 @@ export default function IntegrationModal({ integration, isOpen, onClose, onSave 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto" style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)' }}>
       <div 
-        className="w-full max-w-2xl rounded-2xl p-6 shadow-xl" 
+        className="w-full max-w-2xl rounded-2xl p-4 md:p-6 shadow-xl my-8 max-h-[90vh] overflow-y-auto" 
         style={{ backgroundColor: 'var(--color-bg-secondary)' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-xl md:text-2xl font-bold truncate" style={{ color: 'var(--color-text-primary)' }}>
               Configurar {integration.name}
             </h2>
-            <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+            <p className="text-xs md:text-sm mt-1 truncate" style={{ color: 'var(--color-text-secondary)' }}>
               {integration.description}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-opacity-80 transition-colors"
+            className="p-2 rounded-xl hover:bg-opacity-80 transition-colors flex-shrink-0"
             style={{ backgroundColor: 'var(--color-bg-tertiary)' }}
           >
             <X size={20} style={{ color: 'var(--color-text-primary)' }} />
@@ -143,12 +143,12 @@ export default function IntegrationModal({ integration, isOpen, onClose, onSave 
             </p>
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-4">
+          {/* Actions - Sticky al final en móvil */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-4 mt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 rounded-2xl font-medium transition-colors"
+              className="w-full sm:flex-1 px-6 py-3 rounded-2xl font-medium transition-colors text-sm md:text-base"
               style={{
                 backgroundColor: 'var(--color-bg-tertiary)',
                 color: 'var(--color-text-primary)'
@@ -159,7 +159,7 @@ export default function IntegrationModal({ integration, isOpen, onClose, onSave 
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 px-6 py-3 rounded-2xl font-medium transition-colors"
+              className="w-full sm:flex-1 px-6 py-3 rounded-2xl font-medium transition-colors text-sm md:text-base"
               style={{
                 backgroundColor: 'var(--color-accent)',
                 color: 'white',
