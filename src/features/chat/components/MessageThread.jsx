@@ -25,11 +25,8 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
   }, [conversation?.messages, isLoading]);
 
   const handleBackButton = () => {
-    if (isMobile) {
-      navigate('/');
-    } else {
-      onToggleSidebar();
-    }
+    // ✅ En móvil y desktop: toggle sidebar
+    onToggleSidebar();
   };
 
   return (
@@ -47,8 +44,9 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
+            title="Abrir menú"
           >
-            {isMobile ? <ArrowLeft size={20} /> : <Menu size={20} />}
+            <Menu size={20} />
           </button>
           <span className="font-semibold text-base md:text-lg truncate" style={{ color: 'var(--color-text-primary)' }}>
             {conversation?.title || 'AL-E Chat'}
