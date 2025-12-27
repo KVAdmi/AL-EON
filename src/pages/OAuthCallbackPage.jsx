@@ -88,6 +88,9 @@ export default function OAuthCallbackPage() {
       // ✅ P0: Calcular expires_at
       const expiresAt = new Date(Date.now() + (expires_in * 1000)).toISOString();
 
+      // ✅ P0: Convertir scopes a array (Supabase espera text[] no string)
+      const scopesArray = scope ? scope.split(' ') : [];
+
       // ✅ P0: Guardar en Supabase con TODOS los campos requeridos NO NULL
       const { error: dbError } = await supabase
         .from('user_integrations')
@@ -98,7 +101,7 @@ export default function OAuthCallbackPage() {
           access_token,           // ✅ NUEVO: access token inicial
           refresh_token,          // ✅ Ya existía
           expires_at: expiresAt,  // ✅ NUEVO: cuándo expira
-          scopes: scope,          // ✅ NUEVO: scopes autorizados
+          scopes: scopesArray,    // ✅ NUEVO: array de scopes
           connected_at: new Date().toISOString(), // ✅ NUEVO: cuándo se conectó
           // ✅ Config adicional (legacy compatibility)
           config: {
