@@ -100,7 +100,6 @@ export default function OAuthCallbackPage() {
           expires_at: expiresAt,  // ✅ NUEVO: cuándo expira
           scopes: scope,          // ✅ NUEVO: scopes autorizados
           connected_at: new Date().toISOString(), // ✅ NUEVO: cuándo se conectó
-          is_active: true,        // ✅ Marcar como activo
           // ✅ Config adicional (legacy compatibility)
           config: {
             client_id: GOOGLE_CLIENT_ID,
