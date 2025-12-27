@@ -125,49 +125,49 @@ export default function OAuthCallbackPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+      <div className="max-w-md w-full rounded-xl shadow-lg p-8" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
         {/* Icon */}
         <div className="flex justify-center mb-6">
           {status === 'processing' && (
-            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-              <Loader className="text-blue-600 dark:text-blue-400 animate-spin" size={32} />
+            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
+              <Loader className="animate-spin" style={{ color: 'var(--color-accent)' }} size={32} />
             </div>
           )}
           {status === 'success' && (
-            <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-              <CheckCircle className="text-green-600 dark:text-green-400" size={32} />
+            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)' }}>
+              <CheckCircle style={{ color: '#22c55e' }} size={32} />
             </div>
           )}
           {status === 'error' && (
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
-              <XCircle className="text-red-600 dark:text-red-400" size={32} />
+            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}>
+              <XCircle style={{ color: '#ef4444' }} size={32} />
             </div>
           )}
         </div>
 
         {/* Message */}
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+          <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--color-text-primary)' }}>
             {status === 'processing' && 'Conectando...'}
             {status === 'success' && '¡Conectado!'}
             {status === 'error' && 'Error'}
           </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
+          <p className="mb-6" style={{ color: 'var(--color-text-secondary)' }}>
             {message}
           </p>
 
           {/* Progress dots */}
           {status === 'processing' && (
             <div className="flex justify-center gap-2">
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-accent)', animationDelay: '0ms' }} />
+              <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-accent)', animationDelay: '150ms' }} />
+              <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-accent)', animationDelay: '300ms' }} />
             </div>
           )}
 
           {status === 'success' && (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
               Redirigiendo...
             </p>
           )}
@@ -175,7 +175,8 @@ export default function OAuthCallbackPage() {
           {status === 'error' && (
             <button
               onClick={() => navigate('/settings/integrations')}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              className="px-6 py-2 rounded-lg transition-all font-medium hover:opacity-80"
+              style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}
             >
               Volver a Integraciones
             </button>
