@@ -139,34 +139,45 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
       console.error('❌ Error enviando mensaje:', err);
       setError(err.message);
       
-      // ✅ P0: DETECTAR ERRORES DE OAUTH DEL BACKEND
-      let errorContent = `Error: ${err.message}`;
+      // ✅ P0: DETECTAR ERRORES DE OAUTH DEL BACKEND (formato exacto)
+      let errorContent = null;
       
       // Detectar error de timeout/abort
       if (err.name === 'AbortError' || err.message.includes('Request cancelado') || err.message.includes('aborted')) {
         errorContent = '⏱️ **La solicitud tardó demasiado y fue cancelada**.\n\nEsto puede ocurrir cuando:\n- AL-E está procesando tareas complejas (enviar emails, consultar calendario)\n- Hay problemas de conexión\n\n**Sugerencia**: Intenta de nuevo o simplifica tu solicitud.';
       } else {
-        // Intentar parsear si el error viene del backend en JSON
+        // ✅ P0: Intentar parsear respuesta JSON del backend
         try {
           const errorMsg = err.message.toLowerCase();
           
+          // 1️⃣ OAUTH_NOT_CONNECTED - Gmail/Calendar no conectado
           if (errorMsg.includes('oauth_not_connected') || errorMsg.includes('oauth not connected')) {
-            errorContent = '🔗 Gmail/Calendar no está conectado.\n\nVe a Configuración > Integraciones para conectar tu cuenta de Google.';
-          } else if (errorMsg.includes('oauth_tokens_missing') || errorMsg.includes('tokens missing') || errorMsg.includes('token inválido')) {
-            errorContent = '⚠️ Gmail/Calendar está conectado pero los tokens están incompletos o expirados.\n\n**Solución**: Ve a Configuración > Integraciones, desconecta Gmail/Calendar y vuelve a conectarlo.';
-          } else if (errorMsg.includes('oauth_token_expired') || errorMsg.includes('token expired')) {
-            errorContent = '⏰ Los tokens de Gmail/Calendar expiraron.\n\nVe a Configuración > Integraciones, desconecta y vuelve a conectar tu cuenta.';
-          } else if (errorMsg.includes('gmail') || errorMsg.includes('calendar') || errorMsg.includes('google')) {
-            errorContent = `❌ Error de integración Google: ${err.message}\n\nIntenta desconectar y volver a conectar Gmail/Calendar en Configuración.`;
-          } else if (errorMsg.includes('failed to fetch') || errorMsg.includes('network')) {
-            errorContent = '🌐 **Error de conexión**.\n\nNo se pudo conectar con AL-E Core. Verifica tu conexión a internet e intenta de nuevo.';
-          } else {
-            errorContent = `❌ Error: ${err.message}.\n\nAL-E no pudo responder. Intenta de nuevo.`;
+            errorContent = '🔗 **Gmail/Calendar no está conectado**\n\nPara que AL-E pueda acceder a tu correo y calendario:\n\n1. Ve a **Configuración > Integraciones**\n2. Conecta tu cuenta de Google\n3. Autoriza los permisos necesarios\n\nIntenta de nuevo después de conectar.';
+          } 
+          // 2️⃣ OAUTH_TOKENS_MISSING - Tokens incompletos o NULL
+          else if (errorMsg.includes('oauth_tokens_missing') || errorMsg.includes('tokens missing') || errorMsg.includes('token inválido') || errorMsg.includes('tokens null')) {
+            errorContent = '⚠️ **Tokens de Gmail/Calendar incompletos**\n\nLos tokens están mal configurados o expirados.\n\n**Solución**:\n1. Ve a **Configuración > Integraciones**\n2. **Desconecta** Gmail/Calendar\n3. **Vuelve a conectar** (Google pedirá permiso nuevamente)\n\nEsto renovará los tokens correctamente.';
+          } 
+          // 3️⃣ OAUTH_TOKEN_EXPIRED - Token expirado
+          else if (errorMsg.includes('oauth_token_expired') || errorMsg.includes('token expired')) {
+            errorContent = '⏰ **Tokens de Gmail/Calendar expirados**\n\nTus credenciales necesitan renovarse.\n\n**Solución**:\n1. Ve a **Configuración > Integraciones**\n2. Desconecta y reconecta Gmail/Calendar\n\nAL-E obtendrá tokens nuevos automáticamente.';
+          } 
+          // 4️⃣ Errores genéricos de Google APIs
+          else if (errorMsg.includes('gmail') || errorMsg.includes('calendar') || errorMsg.includes('google')) {
+            errorContent = `❌ **Error de Google APIs**\n\n${err.message}\n\n**Sugerencia**: Intenta desconectar y reconectar Gmail/Calendar en Configuración > Integraciones.`;
+          } 
+          // 5️⃣ Errores de red
+          else if (errorMsg.includes('failed to fetch') || errorMsg.includes('network') || errorMsg.includes('fetch')) {
+            errorContent = '🌐 **Error de conexión**\n\nNo se pudo conectar con AL-E Core.\n\n**Posibles causas**:\n- Sin conexión a internet\n- Backend temporalmente no disponible\n- Firewall bloqueando la conexión\n\nVerifica tu conexión e intenta de nuevo.';
           }
         } catch (parseError) {
-          // Si falla el parseo, usar mensaje genérico
-          errorContent = `❌ Error: ${err.message}.\n\nAL-E no pudo responder.`;
+          console.error('Error parseando mensaje de error:', parseError);
         }
+      }
+      
+      // Si no se detectó ningún error específico, usar mensaje genérico
+      if (!errorContent) {
+        errorContent = `❌ **Error inesperado**\n\n${err.message}\n\nAL-E no pudo procesar tu solicitud. Intenta de nuevo o contacta soporte si el problema persiste.`;
       }
       
       const errorMessage = {

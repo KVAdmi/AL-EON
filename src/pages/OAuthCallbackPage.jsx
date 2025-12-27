@@ -113,6 +113,34 @@ export default function OAuthCallbackPage() {
 
       if (dbError) throw dbError;
 
+      // ✅ P0: VALIDACIÓN POST-SAVE - Verificar que los tokens se guardaron correctamente
+      setMessage('Verificando credenciales...');
+      
+      const { data: savedIntegration, error: verifyError } = await supabase
+        .from('user_integrations')
+        .select('access_token, refresh_token, expires_at, scopes')
+        .eq('user_id', user.id)
+        .eq('integration_type', integration_type)
+        .single();
+
+      if (verifyError) {
+        console.error('[OAuthCallback] Error verificando tokens:', verifyError);
+        throw new Error('Error al verificar tokens guardados. Intenta de nuevo.');
+      }
+
+      // ✅ P0: Verificar que NO están NULL
+      if (!savedIntegration.access_token || !savedIntegration.refresh_token) {
+        console.error('[OAuthCallback] Tokens guardados como NULL:', savedIntegration);
+        throw new Error('❌ Google no entregó refresh_token válido.\n\nReconecta la integración con prompt=consent activo.\n\n**Pasos**: Revoca el acceso en tu cuenta de Google y vuelve a conectar.');
+      }
+
+      console.log('[OAuthCallback] ✅ Tokens verificados correctamente:', {
+        has_access_token: !!savedIntegration.access_token,
+        has_refresh_token: !!savedIntegration.refresh_token,
+        expires_at: savedIntegration.expires_at,
+        scopes: savedIntegration.scopes
+      });
+
       // Éxito
       setStatus('success');
       setMessage(`✅ ${getIntegrationName(integration_type)} conectado exitosamente!`);
