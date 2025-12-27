@@ -91,7 +91,6 @@ export default function OAuthCallbackPage() {
         .upsert({
           user_id: user.id,
           integration_type,
-          integration_name: getIntegrationName(integration_type),
           config: {
             client_id: GOOGLE_CLIENT_ID,
             client_secret: GOOGLE_CLIENT_SECRET,
@@ -100,9 +99,6 @@ export default function OAuthCallbackPage() {
             provider: 'google',
             // No guardamos access_token porque expira en 1 hora
           },
-          is_active: true,
-          test_status: 'success',
-          test_message: 'Conectado exitosamente',
         }, {
           onConflict: 'user_id,integration_type',
         });

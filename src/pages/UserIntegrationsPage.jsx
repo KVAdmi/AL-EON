@@ -23,7 +23,7 @@ export default function UserIntegrationsPage() {
   // Client ID y Secret de tu proyecto OAuth (compartidos por todos los usuarios)
   const GOOGLE_CLIENT_ID = '1010443733044-nj923bcv3rp20mi7ilb75bdvr0jnjfdq.apps.googleusercontent.com';
   const GOOGLE_CLIENT_SECRET = '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';
-  const REDIRECT_URI = `${window.location.origin}/integrations/oauth-callback`;
+  const REDIRECT_URI = 'https://al-eon.com/integrations/oauth-callback';
 
   // Integraciones disponibles para usuarios normales
   const availableIntegrations = [
@@ -126,27 +126,30 @@ export default function UserIntegrationsPage() {
   // Verificar si el usuario tiene una integración conectada
   function hasIntegration(type) {
     return userIntegrations.some(
-      int => int.integration_type === type && int.is_active
+      int => int.integration_type === type
     );
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <Loader className="animate-spin text-blue-600" size={32} />
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+        <Loader className="animate-spin" style={{ color: 'var(--color-accent)' }} size={32} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <div style={{ 
+        backgroundColor: 'var(--color-bg-secondary)', 
+        borderBottom: '1px solid var(--color-border)' 
+      }}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
             🔗 Mis Integraciones
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className="mt-2" style={{ color: 'var(--color-text-secondary)' }}>
             Conecta tus cuentas de Google para usar Gmail, Calendar y Meet desde AL-EON
           </p>
         </div>
@@ -163,7 +166,11 @@ export default function UserIntegrationsPage() {
             return (
               <div
                 key={integration.type}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow"
+                className="rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow"
+                style={{
+                  backgroundColor: 'var(--color-bg-secondary)',
+                  border: '1px solid var(--color-border)'
+                }}
               >
                 {/* Icon & Status */}
                 <div className="flex items-start justify-between mb-4">
@@ -273,12 +280,8 @@ export default function UserIntegrationsPage() {
                         </p>
                       </div>
                     </div>
-                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      int.is_active
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                        : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-                    }`}>
-                      {int.is_active ? 'Activo' : 'Inactivo'}
+                    <div className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                      Activo
                     </div>
                   </div>
                 );

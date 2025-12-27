@@ -886,7 +886,7 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
         <button 
           onClick={() => {
             console.log('🔗 Click en Mis Integraciones - navegando a /settings/integrations');
-            navigate('/settings/integrations');
+            window.location.href = '/settings/integrations';
           }}
           className="w-full p-6 rounded-2xl border cursor-pointer hover:shadow-lg transition-all group text-left" 
           style={{ 

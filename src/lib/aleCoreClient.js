@@ -45,22 +45,19 @@ async function fetchWithRetry(url, options, retries = 1) {
  * Envía mensajes a AL-E Core
  * @param {Object} params
  * @param {string} params.accessToken - JWT token de Supabase (REQUERIDO)
- * @param {Array} params.messages - Historial de mensajes [{role, content}]
+ * @param {string} params.message - Mensaje actual del usuario (SOLO UNO, SIN HISTORIAL)
  * @param {string} params.sessionId - ID de la sesión (opcional, null para crear nueva)
- * @param {string} params.workspaceId - ID del workspace (opcional, default: 'default')
- * @param {Object} params.voiceMeta - Metadata de voz (opcional)
- * @param {Array} params.files - Archivos adjuntos (opcional, [{url, name, type, size}])
- * @param {Array} params.rawFiles - Archivos File objects para enviar via FormData (opcional)
- * @param {Array} params.fileIds - IDs de archivos ya ingestados (opcional, para contexto)
+ * @param {string} params.workspaceId - ID del workspace (opcional, default: 'core')
+ * @param {Object} params.meta - Metadata (platform, version, source, timestamp)
+ * @param {Array} params.files - Archivos adjuntos (opcional)
  * @param {AbortSignal} params.signal - Señal para cancelar request (opcional)
  * @returns {Promise<Object>} Respuesta de AL-E Core con session_id
  */
-export async function sendToAleCore({ accessToken, messages, sessionId, workspaceId, voiceMeta, files, rawFiles, fileIds, signal }) {
-  // ✅ BASE URL desde env, SIN /api/ai/chat
+export async function sendToAleCore({ accessToken, message, sessionId, workspaceId, meta, files, signal }) {
   const BASE_URL = import.meta.env.VITE_ALE_CORE_BASE || import.meta.env.VITE_ALE_CORE_URL?.replace('/api/ai/chat', '');
   
   if (!BASE_URL) {
-    throw new Error("❌ Missing VITE_ALE_CORE_BASE - Verifica tu archivo .env");
+    throw new Error("❌ Missing VITE_ALE_CORE_BASE");
   }
 
   const url = `${BASE_URL}/api/ai/chat`;
@@ -68,163 +65,46 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
   console.log("✅ ALE CORE URL =>", url);
 
   if (!accessToken) {
-    throw new Error("❌ Missing accessToken - Usuario no autenticado");
+    throw new Error("❌ Missing accessToken");
   }
 
-  // ✅ WorkspaceId desde env (NO hardcodear "core")
-  const finalWorkspaceId = import.meta.env.VITE_WORKSPACE_ID || workspaceId || 'al-eon';
-  
-  // ✅ Persistir para futuras cargas
-  localStorage.setItem('workspaceId', finalWorkspaceId);
-  
-  console.log('🗂️ WorkspaceId:', finalWorkspaceId);
-
-  // ✅ RequestId único para correlación de logs (trazabilidad, NO identidad)
-  const requestId = crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-  console.log('🧾 requestId:', requestId);
-
-  // ❌ REMOVIDO: Frontend NO debe extraer userId del JWT
-  // ✅ REGLA: Core valida JWT y define user_uuid = payload.sub
-  // ✅ Frontend solo manda el token en Authorization header
-
-  // 🔥 LIMITAR mensajes para evitar context overflow y reducir costo
-  const MAX_MESSAGES = 12;
-  const trimmedMessages = messages.slice(-MAX_MESSAGES);
-  
-  if (messages.length > MAX_MESSAGES) {
-    console.warn(`⚠️ Historial recortado: ${messages.length} → ${trimmedMessages.length} mensajes`);
+  if (!message || !message.trim()) {
+    throw new Error("❌ Message is required");
   }
-  
-  console.log(`📊 Enviando ${trimmedMessages.length} mensajes (de ${messages.length} totales)`);
 
-  // ✅ WIRE PROTOCOL: Decidir entre JSON o FormData
-  const hasRawFiles = rawFiles && rawFiles.length > 0;
-
-  // ✅ LIMPIAR mensajes contaminados ANTES de enviar (sobre mensajes ya recortados)
-  const cleanedMessages = trimmedMessages.filter(msg => {
-    if (msg.role === 'assistant') {
-      const content = msg.content || '';
-      // Eliminar mensajes de error, HTML, y failed fetches
-      if (
-        content.startsWith('Error:') ||
-        content.startsWith('Failed to fetch') ||
-        content.includes('<!DOCTYPE html>')
-      ) {
-        console.warn('🧹 Mensaje contaminado eliminado:', content.substring(0, 50));
-        return false;
-      }
-    }
-    return true;
-  });
-
-  // Construir payload base (SIN userId - Core lo extrae del JWT)
+  // ✅ P0: PAYLOAD LIMPIO - SOLO mensaje actual
   const payloadData = {
-    requestId, // Solo para trazabilidad
-    workspaceId: finalWorkspaceId,
-    mode: "universal",
-    messages: cleanedMessages, // ✅ SOLO últimos 12 mensajes limpios
-    meta: {
-      ...getRequestMetadata(),
-      timestamp: new Date().toISOString(),
-      ...(voiceMeta && {
-        inputMode: voiceMeta.inputMode || 'text',
-        localeHint: voiceMeta.localeHint || 'es-MX',
-        handsFree: voiceMeta.handsFree || false
-      })
+    message: message.trim(),
+    sessionId: sessionId || undefined,
+    workspaceId: workspaceId || 'core',
+    meta: meta || {
+      platform: "AL-EON",
+      version: "1.0.0",
+      source: "al-eon-console",
+      timestamp: new Date().toISOString()
     }
   };
 
-  // Agregar sessionId si existe
-  if (sessionId) {
-    payloadData.sessionId = sessionId;
-    console.log('🔄 Continuando sesión:', sessionId);
-  } else {
-    console.log('🆕 Creando nueva sesión (sessionId = null)');
-  }
-
-  // Agregar contexto con fileIds si existen (para recuperación de chunks)
-  if (fileIds && fileIds.length > 0) {
-    payloadData.context = { fileIds };
-    console.log('📚 Contexto con fileIds:', fileIds);
-  }
-
-  // Agregar URLs de archivos ya subidos
+  // Agregar archivos si existen
   if (files && files.length > 0) {
-    payloadData.attachments = files;
-    payloadData.files = files; // Compatibilidad
-    console.log('📎 Attachments enviados a AL-E Core:', JSON.stringify(files, null, 2));
+    payloadData.files = files;
+    console.log('📎 Archivos adjuntos:', files.length);
   }
 
-  let fetchOptions;
+  console.log('📤 PAYLOAD:', JSON.stringify(payloadData, null, 2));
 
-  if (hasRawFiles) {
-    // ✅ WIRE PROTOCOL: Multipart/form-data cuando hay archivos raw
-    console.log('📤 WIRE PROTOCOL: Multipart (archivos raw)');
-    const formData = new FormData();
-    
-    // Campos obligatorios (SIN userId - Core lo extrae del JWT)
-    formData.append('workspaceId', payloadData.workspaceId);
-    formData.append('mode', payloadData.mode);
-    formData.append('requestId', payloadData.requestId);
-    formData.append('messages', JSON.stringify(payloadData.messages));
-    
-    // Opcional: sessionId
-    if (payloadData.sessionId) {
-      formData.append('sessionId', payloadData.sessionId);
-    }
-    
-    // Opcional: context
-    if (payloadData.context) {
-      formData.append('context', JSON.stringify(payloadData.context));
-    }
-    
-    // Opcional: meta
-    if (payloadData.meta) {
-      formData.append('meta', JSON.stringify(payloadData.meta));
-    }
-    
-    // Archivos raw
-    for (const file of rawFiles) {
-      formData.append('files', file);
-      console.log(`📎 Adjuntando: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
-    }
-
-    // ✅ Headers: SOLO incluir Authorization si accessToken existe
-    const headers = {};
-    if (accessToken) {
-      headers.Authorization = `Bearer ${accessToken}`;
-    }
-    // NO incluir Content-Type, browser lo setea automático con boundary
-
-    fetchOptions = {
-      method: "POST",
-      headers,
-      body: formData,
-      signal
-    };
-  } else {
-    // ✅ WIRE PROTOCOL: JSON cuando NO hay archivos raw
-    console.log('📤 WIRE PROTOCOL: JSON (sin archivos raw)');
-    console.log('📤 PAYLOAD TO CORE:', JSON.stringify(payloadData, null, 2));
-
-    // ✅ Headers: SOLO incluir Authorization si accessToken existe
-    const headers = { "Content-Type": "application/json" };
-    if (accessToken) {
-      headers.Authorization = `Bearer ${accessToken}`;
-    }
-
-    fetchOptions = {
-      method: "POST",
-      headers,
-      body: JSON.stringify(payloadData),
-      signal
-    };
-  }
+  const fetchOptions = {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${accessToken}`
+    },
+    body: JSON.stringify(payloadData),
+    signal
+  };
 
   try {
-    // ✅ NUEVO: Fetch con 1 reintento automático en caso de 502/504/timeout
     const res = await fetchWithRetry(url, fetchOptions, 1);
-
     const text = await res.text();
     
     if (!res.ok) {
@@ -232,10 +112,9 @@ export async function sendToAleCore({ accessToken, messages, sessionId, workspac
     }
 
     return JSON.parse(text);
-
   } catch (error) {
     if (error.name === 'AbortError') {
-      console.log('🛑 Request cancelado por el usuario');
+      console.log('🛑 Request cancelado');
       throw new Error('Request cancelado');
     }
     console.error("❌ Error comunicándose con AL-E Core:", error);

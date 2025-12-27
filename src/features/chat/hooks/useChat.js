@@ -35,11 +35,11 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
       // 1. Subir archivos si existen
       let uploadedFiles = [];
       if (attachments && attachments.length > 0) {
-        setIsUploading(true); // ✅ NUEVO: Mostrar "Procesando documentos..."
+        setIsUploading(true);
         console.log('📤 Subiendo archivos:', attachments.map(f => f.name));
         uploadedFiles = await uploadFiles(attachments, userId);
         console.log('✅ Archivos subidos:', uploadedFiles);
-        setIsUploading(false); // ✅ Upload completado
+        setIsUploading(false);
       }
 
       // 2. Add user message con archivos
@@ -48,10 +48,10 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
         role: 'user',
         content: content.trim(),
         attachments: uploadedFiles.map(f => ({
-          bucket: f.bucket,  // ✅ AL-E Core necesita bucket
-          path: f.path,      // ✅ AL-E Core necesita path
+          bucket: f.bucket,
+          path: f.path,
           name: f.name,
-          url: f.url,        // Opcional (backward compatibility)
+          url: f.url,
           type: f.type,
           size: f.size
         })),
@@ -60,31 +60,22 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
 
       addMessage(currentConversation.id, userMessage);
 
-      // 3. Prepare messages for AL-E Core
-      const apiMessages = [
-        ...currentConversation.messages.map(msg => ({
-          role: msg.role,
-          content: msg.content
-        })),
-        {
-          role: 'user',
-          content: content.trim()
-        }
-      ];
-
-      console.log('📤 Enviando a AL-E Core:', {
-        sessionId: currentConversation.sessionId || 'null (creará nueva)',
-        messageCount: apiMessages.length
-      });
+      console.log('📤 Enviando a AL-E Core - SOLO mensaje actual');
 
       // ✅ Crear AbortController para poder cancelar
       abortControllerRef.current = new AbortController();
+      
+      // ✅ Timeout de 60 segundos (acciones de correo/calendario)
+      const timeoutId = setTimeout(() => {
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+        }
+      }, 60000);
 
-      // ✅ FORZAR workspaceId="core" para AL-E Core
-      const WORKSPACE_ID = import.meta.env.VITE_WORKSPACE_ID === "core" ? "core" : "core";
-      const workspaceId = WORKSPACE_ID;
+      // ✅ WORKSPACE_ID obligatorio
+      const workspaceId = import.meta.env.VITE_WORKSPACE_ID || "core";
 
-      // ✅ NUEVO: sessionId persistente en localStorage (sobrevive refresh)
+      // ✅ SessionId persistente
       const storedSessionId = localStorage.getItem(`sessionId:${currentConversation.id}`);
       const finalSessionId = currentConversation.sessionId || storedSessionId || null;
       
@@ -92,58 +83,61 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
         console.log('🔄 Usando sessionId persistente:', finalSessionId);
       }
 
-      // Send to AL-E Core con JWT token, sessionId y archivos
+      // ✅ P0: ENVIAR SOLO EL MENSAJE ACTUAL, SIN HISTORIAL
       const response = await sendToAleCore({
         accessToken, // JWT de Supabase
-        messages: apiMessages,
-        sessionId: finalSessionId, // ✅ sessionId desde estado O localStorage
-        workspaceId, // ✅ CRÍTICO: SIEMPRE enviar workspaceId
-        voiceMeta, // Pasar metadata de voz si existe
-        files: uploadedFiles, // ✅ Enviar archivos subidos
-        signal: abortControllerRef.current.signal // ✅ Señal para cancelar
+        message: content.trim(), // ✅ SOLO mensaje actual
+        sessionId: finalSessionId,
+        workspaceId,
+        meta: {
+          platform: "AL-EON",
+          version: "1.0.0",
+          source: "al-eon-console",
+          timestamp: new Date().toISOString(),
+          ...(voiceMeta && {
+            inputMode: voiceMeta.inputMode || 'text',
+            localeHint: voiceMeta.localeHint || 'es-MX',
+            handsFree: voiceMeta.handsFree || false
+          })
+        },
+        files: uploadedFiles,
+        signal: abortControllerRef.current.signal
       });
 
-      // ✅ CRÍTICO: Guardar session_id en estado Y localStorage
+      clearTimeout(timeoutId);
+
+      // ✅ Guardar session_id
       if (response.session_id && !currentConversation.sessionId) {
         console.log('💾 Guardando session_id del backend:', response.session_id);
-        
-        // Guardar en estado
         updateConversation(currentConversation.id, {
           sessionId: response.session_id
         });
-        
-        // ✅ NUEVO: Persistir en localStorage (sobrevive refresh)
         localStorage.setItem(`sessionId:${currentConversation.id}`, response.session_id);
       }
 
-      // Extract reply text (SOLO el campo "answer")
+      // Extract reply text
       const replyText = extractReply(response);
       
-      // VALIDACIÓN SIMPLE: Solo verificar que sea string
       if (!replyText || typeof replyText !== 'string') {
-        console.error('❌ CRÍTICO: extractReply() no devolvió string:', replyText);
-        throw new Error('Respuesta inválida del asistente (no es texto)');
+        console.error('❌ Respuesta inválida del asistente');
+        throw new Error('Respuesta inválida del asistente');
       }
-      
-      console.log('✅ Texto extraído para renderizar:', replyText.substring(0, 100));
 
       // Add AL-E response
       const assistantMessage = {
         id: generateId(),
         role: 'assistant',
-        content: replyText, // ✅ SIEMPRE texto limpio, NUNCA JSON
+        content: replyText,
         timestamp: Date.now()
       };
 
       addMessage(currentConversation.id, assistantMessage);
 
-      // Retornar el texto para que TTS lo pueda leer
       return replyText;
     } catch (err) {
-      console.error('❌ Error enviando mensaje a AL-E Core:', err);
+      console.error('❌ Error enviando mensaje:', err);
       setError(err.message);
       
-      // Add error message
       const errorMessage = {
         id: generateId(),
         role: 'assistant',
@@ -157,8 +151,8 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
       return null;
     } finally {
       setIsLoading(false);
-      setIsUploading(false); // ✅ NUEVO: Asegurar que se limpie el estado
-      abortControllerRef.current = null; // ✅ Limpiar referencia
+      setIsUploading(false);
+      abortControllerRef.current = null;
     }
   };
 
