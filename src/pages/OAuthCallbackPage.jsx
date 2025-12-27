@@ -85,19 +85,27 @@ export default function OAuthCallbackPage() {
 
       setMessage('Guardando credenciales...');
 
-      // Guardar en Supabase (user_integrations)
+      // ✅ P0: Calcular expires_at
+      const expiresAt = new Date(Date.now() + (expires_in * 1000)).toISOString();
+
+      // ✅ P0: Guardar en Supabase con TODOS los campos requeridos NO NULL
       const { error: dbError } = await supabase
         .from('user_integrations')
         .upsert({
           user_id: user.id,
           integration_type,
+          // ✅ Campos principales (NO NULL según backend)
+          access_token,           // ✅ NUEVO: access token inicial
+          refresh_token,          // ✅ Ya existía
+          expires_at: expiresAt,  // ✅ NUEVO: cuándo expira
+          scopes: scope,          // ✅ NUEVO: scopes autorizados
+          connected_at: new Date().toISOString(), // ✅ NUEVO: cuándo se conectó
+          is_active: true,        // ✅ Marcar como activo
+          // ✅ Config adicional (legacy compatibility)
           config: {
             client_id: GOOGLE_CLIENT_ID,
             client_secret: GOOGLE_CLIENT_SECRET,
-            refresh_token,
-            scope,
-            provider: 'google',
-            // No guardamos access_token porque expira en 1 hora
+            provider: 'google'
           },
         }, {
           onConflict: 'user_id,integration_type',

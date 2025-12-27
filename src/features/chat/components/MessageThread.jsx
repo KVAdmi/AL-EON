@@ -7,16 +7,57 @@ import { SaveMemoryModal } from './SaveMemoryModal';
 import { saveMemory } from '@/services/memoryService';
 import { useToast } from '@/ui/use-toast';
 
+// ✅ P1: Componente para mostrar tiempo de procesamiento
+function ProcessingTimer({ startTime }) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startTime) / 1000));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [startTime]);
+
+  const formatTime = (seconds) => {
+    if (seconds < 60) return `${seconds}s`;
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}m ${secs}s`;
+  };
+
+  return (
+    <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+      <span>Procesando... {formatTime(elapsed)}</span>
+      {elapsed > 30 && (
+        <span className="text-yellow-600 dark:text-yellow-400">
+          (operación larga, puede tardar hasta 60s)
+        </span>
+      )}
+    </div>
+  );
+}
+
 function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggleHandsFree, onToggleSidebar, onStopResponse, onRegenerateResponse, currentUser, assistantName }) {
   const scrollRef = useRef(null);
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [loadingStartTime, setLoadingStartTime] = useState(null); // ✅ P1: Track tiempo de inicio
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // ✅ P1: Actualizar tiempo de inicio cuando cambia isLoading
+  useEffect(() => {
+    if (isLoading) {
+      setLoadingStartTime(Date.now());
+    } else {
+      setLoadingStartTime(null);
+    }
+  }, [isLoading]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -128,6 +169,8 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
             {isLoading && (
               <div className="space-y-3">
                 <TypingIndicator />
+                {/* ✅ P1: Indicador de tiempo de procesamiento */}
+                {loadingStartTime && <ProcessingTimer startTime={loadingStartTime} />}
                 {/* Botón detener mientras carga */}
                 <div className="flex justify-start">
                   <button
