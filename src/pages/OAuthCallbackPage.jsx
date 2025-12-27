@@ -1,34 +1,39 @@
 /**
  * OAuthCallbackPage.jsx
  * 
- * Página que recibe el código de autorización de Google OAuth
- * y lo intercambia por un refresh token para guardarlo en Supabase
+ * ✅ FLUJO CORRECTO:
+ * 1. Recibe 'code' de Google OAuth
+ * 2. Envía code al backend: POST /api/auth/google/callback
+ * 3. Backend intercambia tokens y los guarda
+ * 4. Frontend solo muestra resultado
+ * 
+ * ❌ NO hace el frontend:
+ * - Intercambiar code por tokens
+ * - Usar client_secret
+ * - Llamar a Google OAuth directamente
  */
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 import { Loader, CheckCircle, XCircle } from 'lucide-react';
 
 export default function OAuthCallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const [status, setStatus] = useState('processing'); // 'processing' | 'success' | 'error'
   const [message, setMessage] = useState('Procesando autorización...');
 
-  const GOOGLE_CLIENT_ID = '1010443733044-nj923bcv3rp20mi7ilb75bdvr0jnjfdq.apps.googleusercontent.com';
-  const GOOGLE_CLIENT_SECRET = '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';
-  const REDIRECT_URI = `${window.location.origin}/integrations/oauth-callback`;
-
   useEffect(() => {
-    handleOAuthCallback();
-  }, [searchParams, user]);
+    if (user && accessToken) {
+      handleOAuthCallback();
+    }
+  }, [searchParams, user, accessToken]);
 
   async function handleOAuthCallback() {
     try {
-      // Obtener parámetros de la URL
+      // 1️⃣ Obtener parámetros de la URL
       const code = searchParams.get('code');
       const stateStr = searchParams.get('state');
       const error = searchParams.get('error');
@@ -54,98 +59,44 @@ export default function OAuthCallbackPage() {
         throw new Error('Usuario no autorizado');
       }
 
-      setMessage('Intercambiando código por tokens...');
+      // 2️⃣ Enviar code al backend para que intercambie tokens
+      setMessage('Conectando con AL-E Core...');
 
-      // Intercambiar código por tokens (access token y refresh token)
-      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      const BACKEND_URL = import.meta.env.VITE_ALE_CORE_BASE || import.meta.env.VITE_ALE_CORE_URL?.replace('/api/ai/chat', '');
+      
+      if (!BACKEND_URL) {
+        throw new Error('Backend URL no configurada');
+      }
+
+      const response = await fetch(`${BACKEND_URL}/api/auth/google/callback`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}` // JWT de Supabase
         },
-        body: new URLSearchParams({
+        body: JSON.stringify({
           code,
-          client_id: GOOGLE_CLIENT_ID,
-          client_secret: GOOGLE_CLIENT_SECRET,
-          redirect_uri: REDIRECT_URI,
-          grant_type: 'authorization_code',
-        }),
-      });
-
-      if (!tokenResponse.ok) {
-        const errorData = await tokenResponse.json();
-        throw new Error(`Error obteniendo tokens: ${errorData.error_description || errorData.error}`);
-      }
-
-      const tokens = await tokenResponse.json();
-      const { access_token, refresh_token, expires_in, scope } = tokens;
-
-      if (!refresh_token) {
-        throw new Error('No se recibió refresh token. Intenta revocar el acceso en tu cuenta de Google y vuelve a autorizar.');
-      }
-
-      setMessage('Guardando credenciales...');
-
-      // ✅ P0: Calcular expires_at
-      const expiresAt = new Date(Date.now() + (expires_in * 1000)).toISOString();
-
-      // ✅ P0: Convertir scopes a array (Supabase espera text[] no string)
-      const scopesArray = scope ? scope.split(' ') : [];
-
-      // ✅ P0: Guardar en Supabase con TODOS los campos requeridos NO NULL
-      const { error: dbError } = await supabase
-        .from('user_integrations')
-        .upsert({
-          user_id: user.id,
           integration_type,
-          // ✅ Campos principales (NO NULL según backend)
-          access_token,           // ✅ NUEVO: access token inicial
-          refresh_token,          // ✅ Ya existía
-          expires_at: expiresAt,  // ✅ NUEVO: cuándo expira
-          scopes: scopesArray,    // ✅ NUEVO: array de scopes
-          connected_at: new Date().toISOString(), // ✅ NUEVO: cuándo se conectó
-          // ✅ Config adicional (legacy compatibility)
-          config: {
-            client_id: GOOGLE_CLIENT_ID,
-            client_secret: GOOGLE_CLIENT_SECRET,
-            provider: 'google'
-          },
-        }, {
-          onConflict: 'user_id,integration_type',
-        });
-
-      if (dbError) throw dbError;
-
-      // ✅ P0: VALIDACIÓN POST-SAVE - Verificar que los tokens se guardaron correctamente
-      setMessage('Verificando credenciales...');
-      
-      const { data: savedIntegration, error: verifyError } = await supabase
-        .from('user_integrations')
-        .select('access_token, refresh_token, expires_at, scopes')
-        .eq('user_id', user.id)
-        .eq('integration_type', integration_type)
-        .single();
-
-      if (verifyError) {
-        console.error('[OAuthCallback] Error verificando tokens:', verifyError);
-        throw new Error('Error al verificar tokens guardados. Intenta de nuevo.');
-      }
-
-      // ✅ P0: Verificar que NO están NULL
-      if (!savedIntegration.access_token || !savedIntegration.refresh_token) {
-        console.error('[OAuthCallback] Tokens guardados como NULL:', savedIntegration);
-        throw new Error('❌ Google no entregó refresh_token válido.\n\nReconecta la integración con prompt=consent activo.\n\n**Pasos**: Revoca el acceso en tu cuenta de Google y vuelve a conectar.');
-      }
-
-      console.log('[OAuthCallback] ✅ Tokens verificados correctamente:', {
-        has_access_token: !!savedIntegration.access_token,
-        has_refresh_token: !!savedIntegration.refresh_token,
-        expires_at: savedIntegration.expires_at,
-        scopes: savedIntegration.scopes
+          redirect_uri: `${window.location.origin}/integrations/oauth-callback`
+        })
       });
 
-      // Éxito
+      if (!response.ok) {
+        const errorData = await response.json();
+        // Mostrar mensaje exacto del backend
+        throw new Error(errorData.error || errorData.message || `Error del servidor: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      // 3️⃣ Éxito - Backend guardó los tokens
       setStatus('success');
-      setMessage(`✅ ${getIntegrationName(integration_type)} conectado exitosamente!`);
+      setMessage(`✅ ${getIntegrationName(integration_type)} conectado correctamente!`);
+
+      console.log('[OAuthCallback] ✅ Integración conectada:', {
+        integration_type,
+        success: true
+      });
 
       // Redirigir después de 2 segundos
       setTimeout(() => {
@@ -234,3 +185,4 @@ export default function OAuthCallbackPage() {
     </div>
   );
 }
+
