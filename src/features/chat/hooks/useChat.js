@@ -105,6 +105,7 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
         message: content.trim(), // ✅ SOLO mensaje actual
         sessionId: finalSessionId,
         workspaceId,
+        projectId: currentConversation.project_id || null, // ✅ ID del proyecto para RAG
         userEmail, // ✅ COLABORACIÓN: Email del usuario que escribe
         userDisplayName, // ✅ COLABORACIÓN: Nombre para mostrar
         meta: {
