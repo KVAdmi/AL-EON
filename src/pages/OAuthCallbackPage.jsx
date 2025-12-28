@@ -79,7 +79,7 @@ export default function OAuthCallbackPage() {
       const payload = {
         code,
         userId: user.id,
-        integration_type,
+        integrationType: integration_type, // ✅ Cambiar nombre del campo
         redirect_uri: `${window.location.origin}/integrations/oauth-callback`
       };
 
