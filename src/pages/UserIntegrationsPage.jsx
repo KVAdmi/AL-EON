@@ -175,12 +175,13 @@ export default function UserIntegrationsPage() {
                 {/* Icon & Status */}
                 <div className="flex items-start justify-between mb-4">
                   <div
-                    className={`p-3 rounded-lg bg-${integration.color}-50 dark:bg-${integration.color}-900/20`}
+                    className="p-3 rounded-lg"
+                    style={{ backgroundColor: 'var(--color-bg-tertiary)' }}
                   >
-                    <Icon className={`text-${integration.color}-600 dark:text-${integration.color}-400`} size={24} />
+                    <Icon size={24} style={{ color: 'var(--color-accent)' }} />
                   </div>
                   {connected && (
-                    <div className="flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs font-medium">
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' }}>
                       <CheckCircle size={12} />
                       Conectado
                     </div>
@@ -188,10 +189,10 @@ export default function UserIntegrationsPage() {
                 </div>
 
                 {/* Info */}
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
                   {integration.name}
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
                   {integration.description}
                 </p>
 
@@ -200,7 +201,8 @@ export default function UserIntegrationsPage() {
                   <div className="space-y-2">
                     <button
                       onClick={() => handleDisconnect(integration.type)}
-                      className="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-sm font-medium"
+                      className="w-full px-4 py-2 rounded-lg transition-colors text-sm font-medium hover:opacity-80"
+                      style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)' }}
                     >
                       Desconectar
                     </button>
@@ -209,7 +211,8 @@ export default function UserIntegrationsPage() {
                   <button
                     onClick={() => handleConnectGoogle(integration.type)}
                     disabled={isConnecting}
-                    className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                    className="w-full px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                    style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}
                   >
                     {isConnecting ? (
                       <>
@@ -230,18 +233,18 @@ export default function UserIntegrationsPage() {
         </div>
 
         {/* Info Box */}
-        <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+        <div className="mt-8 rounded-lg p-6" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
           <div className="flex gap-3">
             <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--color-accent)' }}>
                 <span className="text-white text-sm">ℹ️</span>
               </div>
             </div>
             <div className="flex-1">
-              <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+              <h4 className="font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
                 ¿Cómo funciona?
               </h4>
-              <ul className="space-y-1 text-sm text-blue-800 dark:text-blue-200">
+              <ul className="space-y-1 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
                 <li>• Al conectar, autorizarás a AL-EON a acceder a tu cuenta de Google</li>
                 <li>• Tus credenciales se guardan de forma segura y encriptada</li>
                 <li>• Puedes desconectar en cualquier momento</li>
@@ -253,8 +256,8 @@ export default function UserIntegrationsPage() {
 
         {/* Connected Accounts Summary */}
         {userIntegrations.length > 0 && (
-          <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <div className="mt-8 rounded-lg shadow-sm p-6" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>
               📋 Cuentas Conectadas
             </h3>
             <div className="space-y-3">
@@ -265,22 +268,23 @@ export default function UserIntegrationsPage() {
                 return (
                   <div
                     key={int.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                    className="flex items-center justify-between p-3 rounded-lg"
+                    style={{ backgroundColor: 'var(--color-bg-tertiary)' }}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded bg-${integration.color}-100 dark:bg-${integration.color}-900/30`}>
-                        <integration.icon className={`text-${integration.color}-600 dark:text-${integration.color}-400`} size={16} />
+                      <div className="p-2 rounded" style={{ backgroundColor: 'var(--color-accent)', opacity: 0.2 }}>
+                        <integration.icon size={16} style={{ color: 'var(--color-accent)' }} />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-white text-sm">
+                        <p className="font-medium text-sm" style={{ color: 'var(--color-text-primary)' }}>
                           {integration.name}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
                           Conectado el {new Date(int.created_at).toLocaleDateString('es-MX')}
                         </p>
                       </div>
                     </div>
-                    <div className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                    <div className="px-2 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' }}>
                       Activo
                     </div>
                   </div>

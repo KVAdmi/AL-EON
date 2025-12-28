@@ -1,221 +1,408 @@
 /**
- * useVoiceMode - Hook maestro para modo de voz completo
+ * useVoiceMode - Hook maestro para modo de voz con backend (AL-E Core)
+ * 
+ * ARQUITECTURA:
+ * - Frontend: Captura audio (MediaRecorder) + reproduce respuesta (Audio API)
+ * - Backend (AL-E Core): STT + contexto + intents + tools + TTS
  * 
  * FLUJO:
- * 1. Modo Texto: usuario escribe, AL-E responde (puede leer respuesta opcionalmente)
- * 2. Modo Voz Total: escuchar → enviar → TTS → auto-escuchar (manos libres)
+ * 1. Modo Texto: usuario escribe, AL-E responde texto
+ * 2. Modo Voz Manos Libres (ON):
+ *    a) Captura audio (push-to-talk)
+ *    b) POST /api/voice/stt → { text }
+ *    c) POST /api/ai/chat → { response }
+ *    d) POST /api/voice/tts → audio MP3
+ *    e) Reproduce audio
+ *    f) Vuelve a escuchar (loop)
  * 
  * ESTADOS:
  * - idle: esperando
- * - listening: escuchando al usuario
- * - processing: enviando mensaje a backend
- * - speaking: AL-E hablando
+ * - recording: grabando audio del usuario
+ * - processing: enviando a backend (STT + chat + TTS)
+ * - speaking: reproduciendo respuesta de AL-E
+ * 
+ * ANTI-DOBLE ENVÍO:
+ * - isSending: bloquea grabación/envío
+ * - AbortController por request (60s timeout)
+ * - Deshabilitar controles mientras processing
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { useSpeechRecognition } from './useSpeechRecognition';
-import { useSpeechSynthesis } from './useSpeechSynthesis';
+
+const CORE_BASE_URL = import.meta.env.VITE_CORE_BASE_URL || 'https://api.al-entity.com';
+const VOICE_LOCAL_MODE = import.meta.env.VITE_VOICE_LOCAL === '1'; // Fallback DEV
 
 export function useVoiceMode({
-  onMessage, // Función para enviar mensaje: (text, meta) => Promise<response>
-  language = 'es-MX',
+  accessToken, // JWT token de Supabase (REQUERIDO)
+  sessionId, // ID de sesión (REQUERIDO)
+  workspaceId = 'core', // ID de workspace
+  onResponse, // Callback con respuesta de AL-E: (text) => void
+  onError, // Callback de error: (error) => void
   handsFreeEnabled = false
 } = {}) {
   const [mode, setMode] = useState('text'); // 'text' | 'voice'
-  const [status, setStatus] = useState('idle'); // 'idle' | 'listening' | 'processing' | 'speaking'
-  const [lastResponse, setLastResponse] = useState('');
+  const [status, setStatus] = useState('idle'); // 'idle' | 'recording' | 'processing' | 'speaking'
+  const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState(null);
+  const [transcript, setTranscript] = useState('');
   
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const audioPlayerRef = useRef(null);
+  const abortControllerRef = useRef(null);
   const handsFreeRef = useRef(handsFreeEnabled);
-  const isProcessingRef = useRef(false);
-
-  // Hooks de voz
-  const stt = useSpeechRecognition({
-    language,
-    continuous: false,
-    interimResults: true
-  });
-
-  const tts = useSpeechSynthesis();
+  const streamRef = useRef(null);
 
   // Sincronizar handsFree
   useEffect(() => {
     handsFreeRef.current = handsFreeEnabled;
   }, [handsFreeEnabled]);
 
-  // Manejar cambio de estado STT
+  // Cleanup al desmontar
   useEffect(() => {
-    if (stt.isListening) {
-      setStatus('listening');
-    } else if (status === 'listening' && !stt.isListening && !isProcessingRef.current) {
-      setStatus('idle');
-    }
-  }, [stt.isListening, status]);
-
-  // Manejar cambio de estado TTS
-  useEffect(() => {
-    if (tts.isSpeaking) {
-      setStatus('speaking');
-    } else if (status === 'speaking' && !tts.isSpeaking) {
-      setStatus('idle');
-      
-      // Si es modo voz y handsFree está activo, volver a escuchar
-      if (mode === 'voice' && handsFreeRef.current) {
-        console.log('🔄 Modo manos libres: reiniciando escucha...');
-        setTimeout(() => {
-          if (mode === 'voice' && handsFreeRef.current && !isProcessingRef.current) {
-            startListening();
-          }
-        }, 500); // Pequeño delay para evitar captar el eco
+    return () => {
+      stopRecording();
+      stopAudio();
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
       }
-    }
-  }, [tts.isSpeaking, status, mode]);
+    };
+  }, []);
 
-  // Cambiar modo
+  /**
+   * Iniciar grabación de audio
+   */
+  const startRecording = useCallback(async () => {
+    if (isSending) {
+      console.warn('⚠️ Ya hay un proceso en curso, esperando...');
+      return;
+    }
+
+    if (!accessToken) {
+      const err = new Error('No hay sesión activa');
+      setError(err);
+      onError?.(err);
+      return;
+    }
+
+    try {
+      console.log('🎤 Iniciando grabación...');
+      
+      // Solicitar permiso de micrófono
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
+      });
+      
+      streamRef.current = stream;
+
+      // Determinar formato soportado
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : 'audio/mp4';
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        console.log('🛑 Grabación detenida, procesando...');
+        
+        // Detener stream
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
+
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        audioChunksRef.current = [];
+
+        if (audioBlob.size > 0) {
+          await sendAudioToBackend(audioBlob);
+        } else {
+          console.warn('⚠️ Audio vacío, no se envía');
+          setStatus('idle');
+        }
+      };
+
+      mediaRecorder.start();
+      setStatus('recording');
+      setError(null);
+      setTranscript('');
+      
+      console.log('✅ Grabación iniciada');
+      
+    } catch (err) {
+      console.error('❌ Error al iniciar grabación:', err);
+      setError(err);
+      setStatus('idle');
+      onError?.(err);
+    }
+  }, [isSending, accessToken, onError]);
+
+  /**
+   * Detener grabación
+   */
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      console.log('🛑 Deteniendo grabación...');
+      mediaRecorderRef.current.stop();
+    }
+  }, []);
+
+  /**
+   * Enviar audio al backend: STT → Chat → TTS → reproducir
+   */
+  const sendAudioToBackend = useCallback(async (audioBlob) => {
+    setIsSending(true);
+    setStatus('processing');
+    
+    // Crear AbortController para timeout
+    abortControllerRef.current = new AbortController();
+    const timeoutId = setTimeout(() => abortControllerRef.current?.abort(), 60000); // 60s
+
+    try {
+      // PASO 1: STT - Convertir audio a texto
+      console.log('📤 Enviando audio a /api/voice/stt...');
+      
+      const formData = new FormData();
+      formData.append('file', audioBlob, 'voice.webm');
+      formData.append('sessionId', sessionId);
+      if (workspaceId) formData.append('workspaceId', workspaceId);
+      formData.append('meta', JSON.stringify({
+        platform: 'web',
+        version: '1.0',
+        timestamp: new Date().toISOString()
+      }));
+
+      const sttResponse = await fetch(`${CORE_BASE_URL}/api/voice/stt`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: formData,
+        signal: abortControllerRef.current.signal
+      });
+
+      if (!sttResponse.ok) {
+        const errorData = await sttResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || `STT Error: ${sttResponse.status}`);
+      }
+
+      const sttData = await sttResponse.json();
+      const userText = sttData.text || sttData.transcript || '';
+
+      if (!userText.trim()) {
+        throw new Error('No se detectó voz en el audio');
+      }
+
+      console.log(`✅ STT: "${userText}"`);
+      setTranscript(userText);
+
+      // PASO 2: Chat - Enviar texto a AL-E Core
+      console.log('💬 Enviando mensaje al chat...');
+      
+      const chatResponse = await fetch(`${CORE_BASE_URL}/api/ai/chat`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: userText,
+          sessionId,
+          workspaceId,
+          meta: {
+            inputMode: 'voice',
+            platform: 'web',
+            handsFree: handsFreeRef.current
+          }
+        }),
+        signal: abortControllerRef.current.signal
+      });
+
+      if (!chatResponse.ok) {
+        const errorData = await chatResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || `Chat Error: ${chatResponse.status}`);
+      }
+
+      const chatData = await chatResponse.json();
+      const assistantText = chatData.response || chatData.message || '';
+
+      if (!assistantText.trim()) {
+        throw new Error('Respuesta vacía del asistente');
+      }
+
+      console.log(`✅ Respuesta: "${assistantText.substring(0, 100)}..."`);
+      onResponse?.(assistantText);
+
+      // PASO 3: TTS - Convertir respuesta a audio
+      console.log('🔊 Solicitando audio con /api/voice/tts...');
+      
+      const ttsResponse = await fetch(`${CORE_BASE_URL}/api/voice/tts`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          text: assistantText,
+          voice: 'mx_female_default',
+          format: 'mp3'
+        }),
+        signal: abortControllerRef.current.signal
+      });
+
+      if (!ttsResponse.ok) {
+        const errorData = await ttsResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || `TTS Error: ${ttsResponse.status}`);
+      }
+
+      const audioBlob = await ttsResponse.blob();
+      
+      // PASO 4: Reproducir audio
+      console.log('🎵 Reproduciendo respuesta...');
+      await playAudio(audioBlob);
+
+      console.log('✅ Ciclo de voz completado');
+      
+      // Si modo manos libres está activo, volver a grabar
+      if (mode === 'voice' && handsFreeRef.current) {
+        console.log('🔄 Modo manos libres: reiniciando grabación...');
+        setTimeout(() => {
+          if (mode === 'voice' && handsFreeRef.current && !isSending) {
+            startRecording();
+          }
+        }, 500);
+      } else {
+        setStatus('idle');
+      }
+
+    } catch (err) {
+      console.error('❌ Error en ciclo de voz:', err);
+      
+      if (err.name === 'AbortError') {
+        const timeoutError = new Error('Timeout: La solicitud tardó más de 60 segundos');
+        setError(timeoutError);
+        onError?.(timeoutError);
+      } else {
+        setError(err);
+        onError?.(err);
+      }
+      
+      setStatus('idle');
+    } finally {
+      clearTimeout(timeoutId);
+      setIsSending(false);
+      abortControllerRef.current = null;
+    }
+  }, [accessToken, sessionId, workspaceId, mode, onResponse, onError, startRecording]);
+
+  /**
+   * Reproducir audio
+   */
+  const playAudio = useCallback((audioBlob) => {
+    return new Promise((resolve, reject) => {
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audioPlayerRef.current = audio;
+
+      audio.onended = () => {
+        console.log('✅ Audio reproducido completamente');
+        URL.revokeObjectURL(audioUrl);
+        setStatus('idle');
+        resolve();
+      };
+
+      audio.onerror = (err) => {
+        console.error('❌ Error al reproducir audio:', err);
+        URL.revokeObjectURL(audioUrl);
+        setStatus('idle');
+        reject(err);
+      };
+
+      setStatus('speaking');
+      audio.play().catch(reject);
+    });
+  }, []);
+
+  /**
+   * Detener audio
+   */
+  const stopAudio = useCallback(() => {
+    if (audioPlayerRef.current) {
+      console.log('🛑 Deteniendo audio...');
+      audioPlayerRef.current.pause();
+      audioPlayerRef.current.currentTime = 0;
+      audioPlayerRef.current = null;
+    }
+  }, []);
+
+  /**
+   * Cambiar modo
+   */
   const setVoiceMode = useCallback((newMode) => {
     console.log(`🔄 Cambiando modo: ${mode} → ${newMode}`);
     
     // Detener todo al cambiar de modo
-    stt.stopListening();
-    tts.cancel();
+    stopRecording();
+    stopAudio();
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
     setStatus('idle');
     setMode(newMode);
     
-    // Si cambia a modo voz con handsFree, iniciar escucha
-    if (newMode === 'voice' && handsFreeRef.current) {
-      setTimeout(() => startListening(), 300);
+    // Si cambia a modo voz con handsFree, iniciar grabación
+    if (newMode === 'voice' && handsFreeRef.current && !isSending) {
+      setTimeout(() => startRecording(), 500);
     }
-  }, [mode, stt, tts]);
+  }, [mode, stopRecording, stopAudio, isSending, startRecording]);
 
-  // Iniciar escucha
-  const startListening = useCallback(() => {
-    if (!stt.isSupported) {
-      console.error('❌ Reconocimiento de voz no soportado');
-      return;
-    }
-
-    if (tts.isSpeaking) {
-      console.warn('⚠️ AL-E está hablando, esperando...');
-      return;
-    }
-
-    if (isProcessingRef.current) {
-      console.warn('⚠️ Procesando mensaje, esperando...');
-      return;
-    }
-
-    console.log('🎤 Iniciando escucha...');
-    stt.resetTranscript();
-    stt.startListening();
-  }, [stt, tts.isSpeaking]);
-
-  // Detener escucha
-  const stopListening = useCallback(() => {
-    console.log('🛑 Deteniendo escucha...');
-    stt.stopListening();
-  }, [stt]);
-
-  // Enviar mensaje por voz
-  const sendVoiceMessage = useCallback(async (text) => {
-    if (!text || text.trim() === '') {
-      console.warn('⚠️ Texto vacío, no se envía');
-      return;
-    }
-
-    console.log(`📤 Enviando mensaje por voz: "${text}"`);
-    
-    setStatus('processing');
-    isProcessingRef.current = true;
-
-    try {
-      const meta = {
-        inputMode: 'voice',
-        localeHint: language,
-        handsFree: handsFreeRef.current
-      };
-
-      const response = await onMessage?.(text, meta);
-      
-      if (response) {
-        setLastResponse(response);
-        
-        // Leer respuesta con TTS
-        console.log('🔊 Leyendo respuesta de AL-E...');
-        tts.speak(response, {
-          onEnd: () => {
-            console.log('✅ Respuesta leída completamente');
-          },
-          onError: (error) => {
-            console.error('❌ Error al leer respuesta:', error);
-            setStatus('idle');
-          }
-        });
-      } else {
-        setStatus('idle');
-      }
-    } catch (error) {
-      console.error('❌ Error al enviar mensaje:', error);
-      setStatus('idle');
-    } finally {
-      isProcessingRef.current = false;
-    }
-  }, [onMessage, language, tts]);
-
-  // Cuando termine de escuchar, enviar automáticamente
-  useEffect(() => {
-    if (mode === 'voice' && !stt.isListening && stt.transcript && !isProcessingRef.current) {
-      const finalText = stt.transcript.trim();
-      
-      if (finalText) {
-        console.log(`✅ Transcripción final: "${finalText}"`);
-        sendVoiceMessage(finalText);
-      }
-    }
-  }, [stt.isListening, stt.transcript, mode, sendVoiceMessage]);
-
-  // Detener todo (TTS + STT)
+  /**
+   * Detener todo (grabación + audio)
+   */
   const stopAll = useCallback(() => {
     console.log('🛑 Deteniendo todo...');
-    stt.stopListening();
-    tts.cancel();
-    isProcessingRef.current = false;
+    stopRecording();
+    stopAudio();
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
     setStatus('idle');
-  }, [stt, tts]);
-
-  // Leer texto (para modo texto con TTS opcional)
-  const speakText = useCallback((text) => {
-    if (!text) return;
-    
-    console.log(`🔊 Leyendo texto: "${text.substring(0, 50)}..."`);
-    tts.speak(text);
-  }, [tts]);
+    setIsSending(false);
+  }, [stopRecording, stopAudio]);
 
   return {
     // Estado
     mode,
     status,
-    lastResponse,
-    
-    // STT
-    isListening: stt.isListening,
-    transcript: stt.transcript,
-    interimTranscript: stt.interimTranscript,
-    sttError: stt.error,
-    sttSupported: stt.isSupported,
-    
-    // TTS
-    isSpeaking: tts.isSpeaking,
-    isPaused: tts.isPaused,
-    ttsError: tts.error,
-    ttsSupported: tts.isSupported,
+    isSending,
+    error,
+    transcript,
     
     // Acciones
     setMode: setVoiceMode,
-    startListening,
-    stopListening,
+    startRecording,
+    stopRecording,
     stopAll,
-    speakText,
-    pauseSpeech: tts.pause,
-    resumeSpeech: tts.resume,
-    cancelSpeech: tts.cancel
+    
+    // Info
+    isRecording: status === 'recording',
+    isProcessing: status === 'processing',
+    isSpeaking: status === 'speaking',
+    isIdle: status === 'idle'
   };
 }
