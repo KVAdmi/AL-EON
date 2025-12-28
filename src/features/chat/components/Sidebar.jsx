@@ -3,7 +3,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { 
   Plus, MessageSquare, Trash2, Edit3, Check, X, Search,
   LogOut, User, Settings, ChevronDown, ChevronRight,
-  Folder, FolderPlus, Calendar, Sparkles, Zap, Users, MoreVertical, Share2
+  Folder, FolderPlus, Calendar, Sparkles, Zap, Users, MoreVertical, Share2, FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils';
@@ -12,6 +12,7 @@ import Logo from '@/components/Logo';
 import ThemeToggle from '@/components/ThemeToggle';
 import { ProjectModal } from '@/features/projects/components/ProjectModal';
 import ShareProjectModal from '@/components/ShareProjectModal';
+import { ProjectDocumentsModal } from '@/features/projects/components/ProjectDocumentsModal';
 import { createProject, getProjects, deleteProject } from '@/services/projectsService';
 import { useToast } from '@/ui/use-toast';
 
@@ -32,7 +33,9 @@ function Sidebar({
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showDocumentsModal, setShowDocumentsModal] = useState(false);
   const [projectToShare, setProjectToShare] = useState(null);
+  const [projectForDocs, setProjectForDocs] = useState(null);
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [expandedSections, setExpandedSections] = useState({
@@ -238,6 +241,10 @@ function Sidebar({
                     setProjectToShare(project);
                     setShowShareModal(true);
                   }}
+                  onManageDocuments={() => {
+                    setProjectForDocs(project);
+                    setShowDocumentsModal(true);
+                  }}
                 />
               ))}
             </div>
@@ -253,6 +260,15 @@ function Sidebar({
           setProjectToShare(null);
         }}
         project={projectToShare}
+      />
+
+      <ProjectDocumentsModal
+        isOpen={showDocumentsModal}
+        onClose={() => {
+          setShowDocumentsModal(false);
+          setProjectForDocs(null);
+        }}
+        project={projectForDocs}
       />
 
       {/* Lista de conversaciones agrupadas (sin proyecto) */}
@@ -637,7 +653,7 @@ function MenuButton({ icon, label, onClick, danger = false }) {
 }
 
 // Componente para mostrar un proyecto con sus conversaciones
-function ProjectItem({ project, conversations, currentConversationId, onSelectConversation, onUpdateConversation, onDeleteConversation, onNewChatInProject, onDeleteProject, onShareProject }) {
+function ProjectItem({ project, conversations, currentConversationId, onSelectConversation, onUpdateConversation, onDeleteConversation, onNewChatInProject, onDeleteProject, onShareProject, onManageDocuments }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
 
@@ -669,6 +685,15 @@ function ProjectItem({ project, conversations, currentConversationId, onSelectCo
             title="Nuevo chat en este proyecto"
           >
             <Plus size={14} />
+          </button>
+          
+          <button
+            onClick={onManageDocuments}
+            className="p-1.5 rounded-xl hover:bg-[var(--color-bg-tertiary)] transition-all"
+            style={{ color: 'var(--color-text-tertiary)' }}
+            title="Documentos del proyecto"
+          >
+            <FileText size={14} />
           </button>
           
           <button
