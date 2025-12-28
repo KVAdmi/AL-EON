@@ -80,7 +80,7 @@ export default function OAuthCallbackPage() {
         code,
         userId: user.id,
         integrationType: integration_type, // ✅ Cambiar nombre del campo
-        redirect_uri: `${window.location.origin}/integrations/oauth-callback`
+        redirect_uri: 'https://al-eon.com/integrations/oauth-callback' // ✅ SIEMPRE la misma que se usó en el inicio
       };
 
       console.log('[OAuthCallback] 📤 Enviando al backend:', {
