@@ -94,8 +94,8 @@ export async function sendToAleCore({ accessToken, message, sessionId, workspace
 
   // Agregar archivos si existen
   if (files && files.length > 0) {
-    payloadData.files = files;
-    console.log('📎 Archivos adjuntos:', files.length);
+    payloadData.attachments = files; // ✅ Backend espera "attachments"
+    console.log('📎 Archivos adjuntos:', files.length, files);
   }
 
   console.log('📤 PAYLOAD (v2):', JSON.stringify(payloadData, null, 2));
