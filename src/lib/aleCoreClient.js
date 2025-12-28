@@ -60,9 +60,10 @@ export async function sendToAleCore({ accessToken, message, sessionId, workspace
     throw new Error("❌ Missing VITE_ALE_CORE_BASE");
   }
 
-  const url = `${BASE_URL}/api/ai/chat`;
+  // ✅ USAR ENDPOINT /api/ai/chat/v2 - Recupera historial automáticamente desde BD
+  const url = `${BASE_URL}/api/ai/chat/v2`;
   
-  console.log("✅ ALE CORE URL =>", url);
+  console.log("✅ ALE CORE URL (v2) =>", url);
 
   if (!accessToken) {
     throw new Error("❌ Missing accessToken");
@@ -72,11 +73,13 @@ export async function sendToAleCore({ accessToken, message, sessionId, workspace
     throw new Error("❌ Message is required");
   }
 
-  // ✅ P0: PAYLOAD LIMPIO - SOLO mensaje actual
+  // ✅ PAYLOAD PARA /api/ai/chat/v2 - Solo enviar mensaje actual
   const payloadData = {
-    message: message.trim(),
+    message: message.trim(),  // ← String simple, no array
     sessionId: sessionId || undefined,
     workspaceId: workspaceId || 'core',
+    userId: accessToken, // Token para identificar usuario
+    mode: 'universal',
     meta: meta || {
       platform: "AL-EON",
       version: "1.0.0",
@@ -91,7 +94,7 @@ export async function sendToAleCore({ accessToken, message, sessionId, workspace
     console.log('📎 Archivos adjuntos:', files.length);
   }
 
-  console.log('📤 PAYLOAD:', JSON.stringify(payloadData, null, 2));
+  console.log('📤 PAYLOAD (v2):', JSON.stringify(payloadData, null, 2));
 
   const fetchOptions = {
     method: "POST",
