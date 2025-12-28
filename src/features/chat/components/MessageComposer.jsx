@@ -75,6 +75,30 @@ function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sess
     }
   };
 
+  const handlePaste = (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    const files = [];
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          files.push(file);
+        }
+      }
+    }
+
+    if (files.length > 0) {
+      console.log('📋 IMAGES PASTED:', files);
+      setAttachments(prev => [...prev, ...files]);
+      toast({
+        title: "Imágenes pegadas",
+        description: `${files.length} imagen(es) agregadas`
+      });
+    }
+  };
+
   const removeAttachment = (index) => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
@@ -163,6 +187,7 @@ function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sess
             value={message}
             onChange={handleTextareaChange}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             placeholder={disabled ? "Nueva conversación..." : isUploading ? "Procesando..." : "Escribe tu mensaje..."}
             disabled={isLoading || isUploading || disabled}
             rows={1}
