@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from '@/lib/supabase';
 
 /**
  * Obtiene todos los miembros de un proyecto

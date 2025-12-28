@@ -13,6 +13,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { ProjectModal } from '@/features/projects/components/ProjectModal';
 import ShareProjectModal from '@/components/ShareProjectModal';
 import { ProjectDocumentsModal } from '@/features/projects/components/ProjectDocumentsModal';
+import NotificationBell from '@/components/NotificationBell';
 import { createProject, getProjects, deleteProject } from '@/services/projectsService';
 import { useToast } from '@/ui/use-toast';
 
@@ -369,8 +370,16 @@ function Sidebar({
         )}
       </div>
 
-      {/* User Info */}
-      {currentUser && <UserInfo currentUser={currentUser} onLogout={onLogout} navigate={navigate} />}
+      {/* Notifications + User Info */}
+      <div className="border-t" style={{ borderColor: 'var(--color-border)' }}>
+        {/* Notification Bell */}
+        <div className="p-2 flex justify-end">
+          <NotificationBell />
+        </div>
+        
+        {/* User Info */}
+        {currentUser && <UserInfo currentUser={currentUser} onLogout={onLogout} navigate={navigate} />}
+      </div>
     </div>
     </>
   );
@@ -549,7 +558,7 @@ function UserInfo({ currentUser, onLogout, navigate }) {
   const [showMenu, setShowMenu] = useState(false);
 
   return (
-    <div className="p-2 border-t" style={{ borderColor: 'var(--color-border)' }}>
+    <div className="p-2">
       <div className="relative">
         <button
           onClick={() => setShowMenu(!showMenu)}
