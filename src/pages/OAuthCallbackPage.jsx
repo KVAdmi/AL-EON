@@ -59,6 +59,14 @@ export default function OAuthCallbackPage() {
         throw new Error('Usuario no autorizado');
       }
 
+      // 🔥 VALIDACIÓN: Asegurar que tenemos userId
+      if (!user.id) {
+        console.error('[OAuthCallback] ❌ user.id is NULL:', { user, user_id });
+        throw new Error('No se pudo obtener el ID del usuario. Intenta cerrar sesión y volver a iniciar.');
+      }
+
+      console.log('[OAuthCallback] ✅ Enviando userId:', user.id);
+
       // 2️⃣ Enviar code al backend para que intercambie tokens
       setMessage('Conectando con AL-E Core...');
 
@@ -68,17 +76,25 @@ export default function OAuthCallbackPage() {
         throw new Error('Backend URL no configurada');
       }
 
+      const payload = {
+        code,
+        userId: user.id,
+        integration_type,
+        redirect_uri: `${window.location.origin}/integrations/oauth-callback`
+      };
+
+      console.log('[OAuthCallback] 📤 Enviando al backend:', {
+        url: `${BACKEND_URL}/api/auth/google/callback`,
+        payload
+      });
+
       const response = await fetch(`${BACKEND_URL}/api/auth/google/callback`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}` // JWT de Supabase
         },
-        body: JSON.stringify({
-          code,
-          integration_type,
-          redirect_uri: `${window.location.origin}/integrations/oauth-callback`
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
