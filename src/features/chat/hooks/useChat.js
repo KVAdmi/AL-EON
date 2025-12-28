@@ -2,12 +2,27 @@ import { useState, useRef, useEffect } from 'react';
 import { sendToAleCore, extractReply } from '@/lib/aleCoreClient';
 import { generateId } from '@/lib/utils';
 import { uploadFiles } from '@/lib/fileUpload';
+import { supabase } from '@/lib/supabase';
 
 export function useChat({ currentConversation, addMessage, updateConversation, accessToken, userId }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false); // ✅ NUEVO: estado de upload
   const [error, setError] = useState(null);
+  const [userEmail, setUserEmail] = useState(null);
+  const [userDisplayName, setUserDisplayName] = useState(null);
   const abortControllerRef = useRef(null); // ✅ Para cancelar requests
+
+  // ✅ Obtener info del usuario al montar
+  useEffect(() => {
+    const loadUserInfo = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserEmail(user.email);
+        setUserDisplayName(user.user_metadata?.display_name || user.email?.split('@')[0]);
+      }
+    };
+    loadUserInfo();
+  }, []);
 
   // ✅ SOLUCIÓN 2: Limpiar requests al desmontar componente
   useEffect(() => {
@@ -90,6 +105,8 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
         message: content.trim(), // ✅ SOLO mensaje actual
         sessionId: finalSessionId,
         workspaceId,
+        userEmail, // ✅ COLABORACIÓN: Email del usuario que escribe
+        userDisplayName, // ✅ COLABORACIÓN: Nombre para mostrar
         meta: {
           platform: "AL-EON",
           version: "1.0.0",

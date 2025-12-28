@@ -48,12 +48,14 @@ async function fetchWithRetry(url, options, retries = 1) {
  * @param {string} params.message - Mensaje actual del usuario (SOLO UNO, SIN HISTORIAL)
  * @param {string} params.sessionId - ID de la sesión (opcional, null para crear nueva)
  * @param {string} params.workspaceId - ID del workspace (opcional, default: 'core')
+ * @param {string} params.userEmail - Email del usuario que escribe (para colaboración)
+ * @param {string} params.userDisplayName - Nombre del usuario que escribe
  * @param {Object} params.meta - Metadata (platform, version, source, timestamp)
  * @param {Array} params.files - Archivos adjuntos (opcional)
  * @param {AbortSignal} params.signal - Señal para cancelar request (opcional)
  * @returns {Promise<Object>} Respuesta de AL-E Core con session_id
  */
-export async function sendToAleCore({ accessToken, message, sessionId, workspaceId, meta, files, signal }) {
+export async function sendToAleCore({ accessToken, message, sessionId, workspaceId, userEmail, userDisplayName, meta, files, signal }) {
   const BASE_URL = import.meta.env.VITE_ALE_CORE_BASE || import.meta.env.VITE_ALE_CORE_URL?.replace('/api/ai/chat', '');
   
   if (!BASE_URL) {
@@ -79,6 +81,8 @@ export async function sendToAleCore({ accessToken, message, sessionId, workspace
     sessionId: sessionId || undefined,
     workspaceId: workspaceId || 'core',
     userId: accessToken, // Token para identificar usuario
+    userEmail: userEmail || undefined, // ✅ COLABORACIÓN
+    userDisplayName: userDisplayName || undefined, // ✅ COLABORACIÓN
     mode: 'universal',
     meta: meta || {
       platform: "AL-EON",

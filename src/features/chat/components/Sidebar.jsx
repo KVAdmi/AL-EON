@@ -3,7 +3,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { 
   Plus, MessageSquare, Trash2, Edit3, Check, X, Search,
   LogOut, User, Settings, ChevronDown, ChevronRight,
-  Folder, FolderPlus, Calendar, Sparkles, Zap, Users, MoreVertical
+  Folder, FolderPlus, Calendar, Sparkles, Zap, Users, MoreVertical, Share2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils';
@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
 import ThemeToggle from '@/components/ThemeToggle';
 import { ProjectModal } from '@/features/projects/components/ProjectModal';
+import ShareProjectModal from '@/components/ShareProjectModal';
 import { createProject, getProjects, deleteProject } from '@/services/projectsService';
 import { useToast } from '@/ui/use-toast';
 
@@ -30,6 +31,8 @@ function Sidebar({
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [projectToShare, setProjectToShare] = useState(null);
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [expandedSections, setExpandedSections] = useState({
@@ -231,12 +234,26 @@ function Sidebar({
                   onDeleteConversation={onDeleteConversation}
                   onNewChatInProject={() => handleNewChatInProject(project.id)}
                   onDeleteProject={() => handleDeleteProject(project.id)}
+                  onShareProject={() => {
+                    setProjectToShare(project);
+                    setShowShareModal(true);
+                  }}
                 />
               ))}
             </div>
           )}
         </div>
       )}
+
+      {/* Modales */}
+      <ShareProjectModal
+        isOpen={showShareModal}
+        onClose={() => {
+          setShowShareModal(false);
+          setProjectToShare(null);
+        }}
+        project={projectToShare}
+      />
 
       {/* Lista de conversaciones agrupadas (sin proyecto) */}
       <div 
@@ -620,7 +637,7 @@ function MenuButton({ icon, label, onClick, danger = false }) {
 }
 
 // Componente para mostrar un proyecto con sus conversaciones
-function ProjectItem({ project, conversations, currentConversationId, onSelectConversation, onUpdateConversation, onDeleteConversation, onNewChatInProject, onDeleteProject }) {
+function ProjectItem({ project, conversations, currentConversationId, onSelectConversation, onUpdateConversation, onDeleteConversation, onNewChatInProject, onDeleteProject, onShareProject }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
 
@@ -652,6 +669,15 @@ function ProjectItem({ project, conversations, currentConversationId, onSelectCo
             title="Nuevo chat en este proyecto"
           >
             <Plus size={14} />
+          </button>
+          
+          <button
+            onClick={onShareProject}
+            className="p-1.5 rounded-xl hover:bg-[var(--color-bg-tertiary)] transition-all"
+            style={{ color: 'var(--color-text-tertiary)' }}
+            title="Compartir proyecto"
+          >
+            <Share2 size={14} />
           </button>
           
           <div className="relative">
