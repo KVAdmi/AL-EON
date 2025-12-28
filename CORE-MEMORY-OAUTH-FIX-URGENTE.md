@@ -272,7 +272,7 @@ app.post('/api/ai/chat', async (req, res) => {
       return res.status(400).json({ error: 'message y sessionId son requeridos' });
     }
     
-    // 1. Buscar o crear sesión en ae_sessions
+    // 1. 🔥 CRÍTICO: Buscar o crear sesión en ae_sessions
     let { data: session, error: sessionError } = await supabase
       .from('ae_sessions')
       .select('*')
@@ -281,6 +281,8 @@ app.post('/api/ai/chat', async (req, res) => {
     
     if (sessionError && sessionError.code === 'PGRST116') {
       // No existe, crear nueva
+      console.log('📝 Creando nueva sesión:', sessionId);
+      
       const { data: newSession, error: createError } = await supabase
         .from('ae_sessions')
         .insert({
@@ -290,13 +292,26 @@ app.post('/api/ai/chat', async (req, res) => {
           assistant_id: 'AL-E',
           title: message.substring(0, 50), // Primeros 50 chars como título
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          total_messages: 0,
+          total_tokens: 0,
+          estimated_cost: 0
         })
         .select()
         .single();
       
-      if (createError) throw createError;
+      if (createError) {
+        console.error('❌ Error creando sesión:', createError);
+        throw new Error(`Failed to create session: ${createError.message}`);
+      }
+      
       session = newSession;
+      console.log('✅ Sesión creada:', session.id);
+    } else if (sessionError) {
+      console.error('❌ Error buscando sesión:', sessionError);
+      throw new Error(`Failed to fetch session: ${sessionError.message}`);
+    } else {
+      console.log('✅ Sesión existente encontrada:', session.id);
     }
     
     // 2. 🔥 CRÍTICO: Recuperar historial de mensajes previos
