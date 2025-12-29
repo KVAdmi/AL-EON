@@ -882,54 +882,10 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
           </p>
         </div>
 
-        {/* Botón: Mis Integraciones (Gmail, Calendar, Meet) */}
-        <button 
-          onClick={() => {
-            console.log('🔗 Click en Mis Integraciones - navegando a /settings/integrations');
-            window.location.href = '/settings/integrations';
-          }}
-          className="w-full p-6 rounded-2xl border cursor-pointer hover:shadow-lg transition-all group text-left" 
-          style={{ 
-            backgroundColor: 'var(--color-bg-tertiary)', 
-            borderColor: 'var(--color-accent)',
-            borderWidth: '2px'
-          }}
-        >
-          <div className="flex items-center justify-between pointer-events-none">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-blue-500 text-white text-2xl">
-                🔗
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg mb-1" style={{ color: 'var(--color-text-primary)' }}>
-                  Mis Integraciones
-                </h3>
-                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                  Conecta tu Gmail, Google Calendar y Google Meet
-                </p>
-                <div className="flex gap-2 mt-2">
-                  <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
-                    Gmail
-                  </span>
-                  <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
-                    Calendar
-                  </span>
-                  <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
-                    Meet
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="text-2xl group-hover:translate-x-1 transition-transform">
-              →
-            </div>
-          </div>
-        </button>
-
         {/* Integraciones de Desarrollador (solo ROOT) */}
         {profile?.role === 'ROOT' && (
           <>
-            <div className="mt-8 pt-8 border-t" style={{ borderColor: 'var(--color-border)' }}>
+            <div className="pt-4">
               <div className="flex items-center gap-2 mb-4">
                 <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-full text-xs font-semibold">
                   👑 SOLO ROOT
