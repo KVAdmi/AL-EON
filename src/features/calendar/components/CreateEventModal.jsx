@@ -1,24 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createEvent } from '@/services/calendarService';
 import { scheduleNotification } from '@/services/notificationsService';
 import { useToast } from '@/ui/use-toast';
 import { X, Calendar, Clock, MapPin, Users, Bell, Loader2 } from 'lucide-react';
 
+const STORAGE_KEY = 'ale_calendar_event_draft';
+
 export default function CreateEventModal({ userId, initialDate, onClose, onEventCreated }) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
-  const [formData, setFormData] = useState({
-    title: '',
-    startDate: initialDate ? initialDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-    startTime: '09:00',
-    endDate: initialDate ? initialDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-    endTime: '10:00',
-    description: '',
-    location: '',
-    attendees: '',
-    reminder: null, // null | '15' | '60' | '1440'
-  });
+  // Recuperar draft de localStorage
+  const getInitialFormData = () => {
+    try {
+      const draft = localStorage.getItem(STORAGE_KEY);
+      if (draft) {
+        const parsed = JSON.parse(draft);
+        // Actualizar fechas si se proporcionó initialDate
+        if (initialDate) {
+          return {
+            ...parsed,
+            startDate: initialDate.toISOString().split('T')[0],
+            endDate: initialDate.toISOString().split('T')[0],
+          };
+        }
+        return parsed;
+      }
+    } catch (error) {
+      console.error('Error recuperando draft:', error);
+    }
+    
+    return {
+      title: '',
+      startDate: initialDate ? initialDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      startTime: '09:00',
+      endDate: initialDate ? initialDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      endTime: '10:00',
+      description: '',
+      location: '',
+      attendees: '',
+      reminder: null, // null | '15' | '60' | '1440'
+    };
+  };
+
+  const [formData, setFormData] = useState(getInitialFormData);
+
+  // Guardar draft automáticamente
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+    } catch (error) {
+      console.error('Error guardando draft:', error);
+    }
+  }, [formData]);
 
   function handleChange(field, value) {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -88,6 +122,13 @@ export default function CreateEventModal({ userId, initialDate, onClose, onEvent
           ? `"${formData.title}" se creó con recordatorio`
           : `"${formData.title}" se creó correctamente`,
       });
+
+      // Limpiar draft después de éxito
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (error) {
+        console.error('Error limpiando draft:', error);
+      }
 
       onEventCreated();
     } catch (error) {

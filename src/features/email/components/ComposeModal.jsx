@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { sendEmail } from '@/services/emailService';
 import { useToast } from '@/ui/use-toast';
 import { X, Send, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+
+const STORAGE_KEY = 'ale_email_compose_draft';
 
 export default function ComposeModal({ accounts, defaultAccountId, onClose }) {
   const { toast } = useToast();
@@ -9,14 +11,44 @@ export default function ComposeModal({ accounts, defaultAccountId, onClose }) {
   const [sendStatus, setSendStatus] = useState(null); // null | 'sending' | 'sent' | 'failed'
   const [messageId, setMessageId] = useState(null);
 
-  const [formData, setFormData] = useState({
-    accountId: defaultAccountId || accounts[0]?.id || '',
-    to: '',
-    subject: '',
-    body: '',
-    cc: '',
-    bcc: '',
-  });
+  // Recuperar draft de localStorage
+  const getInitialFormData = () => {
+    try {
+      const draft = localStorage.getItem(STORAGE_KEY);
+      if (draft) {
+        const parsed = JSON.parse(draft);
+        // Usar cuenta por defecto si existe
+        return {
+          ...parsed,
+          accountId: defaultAccountId || parsed.accountId || accounts[0]?.id || '',
+        };
+      }
+    } catch (error) {
+      console.error('Error recuperando draft:', error);
+    }
+    
+    return {
+      accountId: defaultAccountId || accounts[0]?.id || '',
+      to: '',
+      subject: '',
+      body: '',
+      cc: '',
+      bcc: '',
+    };
+  };
+
+  const [formData, setFormData] = useState(getInitialFormData);
+
+  // Guardar draft automáticamente (solo si hay contenido)
+  useEffect(() => {
+    if (formData.to || formData.subject || formData.body) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+      } catch (error) {
+        console.error('Error guardando draft:', error);
+      }
+    }
+  }, [formData]);
 
   function handleChange(field, value) {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -59,6 +91,13 @@ export default function ComposeModal({ accounts, defaultAccountId, onClose }) {
           ? `ID: ${result.provider_message_id}`
           : 'El email se envió correctamente',
       });
+
+      // Limpiar draft después de envío exitoso
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (error) {
+        console.error('Error limpiando draft:', error);
+      }
 
       // Cerrar después de 2 segundos
       setTimeout(() => {

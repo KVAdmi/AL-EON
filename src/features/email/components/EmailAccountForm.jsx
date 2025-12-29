@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createEmailAccount, updateEmailAccount, testEmailConnection } from '@/services/emailService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/ui/use-toast';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+
+const STORAGE_KEY = 'ale_email_form_draft';
 
 export default function EmailAccountForm({ account = null, onSave, onCancel }) {
   const { user } = useAuth();
@@ -11,25 +13,75 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
 
-  const [formData, setFormData] = useState({
-    fromName: account?.fromName || '',
-    fromEmail: account?.fromEmail || '',
-    smtp: {
-      host: account?.smtp?.host || '',
-      port: account?.smtp?.port || 587,
-      secure: account?.smtp?.secure || false,
-      user: account?.smtp?.user || '',
-      password: account?.smtp?.password || '',
-    },
-    imap: {
-      enabled: account?.imap?.enabled || false,
-      host: account?.imap?.host || '',
-      port: account?.imap?.port || 993,
-      secure: account?.imap?.secure || true,
-      user: account?.imap?.user || '',
-      password: account?.imap?.password || '',
-    },
-  });
+  // Intentar recuperar draft de localStorage si NO estamos editando
+  const getInitialFormData = () => {
+    if (account) {
+      // Si estamos editando, usar datos de la cuenta
+      return {
+        fromName: account?.fromName || '',
+        fromEmail: account?.fromEmail || '',
+        smtp: {
+          host: account?.smtp?.host || '',
+          port: account?.smtp?.port || 587,
+          secure: account?.smtp?.secure || false,
+          user: account?.smtp?.user || '',
+          password: account?.smtp?.password || '',
+        },
+        imap: {
+          enabled: account?.imap?.enabled || false,
+          host: account?.imap?.host || '',
+          port: account?.imap?.port || 993,
+          secure: account?.imap?.secure || true,
+          user: account?.imap?.user || '',
+          password: account?.imap?.password || '',
+        },
+      };
+    }
+
+    // Si es nuevo, intentar recuperar draft
+    try {
+      const draft = localStorage.getItem(STORAGE_KEY);
+      if (draft) {
+        return JSON.parse(draft);
+      }
+    } catch (error) {
+      console.error('Error recuperando draft:', error);
+    }
+
+    // Default vacío
+    return {
+      fromName: '',
+      fromEmail: '',
+      smtp: {
+        host: '',
+        port: 587,
+        secure: false,
+        user: '',
+        password: '',
+      },
+      imap: {
+        enabled: false,
+        host: '',
+        port: 993,
+        secure: true,
+        user: '',
+        password: '',
+      },
+    };
+  };
+
+  const [formData, setFormData] = useState(getInitialFormData);
+
+  // Guardar draft automáticamente cuando cambian los datos (solo si NO estamos editando)
+  useEffect(() => {
+    if (!account) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+      } catch (error) {
+        console.error('Error guardando draft:', error);
+      }
+    }
+  }, [formData, account]);
 
   function handleChange(section, field, value) {
     if (section) {
@@ -52,14 +104,43 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
   async function handleSubmit(e) {
     e.preventDefault();
     
-    if (!user) return;
+    if (!user) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Usuario no autenticado',
+      });
+      return;
+    }
+
+    // Validación: fromName es OBLIGATORIO
+    if (!formData.fromName || !formData.fromName.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Campos requeridos',
+        description: 'El nombre del remitente es obligatorio',
+      });
+      return;
+    }
 
     try {
       setLoading(true);
       
       const payload = {
-        userId: user.id,
-        ...formData,
+        ownerUserId: user.id,  // ✅ Backend requiere "ownerUserId" no "userId"
+        fromName: formData.fromName.trim(),
+        fromEmail: formData.fromEmail,
+        smtpHost: formData.smtp.host,
+        smtpPort: parseInt(formData.smtp.port),
+        smtpSecure: formData.smtp.secure,
+        smtpUser: formData.smtp.user,
+        smtpPass: formData.smtp.password,
+        imapEnabled: formData.imap.enabled,
+        imapHost: formData.imap.host,
+        imapPort: parseInt(formData.imap.port),
+        imapSecure: formData.imap.secure,
+        imapUser: formData.imap.user,
+        imapPass: formData.imap.password,
         ...(account?.id && { accountId: account.id }),
       };
 
@@ -75,6 +156,12 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
           title: 'Cuenta creada',
           description: 'La cuenta de email se creó correctamente',
         });
+        // Limpiar draft después de crear exitosamente
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+        } catch (error) {
+          console.error('Error limpiando draft:', error);
+        }
       }
 
       onSave();

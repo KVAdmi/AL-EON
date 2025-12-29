@@ -1,15 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { connectBot } from '@/services/telegramService';
 import { useToast } from '@/ui/use-toast';
 import { Send, Loader2, AlertCircle } from 'lucide-react';
 
+const STORAGE_KEY = 'ale_telegram_bot_draft';
+
 export default function ConnectBotForm({ userId, onSuccess, onCancel }) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    botUsername: '',
-    botToken: '',
-  });
+  
+  // Recuperar draft de localStorage
+  const getInitialFormData = () => {
+    try {
+      const draft = localStorage.getItem(STORAGE_KEY);
+      if (draft) {
+        return JSON.parse(draft);
+      }
+    } catch (error) {
+      console.error('Error recuperando draft:', error);
+    }
+    return {
+      botUsername: '',
+      botToken: '',
+    };
+  };
+
+  const [formData, setFormData] = useState(getInitialFormData);
+
+  // Guardar draft automáticamente
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+    } catch (error) {
+      console.error('Error guardando draft:', error);
+    }
+  }, [formData]);
 
   function handleChange(field, value) {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -42,6 +67,13 @@ export default function ConnectBotForm({ userId, onSuccess, onCancel }) {
         title: 'Bot conectado',
         description: `@${formData.botUsername} se conectó correctamente`,
       });
+
+      // Limpiar draft después de éxito
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (error) {
+        console.error('Error limpiando draft:', error);
+      }
 
       onSuccess();
     } catch (error) {
