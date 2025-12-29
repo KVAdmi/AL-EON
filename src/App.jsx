@@ -16,9 +16,12 @@ import PlatformsPage from '@/pages/PlatformsPage';
 import HistoryPage from '@/pages/HistoryPage';
 import PrivacyPolicyPage from '@/pages/PrivacyPolicyPage';
 import TermsOfServicePage from '@/pages/TermsOfServicePage';
-import TestIntegrationsPage from '@/pages/TestIntegrationsPage';
 import UserIntegrationsPage from '@/pages/UserIntegrationsPage';
-import OAuthCallbackPage from '@/pages/OAuthCallbackPage';
+import EmailSettingsPage from '@/pages/EmailSettingsPage';
+import EmailPage from '@/pages/EmailPage';
+import CalendarPage from '@/pages/CalendarPage';
+import TelegramSettingsPage from '@/pages/TelegramSettingsPage';
+import TelegramPage from '@/pages/TelegramPage';
 
 // ✅ GLOBAL: AbortController para cancelar requests pendientes
 let globalAbortController = null;
@@ -256,10 +259,42 @@ function App() {
             } 
           />
           <Route 
-            path="/integrations/oauth-callback" 
+            path="/settings/email" 
             element={
               <ProtectedRoute>
-                <OAuthCallbackPage />
+                <EmailSettingsPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/settings/telegram" 
+            element={
+              <ProtectedRoute>
+                <TelegramSettingsPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/mail" 
+            element={
+              <ProtectedRoute>
+                <EmailPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/calendar" 
+            element={
+              <ProtectedRoute>
+                <CalendarPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/telegram" 
+            element={
+              <ProtectedRoute>
+                <TelegramPage />
               </ProtectedRoute>
             } 
           />
@@ -276,14 +311,6 @@ function App() {
             element={
               <ProtectedRoute>
                 <IntegrationsPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/integrations/test" 
-            element={
-              <ProtectedRoute>
-                <TestIntegrationsPage />
               </ProtectedRoute>
             } 
           />

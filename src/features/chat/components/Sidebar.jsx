@@ -3,7 +3,8 @@ import React, { useRef, useEffect, useState } from 'react';
 import { 
   Plus, MessageSquare, Trash2, Edit3, Check, X, Search,
   LogOut, User, Settings, ChevronDown, ChevronRight,
-  Folder, FolderPlus, Calendar, Sparkles, Zap, Users, MoreVertical, Share2, FileText
+  Folder, FolderPlus, Calendar, Sparkles, Zap, Users, MoreVertical, Share2, FileText,
+  Mail, MessageCircle, Bell
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils';
@@ -208,6 +209,51 @@ function Sidebar({
               border: '1px solid var(--color-border)'
             }}
           />
+        </div>
+
+        {/* Navegación rápida: Email, Calendar, Telegram */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => navigate('/mail')}
+            className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl transition-all"
+            style={{
+              backgroundColor: 'var(--color-bg-secondary)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-primary)'
+            }}
+            title="Email"
+          >
+            <Mail size={16} />
+            <span className="text-sm font-medium">Email</span>
+          </button>
+          
+          <button
+            onClick={() => navigate('/calendar')}
+            className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl transition-all"
+            style={{
+              backgroundColor: 'var(--color-bg-secondary)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-primary)'
+            }}
+            title="Agenda"
+          >
+            <Calendar size={16} />
+            <span className="text-sm font-medium">Agenda</span>
+          </button>
+          
+          <button
+            onClick={() => navigate('/telegram')}
+            className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl transition-all"
+            style={{
+              backgroundColor: 'var(--color-bg-secondary)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-primary)'
+            }}
+            title="Telegram"
+          >
+            <MessageCircle size={16} />
+            <span className="text-sm font-medium">Telegram</span>
+          </button>
         </div>
       </div>
 

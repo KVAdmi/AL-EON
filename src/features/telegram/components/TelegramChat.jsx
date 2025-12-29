@@ -1,0 +1,181 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { getMessages, sendMessage } from '@/services/telegramService';
+import { useToast } from '@/ui/use-toast';
+import { Send, Loader2, RefreshCw } from 'lucide-react';
+import TelegramMessage from './TelegramMessage';
+
+export default function TelegramChat({ chatId, chatName, botId, onMessageSent }) {
+  const { toast } = useToast();
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [newMessage, setNewMessage] = useState('');
+  const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    loadMessages();
+  }, [chatId]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  async function loadMessages() {
+    if (!chatId) return;
+
+    try {
+      setLoading(true);
+      const data = await getMessages(chatId);
+      setMessages(data || []);
+    } catch (error) {
+      console.error('Error cargando mensajes:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'No se pudieron cargar los mensajes',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSend(e) {
+    e.preventDefault();
+
+    if (!newMessage.trim() || !chatId) return;
+
+    try {
+      setSending(true);
+
+      await sendMessage({
+        chatId,
+        text: newMessage,
+      });
+
+      setNewMessage('');
+      await loadMessages();
+      onMessageSent();
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'No se pudo enviar el mensaje',
+      });
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function scrollToBottom() {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div 
+        className="px-6 py-4 border-b flex items-center justify-between"
+        style={{ borderColor: 'var(--color-border)' }}
+      >
+        <div className="flex items-center gap-3">
+          <div 
+            className="w-10 h-10 rounded-full flex items-center justify-center font-medium"
+            style={{
+              backgroundColor: 'var(--color-bg-tertiary)',
+              color: 'var(--color-text-primary)',
+            }}
+          >
+            {chatName?.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <h3 
+              className="font-semibold"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              {chatName}
+            </h3>
+            <p 
+              className="text-xs"
+              style={{ color: 'var(--color-text-tertiary)' }}
+            >
+              {messages.length} mensaje(s)
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={loadMessages}
+          disabled={loading}
+          className="p-2 rounded-lg transition-all hover:opacity-80"
+          style={{ color: 'var(--color-text-secondary)' }}
+        >
+          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+        </button>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        {loading ? (
+          <div 
+            className="h-full flex items-center justify-center"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Cargando mensajes...
+          </div>
+        ) : messages.length > 0 ? (
+          <>
+            {messages.map((message) => (
+              <TelegramMessage key={message.id} message={message} />
+            ))}
+            <div ref={messagesEndRef} />
+          </>
+        ) : (
+          <div 
+            className="h-full flex items-center justify-center"
+            style={{ color: 'var(--color-text-tertiary)' }}
+          >
+            No hay mensajes
+          </div>
+        )}
+      </div>
+
+      {/* Input */}
+      <form 
+        onSubmit={handleSend}
+        className="px-6 py-4 border-t"
+        style={{ borderColor: 'var(--color-border)' }}
+      >
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Escribe un mensaje..."
+            disabled={sending}
+            className="flex-1 px-4 py-2.5 rounded-lg border"
+            style={{
+              backgroundColor: 'var(--color-bg-primary)',
+              borderColor: 'var(--color-border)',
+              color: 'var(--color-text-primary)',
+            }}
+          />
+          <button
+            type="submit"
+            disabled={sending || !newMessage.trim()}
+            className="px-6 py-2.5 rounded-lg font-medium transition-all hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
+            style={{
+              backgroundColor: 'var(--color-accent)',
+              color: '#FFFFFF',
+            }}
+          >
+            {sending ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Send size={18} />
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}

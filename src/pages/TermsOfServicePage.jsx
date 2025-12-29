@@ -55,7 +55,7 @@ export default function TermsOfServicePage() {
               <ul className="list-disc pl-6 space-y-2">
                 <li>Respuestas inteligentes a consultas</li>
                 <li>Análisis y procesamiento de documentos</li>
-                <li>Integraciones opcionales con Gmail, Google Calendar y otras herramientas</li>
+                <li>Integraciones opcionales con Email (SMTP/IMAP), Telegram y otras herramientas</li>
                 <li>Gestión de proyectos y conversaciones</li>
               </ul>
             </div>
@@ -128,7 +128,7 @@ export default function TermsOfServicePage() {
             </h2>
             <div style={{ color: 'var(--color-text-secondary)', lineHeight: '1.8' }}>
               <p className="mb-3">
-                Si conectas servicios de terceros (Gmail, Google Calendar, etc.):
+                Si conectas servicios de terceros (Email, Telegram, etc.):
               </p>
               <ul className="list-disc pl-6 space-y-2">
                 <li>Otorgas a AL-EON los permisos necesarios para operar en tu nombre</li>

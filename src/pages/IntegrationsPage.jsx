@@ -15,22 +15,6 @@ export default function IntegrationsPage() {
 
   const availableIntegrations = [
     {
-      type: 'gmail',
-      name: 'Gmail',
-      icon: '📧',
-      description: 'Envío de emails, notificaciones, recordatorios',
-      fields: ['client_id', 'client_secret', 'refresh_token'],
-      capabilities: ['email', 'notifications']
-    },
-    {
-      type: 'google_calendar',
-      name: 'Google Calendar',
-      icon: '📅',
-      description: 'Agendar eventos, recordatorios, reuniones',
-      fields: ['client_id', 'client_secret', 'refresh_token'],
-      capabilities: ['calendar', 'scheduling', 'reminders']
-    },
-    {
       type: 'netlify',
       name: 'Netlify',
       icon: 'NET',
@@ -66,13 +50,6 @@ export default function IntegrationsPage() {
       fields: ['access_key_id', 'secret_access_key', 'region'],
     },
     {
-      type: 'google',
-      name: 'Google APIs',
-      icon: 'GO',
-      description: 'Play Store, Maps, Drive',
-      fields: ['credentials_json'],
-    },
-    {
       type: 'apple',
       name: 'Apple',
       icon: 'APP',
@@ -82,7 +59,7 @@ export default function IntegrationsPage() {
     {
       type: 'slack',
       name: 'Slack',
-      icon: '💬',
+      icon: 'SL',
       description: 'Notificaciones a canales, alertas',
       fields: ['webhook_url', 'bot_token'],
       capabilities: ['notifications', 'messaging']
@@ -93,24 +70,7 @@ export default function IntegrationsPage() {
     const integration = availableIntegrations.find((i) => i.type === integrationType);
     if (!integration) return;
 
-    // Instrucciones especiales para Gmail y Google Calendar
-    if (integrationType === 'gmail' || integrationType === 'google_calendar') {
-      const instructions = `
-📧 Para conectar ${integration.name}:
-
-1. Ve a: https://console.cloud.google.com/
-2. Crea/selecciona un proyecto
-3. Habilita la API: ${integrationType === 'gmail' ? 'Gmail API' : 'Google Calendar API'}
-4. Crea credenciales OAuth 2.0
-5. Copia: Client ID, Client Secret
-6. Genera un Refresh Token usando OAuth Playground
-
-¿Quieres continuar?`;
-      
-      if (!confirm(instructions)) return;
-    }
-
-    // Mostrar prompt simple (después harás modal)
+    // Mostrar prompt simple
     const config = {};
     for (const field of integration.fields) {
       const value = prompt(`${integration.name} - ${field}:`);
@@ -123,9 +83,9 @@ export default function IntegrationsPage() {
     setConnecting(null);
 
     if (result.success) {
-      alert(`✅ ${integration.name} conectado`);
+      alert(`Listo: ${integration.name} conectado`);
     } else {
-      alert(`❌ Error: ${result.error}`);
+      alert(`Error: ${result.error}`);
     }
   }
 
@@ -137,29 +97,18 @@ export default function IntegrationsPage() {
 
     const result = await disconnectIntegration(integrationType);
     if (result.success) {
-      alert(`✅ ${integration.name} desconectado`);
+      alert(`Listo: ${integration.name} desconectado`);
     } else {
-      alert(`❌ Error: ${result.error}`);
+      alert(`Error: ${result.error}`);
     }
   }
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-2">🔧 Integraciones</h1>
+      <h1 className="text-3xl font-bold mb-2">Integraciones</h1>
       <p className="text-gray-600 dark:text-gray-400 mb-6">
-        👑 Solo tú (ROOT) puedes ver y gestionar estas integraciones
+        Solo ROOT puede ver y gestionar estas integraciones
       </p>
-
-      {/* Botón de pruebas */}
-      <div className="mb-6">
-        <Link
-          to="/integrations/test"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-        >
-          <TestTube size={18} />
-          Probar Gmail y Calendar
-        </Link>
-      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {availableIntegrations.map((integration) => {
@@ -201,7 +150,7 @@ export default function IntegrationsPage() {
                       : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                   }`}
                 >
-                  {connected ? '🟢 Conectado' : '⚪ Desconectado'}
+                  {connected ? 'Conectado' : 'Desconectado'}
                 </div>
               </div>
 
@@ -212,10 +161,10 @@ export default function IntegrationsPage() {
                     variant="destructive"
                     className="w-full"
                   >
-                    🔌 Desconectar
+                    Desconectar
                   </Button>
                   <Button variant="outline" className="w-full">
-                    ⚙️ Configurar
+                    Configurar
                   </Button>
                 </div>
               ) : (
@@ -224,7 +173,7 @@ export default function IntegrationsPage() {
                   disabled={isConnecting}
                   className="w-full"
                 >
-                  {isConnecting ? 'Conectando...' : '🔗 Conectar'}
+                  {isConnecting ? 'Conectando...' : 'Conectar'}
                 </Button>
               )}
             </div>
@@ -232,13 +181,13 @@ export default function IntegrationsPage() {
         })}
       </div>
 
-      {/* Estado de Infraestructura (placeholder) */}
+      {/* Estado de Infraestructura */}
       <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">📊 Estado de Infraestructura</h2>
+        <h2 className="text-xl font-semibold mb-4">Estado de Infraestructura</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded">
             <p className="text-sm text-gray-600 dark:text-gray-400">AL-E CORE</p>
-            <p className="text-2xl font-bold">🟢 Online</p>
+            <p className="text-2xl font-bold">Online</p>
           </div>
           <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded">
             <p className="text-sm text-gray-600 dark:text-gray-400">Latencia</p>
@@ -246,7 +195,7 @@ export default function IntegrationsPage() {
           </div>
           <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded">
             <p className="text-sm text-gray-600 dark:text-gray-400">Último ping</p>
-            <p className="text-2xl font-bold">✅ Ahora</p>
+            <p className="text-2xl font-bold">Ahora</p>
           </div>
         </div>
       </div>
