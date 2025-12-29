@@ -18,13 +18,20 @@ export default function ConnectBotForm({ userId, onSuccess, onCancel }) {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    if (!userId) return;
+    if (!userId) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo obtener el ID de usuario',
+      });
+      return;
+    }
 
     try {
       setLoading(true);
 
       const payload = {
-        userId,
+        ownerUserId: userId, // ✅ Backend espera ownerUserId
         botUsername: formData.botUsername.replace('@', ''), // Remover @ si lo pusieron
         botToken: formData.botToken,
       };

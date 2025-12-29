@@ -42,9 +42,10 @@ export default function UserIntegrationsPage() {
 
   return (
     <div
-      className="min-h-screen overflow-y-auto"
-      style={{ backgroundColor: 'var(--color-bg-primary)', paddingBottom: '120px' }}
+      className="h-screen overflow-y-auto"
+      style={{ backgroundColor: 'var(--color-bg-primary)' }}
     >
+      <div style={{ paddingBottom: '120px' }}>
       {/* Header */}
       <div
         style={{
@@ -158,6 +159,7 @@ export default function UserIntegrationsPage() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

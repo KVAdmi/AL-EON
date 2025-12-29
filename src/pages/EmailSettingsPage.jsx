@@ -59,10 +59,10 @@ export default function EmailSettingsPage() {
 
   return (
     <div 
-      className="min-h-screen p-6"
+      className="h-screen overflow-y-auto"
       style={{ backgroundColor: 'var(--color-bg-primary)' }}
     >
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-5xl mx-auto p-6 pb-32">
         {/* Header */}
         <div className="mb-8">
           <h1 
