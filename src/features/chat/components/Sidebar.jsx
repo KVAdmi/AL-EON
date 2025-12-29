@@ -4,7 +4,7 @@ import {
   Plus, MessageSquare, Trash2, Edit3, Check, X, Search,
   LogOut, User, Settings, ChevronDown, ChevronRight,
   Folder, FolderPlus, Calendar, Sparkles, Zap, Users, MoreVertical, Share2, FileText,
-  Mail, MessageCircle, Bell
+  Mail, Send, Bell
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils';
@@ -212,10 +212,10 @@ function Sidebar({
         </div>
 
         {/* Navegación rápida: Email, Calendar, Telegram */}
-        <div className="flex gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <button
             onClick={() => navigate('/mail')}
-            className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl transition-all"
+            className="flex items-center justify-center py-3 px-2 rounded-xl transition-all hover:opacity-80"
             style={{
               backgroundColor: 'var(--color-bg-secondary)',
               border: '1px solid var(--color-border)',
@@ -223,13 +223,12 @@ function Sidebar({
             }}
             title="Email"
           >
-            <Mail size={16} />
-            <span className="text-sm font-medium">Email</span>
+            <Mail size={22} />
           </button>
           
           <button
             onClick={() => navigate('/calendar')}
-            className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl transition-all"
+            className="flex items-center justify-center py-3 px-2 rounded-xl transition-all hover:opacity-80"
             style={{
               backgroundColor: 'var(--color-bg-secondary)',
               border: '1px solid var(--color-border)',
@@ -237,13 +236,12 @@ function Sidebar({
             }}
             title="Agenda"
           >
-            <Calendar size={16} />
-            <span className="text-sm font-medium">Agenda</span>
+            <Calendar size={22} />
           </button>
           
           <button
             onClick={() => navigate('/telegram')}
-            className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl transition-all"
+            className="flex items-center justify-center py-3 px-2 rounded-xl transition-all hover:opacity-80"
             style={{
               backgroundColor: 'var(--color-bg-secondary)',
               border: '1px solid var(--color-border)',
@@ -251,8 +249,7 @@ function Sidebar({
             }}
             title="Telegram"
           >
-            <MessageCircle size={16} />
-            <span className="text-sm font-medium">Telegram</span>
+            <Send size={22} />
           </button>
         </div>
       </div>
