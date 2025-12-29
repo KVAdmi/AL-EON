@@ -67,11 +67,11 @@ export default function CalendarView({ events, selectedDate, onDateChange, onEve
   return (
     <div className="h-full flex flex-col">
       {/* Controls */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={handleToday}
-            className="px-4 py-2 rounded-lg font-medium border transition-all hover:opacity-80"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium border transition-all hover:opacity-80 text-sm"
             style={{
               borderColor: 'var(--color-border)',
               color: 'var(--color-text-primary)',
@@ -80,31 +80,31 @@ export default function CalendarView({ events, selectedDate, onDateChange, onEve
             Hoy
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <button
               onClick={handlePrevWeek}
-              className="p-2 rounded-lg transition-all hover:opacity-80"
+              className="p-1.5 sm:p-2 rounded-lg transition-all hover:opacity-80"
               style={{
                 backgroundColor: 'var(--color-bg-secondary)',
                 color: 'var(--color-text-primary)',
               }}
             >
-              <ChevronLeft size={20} />
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
             <button
               onClick={handleNextWeek}
-              className="p-2 rounded-lg transition-all hover:opacity-80"
+              className="p-1.5 sm:p-2 rounded-lg transition-all hover:opacity-80"
               style={{
                 backgroundColor: 'var(--color-bg-secondary)',
                 color: 'var(--color-text-primary)',
               }}
             >
-              <ChevronRight size={20} />
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
 
           <h3 
-            className="text-lg font-semibold capitalize"
+            className="text-sm sm:text-lg font-semibold capitalize"
             style={{ color: 'var(--color-text-primary)' }}
           >
             {formatWeekRange()}
@@ -113,12 +113,12 @@ export default function CalendarView({ events, selectedDate, onDateChange, onEve
 
         {/* View toggle */}
         <div 
-          className="flex rounded-lg border overflow-hidden"
+          className="flex rounded-lg border overflow-hidden w-full sm:w-auto"
           style={{ borderColor: 'var(--color-border)' }}
         >
           <button
             onClick={() => setView('week')}
-            className={`px-4 py-2 text-sm font-medium transition-all ${
+            className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all ${
               view === 'week' ? 'font-semibold' : ''
             }`}
             style={{
@@ -130,7 +130,7 @@ export default function CalendarView({ events, selectedDate, onDateChange, onEve
           </button>
           <button
             onClick={() => setView('list')}
-            className={`px-4 py-2 text-sm font-medium transition-all border-l ${
+            className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all border-l ${
               view === 'list' ? 'font-semibold' : ''
             }`}
             style={{
@@ -146,7 +146,7 @@ export default function CalendarView({ events, selectedDate, onDateChange, onEve
 
       {/* Week Grid View */}
       {view === 'week' && (
-        <div className="flex-1 grid grid-cols-7 gap-2 overflow-hidden">
+        <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1 sm:gap-2 overflow-auto">
           {weekDays.map((day, index) => {
             const isToday = day.getTime() === today.getTime();
             const dayEvents = getEventsForDay(day);
@@ -154,7 +154,7 @@ export default function CalendarView({ events, selectedDate, onDateChange, onEve
             return (
               <div
                 key={index}
-                className="flex flex-col border rounded-xl overflow-hidden"
+                className="flex flex-col border rounded-lg sm:rounded-xl overflow-hidden min-h-[120px] sm:min-h-[150px]"
                 style={{
                   backgroundColor: 'var(--color-bg-secondary)',
                   borderColor: isToday ? 'var(--color-accent)' : 'var(--color-border)',
@@ -163,20 +163,20 @@ export default function CalendarView({ events, selectedDate, onDateChange, onEve
               >
                 {/* Day header */}
                 <div 
-                  className="p-3 text-center border-b"
+                  className="p-2 sm:p-3 text-center border-b"
                   style={{
                     backgroundColor: isToday ? 'var(--color-accent)' : 'var(--color-bg-primary)',
                     borderColor: 'var(--color-border)',
                   }}
                 >
                   <div 
-                    className="text-xs font-medium mb-1 uppercase"
+                    className="text-[10px] sm:text-xs font-medium mb-0.5 sm:mb-1 uppercase"
                     style={{ color: isToday ? '#FFFFFF' : 'var(--color-text-secondary)' }}
                   >
                     {day.toLocaleDateString('es-ES', { weekday: 'short' })}
                   </div>
                   <div 
-                    className="text-2xl font-bold"
+                    className="text-lg sm:text-2xl font-bold"
                     style={{ color: isToday ? '#FFFFFF' : 'var(--color-text-primary)' }}
                   >
                     {day.getDate()}
@@ -184,7 +184,7 @@ export default function CalendarView({ events, selectedDate, onDateChange, onEve
                 </div>
 
                 {/* Events */}
-                <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                <div className="flex-1 overflow-y-auto p-1 sm:p-2 space-y-1 sm:space-y-2">
                   {dayEvents.length > 0 ? (
                     dayEvents.map(event => (
                       <EventCard
@@ -196,7 +196,7 @@ export default function CalendarView({ events, selectedDate, onDateChange, onEve
                     ))
                   ) : (
                     <div 
-                      className="text-center py-4 text-xs"
+                      className="text-center py-2 sm:py-4 text-[10px] sm:text-xs"
                       style={{ color: 'var(--color-text-tertiary)' }}
                     >
                       Sin eventos

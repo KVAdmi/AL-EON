@@ -8,7 +8,7 @@ import CreateEventModal from '@/features/calendar/components/CreateEventModal';
 import { useToast } from '@/ui/use-toast';
 
 export default function CalendarPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
@@ -17,11 +17,16 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   useEffect(() => {
-    loadEvents();
+    if (user?.id) {
+      loadEvents();
+    }
   }, [user, selectedDate]);
 
   async function loadEvents() {
-    if (!user) return;
+    if (!user?.id) {
+      console.warn('[CalendarPage] No user ID available');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -39,6 +44,32 @@ export default function CalendarPage() {
     }
   }
 
+  if (authLoading) {
+    return (
+      <div 
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: 'var(--color-bg-primary)' }}
+      >
+        <div style={{ color: 'var(--color-text-secondary)' }}>
+          Cargando...
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div 
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: 'var(--color-bg-primary)' }}
+      >
+        <div style={{ color: 'var(--color-text-secondary)' }}>
+          Por favor inicia sesión
+        </div>
+      </div>
+    );
+  }
+
   function handleEventCreated() {
     loadEvents();
     setShowCreateModal(false);
@@ -51,19 +82,19 @@ export default function CalendarPage() {
   return (
     <>
       <div 
-        className="h-screen flex flex-col"
+        className="min-h-screen flex flex-col"
         style={{ backgroundColor: 'var(--color-bg-primary)' }}
       >
         {/* Header */}
         <div 
-          className="border-b px-6 py-4 flex items-center justify-between"
+          className="border-b px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 justify-between"
           style={{ borderColor: 'var(--color-border)' }}
         >
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
             {/* Botón Volver */}
             <button
               onClick={() => navigate(-1)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:opacity-80"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all hover:opacity-80 text-sm sm:text-base"
               style={{
                 backgroundColor: 'var(--color-bg-secondary)',
                 color: 'var(--color-text-primary)',
@@ -74,10 +105,10 @@ export default function CalendarPage() {
               <span className="font-medium">Volver</span>
             </button>
 
-            <div className="flex items-center gap-3">
-              <CalendarIcon size={24} style={{ color: 'var(--color-accent)' }} />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <CalendarIcon className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: 'var(--color-accent)' }} />
               <h1 
-                className="text-2xl font-bold"
+                className="text-xl sm:text-2xl font-bold"
                 style={{ color: 'var(--color-text-primary)' }}
               >
                 Agenda
@@ -87,22 +118,23 @@ export default function CalendarPage() {
           
           <button
             onClick={() => setShowCreateModal(true)}
-            className="py-2.5 px-5 rounded-xl font-medium transition-all hover:opacity-90 flex items-center gap-2"
+            className="py-2 sm:py-2.5 px-4 sm:px-5 rounded-xl font-medium transition-all hover:opacity-90 flex items-center gap-2 text-sm sm:text-base w-full sm:w-auto justify-center"
             style={{
               backgroundColor: 'var(--color-accent)',
               color: '#FFFFFF',
             }}
           >
-            <Plus size={18} />
-            Nuevo evento
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">Nuevo evento</span>
+            <span className="sm:hidden">Nuevo</span>
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden p-6">
+        <div className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
           {loading ? (
             <div 
-              className="h-full flex items-center justify-center"
+              className="h-full flex items-center justify-center text-sm sm:text-base"
               style={{ color: 'var(--color-text-secondary)' }}
             >
               Cargando agenda...

@@ -157,39 +157,39 @@ export default function EmailPage() {
   return (
     <>
       <div 
-        className="h-screen flex"
+        className="h-screen flex flex-col sm:flex-row"
         style={{ backgroundColor: 'var(--color-bg-primary)' }}
       >
         {/* Sidebar */}
         <div 
-          className="w-64 border-r flex flex-col"
+          className="w-full sm:w-64 border-r flex flex-col max-h-[40vh] sm:max-h-none"
           style={{ borderColor: 'var(--color-border)' }}
         >
           {/* Header */}
-          <div className="p-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
+          <div className="p-3 sm:p-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
             {/* Botón Volver */}
             <button
               onClick={() => navigate(-1)}
-              className="w-full mb-3 px-4 py-2 rounded-lg transition-all hover:opacity-80 flex items-center gap-2"
+              className="w-full mb-2 sm:mb-3 px-3 sm:px-4 py-2 rounded-lg transition-all hover:opacity-80 flex items-center gap-2 text-sm sm:text-base"
               style={{
                 backgroundColor: 'var(--color-bg-secondary)',
                 color: 'var(--color-text-primary)',
                 border: '1px solid var(--color-border)'
               }}
             >
-              <ArrowLeft size={18} />
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
               <span className="font-medium">Volver</span>
             </button>
 
             <button
               onClick={() => setShowCompose(true)}
-              className="w-full py-3 px-4 rounded-xl font-medium transition-all hover:opacity-90 flex items-center justify-center gap-2"
+              className="w-full py-2 sm:py-3 px-3 sm:px-4 rounded-xl font-medium transition-all hover:opacity-90 flex items-center justify-center gap-2 text-sm sm:text-base"
               style={{
                 backgroundColor: 'var(--color-accent)',
                 color: '#FFFFFF',
               }}
             >
-              <Send size={18} />
+              <Send className="w-4 h-4 sm:w-5 sm:h-5" />
               Redactar
             </button>
           </div>

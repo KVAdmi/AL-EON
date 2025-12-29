@@ -17,7 +17,7 @@ const BACKEND_URL = 'https://api.al-eon.com';
 export async function getEvents(userId, options = {}) {
   try {
     const params = new URLSearchParams({
-      userId,
+      ownerUserId: userId, // Backend espera ownerUserId
       ...(options.startDate && { startDate: options.startDate.toISOString() }),
       ...(options.endDate && { endDate: options.endDate.toISOString() }),
     });
@@ -57,13 +57,20 @@ export async function getEvents(userId, options = {}) {
  */
 export async function createEvent(eventData) {
   try {
+    // Transformar userId a ownerUserId para el backend
+    const payload = {
+      ...eventData,
+      ownerUserId: eventData.userId || eventData.ownerUserId,
+    };
+    delete payload.userId; // Remover userId si existe
+    
     const response = await fetch(`${BACKEND_URL}/api/calendar/events`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       credentials: 'include',
-      body: JSON.stringify(eventData),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
