@@ -13,6 +13,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Mail, Calendar, Video, CheckCircle, XCircle, Loader, ExternalLink } from 'lucide-react';
+import IntegrationsStatusPanel from '../components/IntegrationsStatusPanel';
 
 export default function UserIntegrationsPage() {
   const { user } = useAuth();
@@ -256,10 +257,15 @@ export default function UserIntegrationsPage() {
 
         {/* Connected Accounts Summary */}
         {userIntegrations.length > 0 && (
-          <div className="mt-8 rounded-lg shadow-sm p-6" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
-            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>
-              📋 Cuentas Conectadas
-            </h3>
+          <div className="mt-8 space-y-6">
+            {/* Status Panel */}
+            <IntegrationsStatusPanel />
+
+            {/* Cuentas Conectadas */}
+            <div className="rounded-lg shadow-sm p-6" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+              <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>
+                📋 Cuentas Conectadas
+              </h3>
             <div className="space-y-3">
               {userIntegrations.map((int) => {
                 const integration = availableIntegrations.find(i => i.type === int.integration_type);
@@ -292,6 +298,7 @@ export default function UserIntegrationsPage() {
               })}
             </div>
           </div>
+        </div>
         )}
       </div>
     </div>
