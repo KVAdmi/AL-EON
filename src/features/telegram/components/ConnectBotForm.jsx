@@ -57,9 +57,14 @@ export default function ConnectBotForm({ userId, onSuccess, onCancel }) {
 
       const payload = {
         ownerUserId: userId, // ✅ Backend espera ownerUserId
-        botUsername: formData.botUsername.replace('@', ''), // Remover @ si lo pusieron
-        botToken: formData.botToken,
+        botUsername: formData.botUsername.replace(/^@/, ''), // Remover @ del inicio
+        botToken: formData.botToken.trim(),
       };
+
+      console.log('[ConnectBotForm] Enviando payload:', { 
+        ...payload, 
+        botToken: '***HIDDEN***' 
+      });
 
       const result = await connectBot(payload);
 

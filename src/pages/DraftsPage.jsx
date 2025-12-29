@@ -139,10 +139,10 @@ export default function DraftsPage() {
       </div>
 
       {/* Draft Editor Modal */}
-      {showEditor && (
+      {showEditor && selectedAccount && (
         <DraftEditor
           draft={editingDraft}
-          accountId={selectedAccount?.account_id}
+          accountId={selectedAccount.account_id || selectedAccount.id}
           ownerUserId={user?.id}
           onClose={() => {
             setShowEditor(false);

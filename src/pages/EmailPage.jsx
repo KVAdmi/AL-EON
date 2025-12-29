@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { getEmailAccounts, getInbox, getFolders } from '@/services/emailService';
+import { getEmailAccounts, getInbox, getFolders, createFolder } from '@/services/emailService';
 import { Mail, Inbox as InboxIcon, Send, Archive, ArrowLeft, FileText } from 'lucide-react';
 import EmailInbox from '@/features/email/components/EmailInbox';
 import ComposeModal from '@/features/email/components/ComposeModal';
@@ -57,7 +57,7 @@ export default function EmailPage() {
 
     try {
       setLoadingFolders(true);
-      const data = await getFolders(selectedAccount.account_id, user.id);
+      const data = await getFolders(selectedAccount.account_id || selectedAccount.id, user.id);
       setFolders(data || []);
       
       // Seleccionar INBOX por defecto
@@ -70,6 +70,34 @@ export default function EmailPage() {
     } finally {
       setLoadingFolders(false);
     }
+  }
+
+  async function handleCreateFolder(folderName) {
+    if (!selectedAccount || !user) return;
+    
+    try {
+      await createFolder({
+        account_id: selectedAccount.account_id || selectedAccount.id,
+        owner_user_id: user.id,
+        folder_name: folderName,
+        is_system: false,
+      });
+      await loadFolders(); // Recargar lista
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async function handleRenameFolder(folderId, newName) {
+    // TODO: Implementar endpoint de rename en backend
+    console.log('Rename folder:', folderId, newName);
+    alert('Feature de renombrar carpetas estará disponible pronto');
+  }
+
+  async function handleDeleteFolder(folderId) {
+    // TODO: Implementar endpoint de delete en backend
+    console.log('Delete folder:', folderId);
+    alert('Feature de eliminar carpetas estará disponible pronto');
   }
 
   if (loading) {
@@ -189,6 +217,9 @@ export default function EmailPage() {
                 folders={folders}
                 selectedFolder={selectedFolder}
                 onSelectFolder={setSelectedFolder}
+                onCreateFolder={handleCreateFolder}
+                onRenameFolder={handleRenameFolder}
+                onDeleteFolder={handleDeleteFolder}
                 isLoading={loadingFolders}
               />
             </div>
