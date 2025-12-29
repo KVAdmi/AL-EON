@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { getEmailAccounts, getInbox } from '@/services/emailService';
-import { Mail, Inbox as InboxIcon, Send, Archive, ArrowLeft } from 'lucide-react';
+import { getEmailAccounts, getInbox, getFolders } from '@/services/emailService';
+import { Mail, Inbox as InboxIcon, Send, Archive, ArrowLeft, FileText } from 'lucide-react';
 import EmailInbox from '@/features/email/components/EmailInbox';
 import ComposeModal from '@/features/email/components/ComposeModal';
+import FoldersList from '@/components/email/FoldersList';
 import { useToast } from '@/ui/use-toast';
 import { Link } from 'react-router-dom';
 
@@ -14,13 +15,22 @@ export default function EmailPage() {
   const navigate = useNavigate();
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState(null);
+  const [folders, setFolders] = useState([]);
+  const [selectedFolder, setSelectedFolder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadingFolders, setLoadingFolders] = useState(false);
   const [showCompose, setShowCompose] = useState(false);
   const [activeView, setActiveView] = useState('inbox'); // inbox, sent, archive
 
   useEffect(() => {
     loadAccounts();
   }, [user]);
+
+  useEffect(() => {
+    if (selectedAccount && user) {
+      loadFolders();
+    }
+  }, [selectedAccount, user]);
 
   async function loadAccounts() {
     if (!user) return;
@@ -39,6 +49,26 @@ export default function EmailPage() {
       console.error('Error cargando cuentas:', error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadFolders() {
+    if (!selectedAccount || !user) return;
+
+    try {
+      setLoadingFolders(true);
+      const data = await getFolders(selectedAccount.account_id, user.id);
+      setFolders(data || []);
+      
+      // Seleccionar INBOX por defecto
+      const inbox = data?.find(f => f.folder_name === 'INBOX');
+      if (inbox) {
+        setSelectedFolder(inbox);
+      }
+    } catch (error) {
+      console.error('Error cargando folders:', error);
+    } finally {
+      setLoadingFolders(false);
     }
   }
 
@@ -137,48 +167,31 @@ export default function EmailPage() {
           </div>
 
           {/* Navigation */}
-          <div className="flex-1 overflow-y-auto p-2">
-            <button
-              onClick={() => setActiveView('inbox')}
-              className={`w-full px-4 py-2.5 rounded-lg mb-1 flex items-center gap-3 transition-all ${
-                activeView === 'inbox' ? 'font-medium' : ''
-              }`}
-              style={{
-                backgroundColor: activeView === 'inbox' ? 'var(--color-bg-secondary)' : 'transparent',
-                color: 'var(--color-text-primary)',
-              }}
-            >
-              <InboxIcon size={18} />
-              Bandeja de entrada
-            </button>
+          <div className="flex-1 overflow-y-auto">
+            {/* Borradores link */}
+            <div className="p-2 border-b" style={{ borderColor: 'var(--color-border)' }}>
+              <button
+                onClick={() => navigate('/drafts')}
+                className="w-full px-4 py-2.5 rounded-lg flex items-center gap-3 transition-all hover:opacity-80"
+                style={{
+                  backgroundColor: 'var(--color-bg-secondary)',
+                  color: 'var(--color-text-primary)',
+                }}
+              >
+                <FileText size={18} />
+                Borradores
+              </button>
+            </div>
 
-            <button
-              onClick={() => setActiveView('sent')}
-              className={`w-full px-4 py-2.5 rounded-lg mb-1 flex items-center gap-3 transition-all ${
-                activeView === 'sent' ? 'font-medium' : ''
-              }`}
-              style={{
-                backgroundColor: activeView === 'sent' ? 'var(--color-bg-secondary)' : 'transparent',
-                color: 'var(--color-text-primary)',
-              }}
-            >
-              <Send size={18} />
-              Enviados
-            </button>
-
-            <button
-              onClick={() => setActiveView('archive')}
-              className={`w-full px-4 py-2.5 rounded-lg mb-1 flex items-center gap-3 transition-all ${
-                activeView === 'archive' ? 'font-medium' : ''
-              }`}
-              style={{
-                backgroundColor: activeView === 'archive' ? 'var(--color-bg-secondary)' : 'transparent',
-                color: 'var(--color-text-primary)',
-              }}
-            >
-              <Archive size={18} />
-              Archivo
-            </button>
+            {/* Folders */}
+            <div className="p-2">
+              <FoldersList
+                folders={folders}
+                selectedFolder={selectedFolder}
+                onSelectFolder={setSelectedFolder}
+                isLoading={loadingFolders}
+              />
+            </div>
           </div>
 
           {/* Account selector */}

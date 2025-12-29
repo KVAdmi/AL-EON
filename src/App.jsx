@@ -19,6 +19,7 @@ import TermsOfServicePage from '@/pages/TermsOfServicePage';
 import UserIntegrationsPage from '@/pages/UserIntegrationsPage';
 import EmailSettingsPage from '@/pages/EmailSettingsPage';
 import EmailPage from '@/pages/EmailPage';
+import DraftsPage from '@/pages/DraftsPage';
 import CalendarPage from '@/pages/CalendarPage';
 import TelegramSettingsPage from '@/pages/TelegramSettingsPage';
 import TelegramPage from '@/pages/TelegramPage';
@@ -279,6 +280,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <EmailPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/drafts" 
+            element={
+              <ProtectedRoute>
+                <DraftsPage />
               </ProtectedRoute>
             } 
           />

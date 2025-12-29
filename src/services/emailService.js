@@ -7,6 +7,12 @@
 const BACKEND_URL = 'https://api.al-eon.com';
 
 /**
+ * =====================================================
+ * CUENTAS DE EMAIL
+ * =====================================================
+ */
+
+/**
  * Obtiene todas las cuentas de email del usuario
  * @param {string} userId - ID del usuario
  * @returns {Promise<Array>} Lista de cuentas de email
@@ -49,6 +55,286 @@ export async function getEmailAccounts(userId) {
     }
   } catch (error) {
     console.error('[EmailService] Error en getEmailAccounts:', error);
+    throw error;
+  }
+}
+
+/**
+ * =====================================================
+ * FOLDERS (CARPETAS)
+ * =====================================================
+ */
+
+/**
+ * Obtiene todas las carpetas de una cuenta
+ * @param {string} accountId - ID de la cuenta
+ * @param {string} userId - ID del usuario
+ * @returns {Promise<Array>} Lista de carpetas
+ */
+export async function getFolders(accountId, userId) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/mail/folders/${accountId}?ownerUserId=${userId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al obtener carpetas');
+    }
+
+    const data = await response.json();
+    return data.folders || [];
+  } catch (error) {
+    console.error('[EmailService] Error en getFolders:', error);
+    throw error;
+  }
+}
+
+/**
+ * Crea una carpeta personalizada
+ * @param {Object} folderData - Datos de la carpeta
+ * @returns {Promise<Object>} Carpeta creada
+ */
+export async function createFolder(folderData) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/mail/folders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(folderData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al crear carpeta');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[EmailService] Error en createFolder:', error);
+    throw error;
+  }
+}
+
+/**
+ * =====================================================
+ * DRAFTS (BORRADORES)
+ * =====================================================
+ */
+
+/**
+ * Obtiene los borradores del usuario
+ * @param {string} userId - ID del usuario
+ * @param {string} accountId - ID de la cuenta (opcional)
+ * @returns {Promise<Array>} Lista de borradores
+ */
+export async function getDrafts(userId, accountId = null) {
+  try {
+    const url = accountId 
+      ? `${BACKEND_URL}/api/mail/drafts?ownerUserId=${userId}&accountId=${accountId}`
+      : `${BACKEND_URL}/api/mail/drafts?ownerUserId=${userId}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al obtener borradores');
+    }
+
+    const data = await response.json();
+    return data.drafts || [];
+  } catch (error) {
+    console.error('[EmailService] Error en getDrafts:', error);
+    throw error;
+  }
+}
+
+/**
+ * Crea un borrador
+ * @param {Object} draftData - Datos del borrador
+ * @returns {Promise<Object>} Borrador creado
+ */
+export async function createDraft(draftData) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/mail/drafts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(draftData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al crear borrador');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[EmailService] Error en createDraft:', error);
+    throw error;
+  }
+}
+
+/**
+ * Actualiza un borrador
+ * @param {string} draftId - ID del borrador
+ * @param {Object} updates - Campos a actualizar
+ * @returns {Promise<Object>} Borrador actualizado
+ */
+export async function updateDraft(draftId, updates) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/mail/drafts/${draftId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(updates),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al actualizar borrador');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[EmailService] Error en updateDraft:', error);
+    throw error;
+  }
+}
+
+/**
+ * Elimina un borrador
+ * @param {string} draftId - ID del borrador
+ * @returns {Promise<Object>} Confirmación
+ */
+export async function deleteDraft(draftId) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/mail/drafts/${draftId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al eliminar borrador');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[EmailService] Error en deleteDraft:', error);
+    throw error;
+  }
+}
+
+/**
+ * Envía un borrador
+ * @param {string} draftId - ID del borrador
+ * @returns {Promise<Object>} Resultado del envío
+ */
+export async function sendDraft(draftId) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/mail/drafts/${draftId}/send`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al enviar borrador');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[EmailService] Error en sendDraft:', error);
+    throw error;
+  }
+}
+
+/**
+ * =====================================================
+ * ATTACHMENTS (ADJUNTOS)
+ * =====================================================
+ */
+
+/**
+ * Sube un archivo adjunto
+ * @param {File} file - Archivo a subir
+ * @param {string} ownerUserId - ID del usuario
+ * @param {string} draftId - ID del borrador (opcional)
+ * @param {string} messageId - ID del mensaje (opcional)
+ * @returns {Promise<Object>} Attachment creado
+ */
+export async function uploadAttachment(file, ownerUserId, draftId = null, messageId = null) {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('ownerUserId', ownerUserId);
+    if (draftId) formData.append('draftId', draftId);
+    if (messageId) formData.append('messageId', messageId);
+    
+    const response = await fetch(`${BACKEND_URL}/api/mail/attachments/upload`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al subir archivo');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[EmailService] Error en uploadAttachment:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene la URL de descarga de un adjunto
+ * @param {string} attachmentId - ID del attachment
+ * @returns {string} URL de descarga
+ */
+export function getAttachmentDownloadUrl(attachmentId) {
+  return `${BACKEND_URL}/api/mail/attachments/${attachmentId}/download`;
+}
+
+/**
+ * Elimina un attachment
+ * @param {string} attachmentId - ID del attachment
+ * @returns {Promise<Object>} Confirmación
+ */
+export async function deleteAttachment(attachmentId) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/mail/attachments/${attachmentId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al eliminar adjunto');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[EmailService] Error en deleteAttachment:', error);
     throw error;
   }
 }
