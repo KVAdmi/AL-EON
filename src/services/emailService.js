@@ -13,7 +13,9 @@ const BACKEND_URL = 'https://api.al-eon.com';
  */
 export async function getEmailAccounts(userId) {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/email/accounts?userId=${userId}`, {
+    console.log('[EmailService] Obteniendo cuentas para userId:', userId);
+    // Backend espera ownerUserId, no userId
+    const response = await fetch(`${BACKEND_URL}/api/email/accounts?ownerUserId=${userId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -21,12 +23,30 @@ export async function getEmailAccounts(userId) {
       credentials: 'include',
     });
 
+    console.log('[EmailService] Response status:', response.status);
+
     if (!response.ok) {
       const error = await response.json();
+      console.error('[EmailService] Error response:', error);
       throw new Error(error.message || 'Error al obtener cuentas de email');
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log('[EmailService] Cuentas obtenidas:', data);
+    
+    // Backend puede devolver array directo, {ok, accounts}, o {data}
+    if (Array.isArray(data)) {
+      return data;
+    } else if (data.accounts && Array.isArray(data.accounts)) {
+      return data.accounts;
+    } else if (data.data && Array.isArray(data.data)) {
+      return data.data;
+    } else if (data.ok && Array.isArray(data.data)) {
+      return data.data;
+    } else {
+      console.warn('[EmailService] Formato de respuesta inesperado, devolviendo array vacío:', data);
+      return [];
+    }
   } catch (error) {
     console.error('[EmailService] Error en getEmailAccounts:', error);
     throw error;
