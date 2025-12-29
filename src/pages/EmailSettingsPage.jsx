@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Mail } from 'lucide-react';
+import { Mail, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { getEmailAccounts } from '@/services/emailService';
 import EmailAccountForm from '@/features/email/components/EmailAccountForm';
 import EmailAccountsList from '@/features/email/components/EmailAccountsList';
@@ -9,6 +10,7 @@ import { useToast } from '@/ui/use-toast';
 export default function EmailSettingsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -63,6 +65,20 @@ export default function EmailSettingsPage() {
       style={{ backgroundColor: 'var(--color-bg-primary)' }}
     >
       <div className="max-w-5xl mx-auto p-6 pb-32">
+        {/* Botón Volver */}
+        <button
+          onClick={() => navigate('/integrations')}
+          className="flex items-center gap-2 mb-6 px-4 py-2 rounded-lg transition-all hover:opacity-80"
+          style={{
+            backgroundColor: 'var(--color-bg-secondary)',
+            color: 'var(--color-text-primary)',
+            border: '1px solid var(--color-border)'
+          }}
+        >
+          <ArrowLeft size={18} />
+          <span className="font-medium">Volver</span>
+        </button>
+
         {/* Header */}
         <div className="mb-8">
           <h1 

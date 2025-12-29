@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { getUserBots } from '@/services/telegramService';
 import ConnectBotForm from '@/features/telegram/components/ConnectBotForm';
 import { useToast } from '@/ui/use-toast';
 import { Link } from 'react-router-dom';
-import { Send, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { Send, CheckCircle2, XCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 
 export default function TelegramSettingsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [bots, setBots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showConnectForm, setShowConnectForm] = useState(false);
@@ -47,6 +49,20 @@ export default function TelegramSettingsPage() {
       style={{ backgroundColor: 'var(--color-bg-primary)' }}
     >
       <div className="max-w-4xl mx-auto p-6 pb-32">
+        {/* Botón Volver */}
+        <button
+          onClick={() => navigate('/integrations')}
+          className="flex items-center gap-2 mb-6 px-4 py-2 rounded-lg transition-all hover:opacity-80"
+          style={{
+            backgroundColor: 'var(--color-bg-secondary)',
+            color: 'var(--color-text-primary)',
+            border: '1px solid var(--color-border)'
+          }}
+        >
+          <ArrowLeft size={18} />
+          <span className="font-medium">Volver</span>
+        </button>
+
         {/* Header */}
         <div className="mb-8">
           <h1 

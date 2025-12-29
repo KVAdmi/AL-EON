@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { getEmailAccounts, getInbox } from '@/services/emailService';
-import { Mail, Inbox as InboxIcon, Send, Archive } from 'lucide-react';
+import { Mail, Inbox as InboxIcon, Send, Archive, ArrowLeft } from 'lucide-react';
 import EmailInbox from '@/features/email/components/EmailInbox';
 import ComposeModal from '@/features/email/components/ComposeModal';
 import { useToast } from '@/ui/use-toast';
@@ -10,6 +11,7 @@ import { Link } from 'react-router-dom';
 export default function EmailPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -107,6 +109,20 @@ export default function EmailPage() {
         >
           {/* Header */}
           <div className="p-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
+            {/* Botón Volver */}
+            <button
+              onClick={() => navigate('/')}
+              className="w-full mb-3 px-4 py-2 rounded-lg transition-all hover:opacity-80 flex items-center gap-2"
+              style={{
+                backgroundColor: 'var(--color-bg-secondary)',
+                color: 'var(--color-text-primary)',
+                border: '1px solid var(--color-border)'
+              }}
+            >
+              <ArrowLeft size={18} />
+              <span className="font-medium">Volver</span>
+            </button>
+
             <button
               onClick={() => setShowCompose(true)}
               className="w-full py-3 px-4 rounded-xl font-medium transition-all hover:opacity-90 flex items-center justify-center gap-2"

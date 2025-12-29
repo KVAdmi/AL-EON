@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { getChats, getUserBots } from '@/services/telegramService';
 import TelegramInbox from '@/features/telegram/components/TelegramInbox';
 import { useToast } from '@/ui/use-toast';
 import { Link } from 'react-router-dom';
-import { Send } from 'lucide-react';
+import { Send, ArrowLeft } from 'lucide-react';
 
 export default function TelegramPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [bots, setBots] = useState([]);
   const [chats, setChats] = useState([]);
   const [selectedBot, setSelectedBot] = useState(null);
@@ -127,53 +129,91 @@ export default function TelegramPage() {
       {/* Sidebar con lista de bots (si hay múltiples) */}
       {bots.length > 1 && (
         <div 
-          className="w-64 border-r p-4"
+          className="w-64 border-r flex flex-col"
           style={{ borderColor: 'var(--color-border)' }}
         >
-          <h3 
-            className="font-semibold mb-3"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            Bots conectados
-          </h3>
-          <div className="space-y-2">
-            {bots.filter(b => b.isConnected).map(bot => (
-              <button
-                key={bot.id}
-                onClick={() => setSelectedBot(bot)}
-                className={`w-full px-4 py-3 rounded-lg text-left transition-all ${
-                  selectedBot?.id === bot.id ? 'font-medium' : ''
-                }`}
-                style={{
-                  backgroundColor: selectedBot?.id === bot.id 
-                    ? 'var(--color-bg-secondary)' 
-                    : 'transparent',
-                  color: 'var(--color-text-primary)',
-                }}
-              >
-                @{bot.botUsername}
-              </button>
-            ))}
+          {/* Botón Volver */}
+          <div className="p-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
+            <button
+              onClick={() => navigate('/')}
+              className="w-full px-4 py-2 rounded-lg transition-all hover:opacity-80 flex items-center gap-2"
+              style={{
+                backgroundColor: 'var(--color-bg-secondary)',
+                color: 'var(--color-text-primary)',
+                border: '1px solid var(--color-border)'
+              }}
+            >
+              <ArrowLeft size={18} />
+              <span className="font-medium">Volver</span>
+            </button>
+          </div>
+
+          <div className="p-4 flex-1">
+            <h3 
+              className="font-semibold mb-3"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              Bots conectados
+            </h3>
+            <div className="space-y-2">
+              {bots.filter(b => b.isConnected).map(bot => (
+                <button
+                  key={bot.id}
+                  onClick={() => setSelectedBot(bot)}
+                  className={`w-full px-4 py-3 rounded-lg text-left transition-all ${
+                    selectedBot?.id === bot.id ? 'font-medium' : ''
+                  }`}
+                  style={{
+                    backgroundColor: selectedBot?.id === bot.id 
+                      ? 'var(--color-bg-secondary)' 
+                      : 'transparent',
+                    color: 'var(--color-text-primary)',
+                  }}
+                >
+                  @{bot.botUsername}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
       {/* Main content */}
-      <div className="flex-1">
-        {selectedBot ? (
-          <TelegramInbox
-            botId={selectedBot.id}
-            chats={chats}
-            onChatsUpdated={loadChats}
-          />
-        ) : (
-          <div 
-            className="h-full flex items-center justify-center"
-            style={{ color: 'var(--color-text-tertiary)' }}
-          >
-            Selecciona un bot
+      <div className="flex-1 flex flex-col">
+        {/* Botón Volver para cuando no hay sidebar (1 solo bot) */}
+        {bots.length === 1 && (
+          <div className="p-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
+            <button
+              onClick={() => navigate('/')}
+              className="px-4 py-2 rounded-lg transition-all hover:opacity-80 flex items-center gap-2"
+              style={{
+                backgroundColor: 'var(--color-bg-secondary)',
+                color: 'var(--color-text-primary)',
+                border: '1px solid var(--color-border)'
+              }}
+            >
+              <ArrowLeft size={18} />
+              <span className="font-medium">Volver</span>
+            </button>
           </div>
         )}
+
+        <div className="flex-1">
+          {selectedBot ? (
+            <TelegramInbox
+              botId={selectedBot.id}
+              chats={chats}
+              onChatsUpdated={loadChats}
+            />
+          ) : (
+            <div 
+              className="h-full flex items-center justify-center"
+              style={{ color: 'var(--color-text-tertiary)' }}
+            >
+              Selecciona un bot
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
