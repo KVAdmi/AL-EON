@@ -135,7 +135,7 @@ export default function TelegramPage() {
           {/* Botón Volver */}
           <div className="p-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate(-1)}
               className="w-full px-4 py-2 rounded-lg transition-all hover:opacity-80 flex items-center gap-2"
               style={{
                 backgroundColor: 'var(--color-bg-secondary)',
@@ -184,7 +184,7 @@ export default function TelegramPage() {
         {bots.length === 1 && (
           <div className="p-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate(-1)}
               className="px-4 py-2 rounded-lg transition-all hover:opacity-80 flex items-center gap-2"
               style={{
                 backgroundColor: 'var(--color-bg-secondary)',

@@ -62,7 +62,7 @@ export default function CalendarPage() {
           <div className="flex items-center gap-4">
             {/* Botón Volver */}
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate(-1)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:opacity-80"
               style={{
                 backgroundColor: 'var(--color-bg-secondary)',

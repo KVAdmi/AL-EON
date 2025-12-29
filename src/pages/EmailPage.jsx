@@ -111,7 +111,7 @@ export default function EmailPage() {
           <div className="p-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
             {/* Botón Volver */}
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate(-1)}
               className="w-full mb-3 px-4 py-2 rounded-lg transition-all hover:opacity-80 flex items-center gap-2"
               style={{
                 backgroundColor: 'var(--color-bg-secondary)',
