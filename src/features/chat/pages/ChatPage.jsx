@@ -141,7 +141,7 @@ function ChatPage() {
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
           isUploading={isUploading}
-          disabled={voiceMode.mode === 'voice'}
+          disabled={voiceMode?.mode === 'voice'}
         />
       </div>
     </div>

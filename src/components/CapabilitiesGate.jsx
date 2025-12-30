@@ -51,8 +51,18 @@ export function CapabilitiesGate({ capability, children, fallback = null }) {
  * USO:
  * const canUseVoice = useCapability('voice');
  * if (!canUseVoice) return null;
+ * 
+ * RETORNA:
+ * - true si capability está habilitada
+ * - false si capability está deshabilitada o aún no cargadas
  */
 export function useCapability(capability) {
-  const { hasCapability } = useCapabilities();
+  const { hasCapability, capabilities } = useCapabilities();
+  
+  // ⚡ Si capabilities no están cargadas aún, retornar false (no bloquear render)
+  if (!capabilities) {
+    return false;
+  }
+  
   return hasCapability(capability);
 }

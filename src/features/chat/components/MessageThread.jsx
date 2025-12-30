@@ -97,47 +97,52 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
         {/* Chips de control de voz - Responsive */}
         {voiceMode && (
           <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
-            {/* Estado actual */}
-            {voiceMode.status !== 'idle' && (
-              <div className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-full text-xs font-medium ${
-                voiceMode.status === 'listening' ? 'bg-green-900/30 text-green-400 border border-green-700' :
-                voiceMode.status === 'processing' ? 'bg-blue-900/30 text-blue-400 border border-blue-700' :
-                'bg-gray-700 text-gray-300 border border-gray-600'
-              }`}>
-                {voiceMode.status === 'listening' && <><Mic size={12} md:size={14} className="animate-pulse" /> <span className="hidden sm:inline">Escuchando</span></>}
-                {voiceMode.status === 'processing' && <><span className="hidden sm:inline">Procesando...</span><span className="sm:hidden">...</span></>}
-                {voiceMode.status === 'speaking' && <><Volume2 size={12} md:size={14} className="animate-pulse" /> <span className="hidden sm:inline">AL-E habla</span></>}
-              </div>
-            )}
+            {/* Voice controls - SOLO SI voiceMode existe */}
+            {voiceMode && (
+              <>
+                {/* Estado actual */}
+                {voiceMode.status !== 'idle' && (
+                  <div className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-full text-xs font-medium ${
+                    voiceMode.status === 'listening' ? 'bg-green-900/30 text-green-400 border border-green-700' :
+                    voiceMode.status === 'processing' ? 'bg-blue-900/30 text-blue-400 border border-blue-700' :
+                    'bg-gray-700 text-gray-300 border border-gray-600'
+                  }`}>
+                    {voiceMode.status === 'listening' && <><Mic size={12} md:size={14} className="animate-pulse" /> <span className="hidden sm:inline">Escuchando</span></>}
+                    {voiceMode.status === 'processing' && <><span className="hidden sm:inline">Procesando...</span><span className="sm:hidden">...</span></>}
+                    {voiceMode.status === 'speaking' && <><Volume2 size={12} md:size={14} className="animate-pulse" /> <span className="hidden sm:inline">AL-E habla</span></>}
+                  </div>
+                )}
 
-            {/* Selector de modo */}
-            <button
-              onClick={() => voiceMode.setMode(voiceMode.mode === 'text' ? 'voice' : 'text')}
-              className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                voiceMode.mode === 'voice'
-                  ? 'bg-gray-700 text-white border border-gray-600'
-                  : 'bg-transparent text-gray-400 hover:bg-gray-800 border border-gray-700'
-              }`}
-            >
-              {voiceMode.mode === 'voice' ? (
-                <><Waves size={12} md:size={14} /> <span className="hidden sm:inline">Voz</span></>
-              ) : (
-                <><MessageSquare size={12} md:size={14} /> <span className="hidden sm:inline">Texto</span></>
-              )}
-            </button>
+                {/* Selector de modo */}
+                <button
+                  onClick={() => voiceMode.setMode(voiceMode.mode === 'text' ? 'voice' : 'text')}
+                  className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    voiceMode.mode === 'voice'
+                      ? 'bg-gray-700 text-white border border-gray-600'
+                      : 'bg-transparent text-gray-400 hover:bg-gray-800 border border-gray-700'
+                  }`}
+                >
+                  {voiceMode.mode === 'voice' ? (
+                    <><Waves size={12} md:size={14} /> <span className="hidden sm:inline">Voz</span></>
+                  ) : (
+                    <><MessageSquare size={12} md:size={14} /> <span className="hidden sm:inline">Texto</span></>
+                  )}
+                </button>
 
-            {/* Botón micrófono en modo voz */}
-            {voiceMode.mode === 'voice' && (
-              <button
-                onClick={voiceMode.isListening ? voiceMode.stopAll : voiceMode.startListening}
-                className={`p-2 rounded-full transition-all ${
-                  voiceMode.isListening
-                    ? 'bg-red-600 text-white animate-pulse'
-                    : 'bg-gray-700 text-white hover:bg-gray-600 border border-gray-600'
-                }`}
-              >
-                <Mic size={14} md:size={16} />
-              </button>
+                {/* Botón micrófono en modo voz */}
+                {voiceMode.mode === 'voice' && (
+                  <button
+                    onClick={voiceMode.isListening ? voiceMode.stopAll : voiceMode.startListening}
+                    className={`p-2 rounded-full transition-all ${
+                      voiceMode.isListening
+                        ? 'bg-red-600 text-white animate-pulse'
+                        : 'bg-gray-700 text-white hover:bg-gray-600 border border-gray-600'
+                    }`}
+                  >
+                    <Mic size={14} md:size={16} />
+                  </button>
+                )}
+              </>
             )}
           </div>
         )}
