@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { UserProfileProvider } from '@/contexts/UserProfileContext';
+import { CapabilitiesProvider } from '@/contexts/CapabilitiesContext';
 import MainLayout from '@/components/MainLayout';
 import LandingPage from '@/pages/LandingPage';
 import ChatPage from '@/features/chat/pages/ChatPage';
@@ -372,11 +373,13 @@ function App() {
   );
 }
 
-// Wrapper con AuthProvider
+// Wrapper con Providers
 export default function AppWrapper() {
   return (
-    <AuthProvider>
-      <App />
-    </AuthProvider>
+    <CapabilitiesProvider>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </CapabilitiesProvider>
   );
 }

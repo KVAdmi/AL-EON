@@ -6,10 +6,14 @@ import { useConversations } from '@/features/chat/hooks/useConversations';
 import { useChat } from '@/features/chat/hooks/useChat';
 import { useVoiceMode } from '@/hooks/useVoiceMode';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCapability } from '@/components/CapabilitiesGate';
 
 function ChatPage() {
   const { user, userProfile, accessToken, logout } = useAuth();
   const [handsFree, setHandsFree] = useState(false);
+  
+  // 🔒 VERIFICAR SI VOZ ESTÁ HABILITADA
+  const canUseVoice = useCapability('voice');
   
   // ✅ Sidebar cerrado por default en móvil, abierto en desktop
   const [showSidebar, setShowSidebar] = useState(() => {
@@ -38,8 +42,8 @@ function ChatPage() {
     userId: user?.id // ✅ Pasar userId para subir archivos
   });
 
-  // Sistema de voz
-  const voiceMode = useVoiceMode({
+  // 🔒 Sistema de voz SOLO si está habilitado
+  const voiceMode = canUseVoice ? useVoiceMode({
     onMessage: async (text, meta) => {
       if (!currentConversation) {
         createConversation();
@@ -49,7 +53,7 @@ function ChatPage() {
     },
     language: 'es-MX',
     handsFreeEnabled: handsFree
-  });
+  }) : null;
 
   const handleNewConversation = (projectId = null) => {
     createConversation(projectId);

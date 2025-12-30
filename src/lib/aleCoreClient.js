@@ -132,18 +132,20 @@ export async function sendToAleCore({ accessToken, message, sessionId, workspace
 
 /**
  * Extrae el contenido de la respuesta de AL-E Core
- * Maneja diferentes formatos de respuesta
+ * 
+ * AL-EON NO INTERPRETA. SOLO EXTRAE Y MUESTRA.
  * 
  * FORMATO ESPERADO DEL BACKEND:
  * {
  *   answer: string,
- *   memories_to_add: [],
- *   actions?: [],
- *   artifacts?: []
+ *   success: boolean,
+ *   userMessage: string (opcional - mensaje del CORE para el usuario)
  * }
  * 
- * REGLA AL-E: Solo extraer y mostrar el campo "answer".
- * El usuario NUNCA ve JSON. AL-E conversa, no expone su estructura interna.
+ * REGLA: 
+ * - Si success=false Y existe userMessage -> mostrar userMessage
+ * - Si existe answer -> mostrar answer
+ * - NO adornar, NO reformular, NO sugerir acciones
  */
 export function extractReply(data) {
   console.log('📥 Respuesta completa de AL-E Core:', data);
@@ -160,45 +162,26 @@ export function extractReply(data) {
     return String(data);
   }
   
-  // PRIORIDAD 1: Campo "answer" (formato estándar de AL-E Core)
-  if (data.answer && typeof data.answer === 'string') {
-    let answer = data.answer;
-    
-    // � DETECTAR SI answer CONTIENE JSON STRINGIFICADO
-    if (answer.trim().startsWith('{') && answer.trim().endsWith('}')) {
-      try {
-        console.log('🔍 String JSON detectado en el chat - intentando parsear');
-        const parsed = JSON.parse(answer);
-        
-        // Si el JSON parseado tiene un campo "answer", usar ese
-        if (parsed.answer && typeof parsed.answer === 'string') {
-          console.log('✅ JSON parseado exitosamente, extrayendo answer interno');
-          answer = parsed.answer;
-        } else if (parsed.message && typeof parsed.message === 'string') {
-          console.log('✅ JSON parseado exitosamente, extrayendo message');
-          answer = parsed.message;
-        } else {
-          console.log('ℹ️ JSON parseado pero no tiene campo answer/message válido');
-          // Mantener el JSON original como texto
-        }
-      } catch (e) {
-        console.log('ℹ️ String parece JSON pero no se pudo parsear, usando como texto');
-        // Si falla el parse, usar el string original
-      }
-    }
-    
-    console.log('✅ Extrayendo data.answer:', answer.substring(0, 100));
-    console.log('🗑️ Ignorando metadata:', { 
-      memories_to_add: data.memories_to_add?.length || 0,
-      actions: data.actions?.length || 0,
-      artifacts: data.artifacts?.length || 0
-    });
-    return answer;
+  // 🚫 SI success=false Y existe userMessage, MOSTRAR userMessage
+  if (data.success === false && data.userMessage) {
+    console.log('⚠️ success=false -> mostrando userMessage del CORE');
+    return data.userMessage;
   }
   
-  // PRIORIDAD 2: Otros formatos alternativos
+  // PRIORIDAD 1: Campo "answer" (formato estándar de AL-E Core)
+  if (data.answer && typeof data.answer === 'string') {
+    console.log('✅ Extrayendo data.answer');
+    return data.answer;
+  }
+  
+  // PRIORIDAD 2: userMessage (mensajes del sistema)
+  if (data.userMessage && typeof data.userMessage === 'string') {
+    console.log('✅ Extrayendo data.userMessage');
+    return data.userMessage;
+  }
+  
+  // PRIORIDAD 3: Otros formatos alternativos
   const reply = 
-    data.displayText?.answer ||
     data.message ||
     data.content ||
     data.reply ||
@@ -206,14 +189,13 @@ export function extractReply(data) {
     data.text;
   
   if (reply && typeof reply === 'string') {
-    console.log('✅ Respuesta extraída de campo alternativo:', reply);
+    console.log('✅ Respuesta extraída de campo alternativo');
     return reply;
   }
   
   // Si llegamos aquí, el formato es incorrecto
-  console.error('❌ FORMATO INVÁLIDO - No se encontró campo "answer"');
+  console.error('❌ FORMATO INVÁLIDO - No se encontró campo "answer" o "userMessage"');
   console.error('❌ Estructura recibida:', Object.keys(data));
-  console.error('❌ Objeto completo:', data);
   
-  return 'Lo siento, hubo un error procesando mi respuesta.';
+  return 'Error: respuesta inválida del servidor';
 }

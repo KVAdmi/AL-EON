@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { useCapabilities } from '@/contexts/CapabilitiesContext';
 
 const AuthContext = createContext(null);
 
@@ -21,9 +20,6 @@ export function AuthProvider({ children }) {
   const [accessToken, setAccessToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bootError, setBootError] = useState(null); // 🔥 NUEVO: Estado de error
-  
-  // 🔥 CAPABILITIES: Cargar capacidades del CORE al iniciar sesión
-  const { loadCapabilities, resetCapabilities } = useCapabilities();
 
   const loadUserProfile = async (userId) => {
     try {
@@ -78,12 +74,6 @@ export function AuthProvider({ children }) {
           
           if (session?.user) {
             await loadUserProfile(session.user.id);
-            
-            // 🔥 CARGAR CAPABILITIES del CORE después de cargar perfil
-            if (session.access_token) {
-              console.log('[BOOT] 📡 Cargando capabilities del CORE...');
-              await loadCapabilities(session.access_token);
-            }
           }
           
           console.log('[BOOT] ✅ done -> ready');
@@ -206,9 +196,6 @@ export function AuthProvider({ children }) {
       setAccessToken(null);
       setBootError(null);
       
-      // 🔥 RESETEAR CAPABILITIES
-      resetCapabilities();
-      
       // Limpiar localStorage
       localStorage.clear();
       
@@ -222,7 +209,6 @@ export function AuthProvider({ children }) {
       setUserProfile(null);
       setAccessToken(null);
       setBootError(null);
-      resetCapabilities();
       localStorage.clear();
       window.location.replace('/login');
     } finally {

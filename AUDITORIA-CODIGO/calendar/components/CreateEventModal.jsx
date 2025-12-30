@@ -66,12 +66,12 @@ export default function CreateEventModal({ userId, initialDate, onClose, onEvent
     try {
       setLoading(true);
 
-      // Construir fechas ISO usando from/to
-      const from = new Date(`${formData.startDate}T${formData.startTime}`).toISOString();
-      const to = new Date(`${formData.endDate}T${formData.endTime}`).toISOString();
+      // Construir fechas ISO
+      const startTime = new Date(`${formData.startDate}T${formData.startTime}`).toISOString();
+      const endTime = new Date(`${formData.endDate}T${formData.endTime}`).toISOString();
 
-      // Validar que to > from
-      if (new Date(to) <= new Date(from)) {
+      // Validar que end > start
+      if (new Date(endTime) <= new Date(startTime)) {
         toast({
           variant: 'destructive',
           title: 'Error',
@@ -84,8 +84,8 @@ export default function CreateEventModal({ userId, initialDate, onClose, onEvent
       const eventData = {
         userId,
         title: formData.title,
-        from, // ← PARÁMETRO OBLIGATORIO
-        to,   // ← PARÁMETRO OBLIGATORIO
+        startTime,
+        endTime,
         ...(formData.description && { description: formData.description }),
         ...(formData.location && { location: formData.location }),
         ...(formData.attendees && { 
@@ -93,55 +93,45 @@ export default function CreateEventModal({ userId, initialDate, onClose, onEvent
         }),
       };
 
-      // ESPERAR RESPUESTA DEL CORE
-      const response = await createEvent(eventData);
+      const createdEvent = await createEvent(eventData);
 
-      // VERIFICAR success=true Y eventId EXISTE
-      if (response.success === true && response.eventId) {
-        // Si hay recordatorio, programarlo
-        if (formData.reminder) {
-          const reminderMinutes = parseInt(formData.reminder);
-          const reminderDate = new Date(from);
-          reminderDate.setMinutes(reminderDate.getMinutes() - reminderMinutes);
+      // Si hay recordatorio, programarlo
+      if (formData.reminder && createdEvent.id) {
+        const reminderMinutes = parseInt(formData.reminder);
+        const reminderDate = new Date(startTime);
+        reminderDate.setMinutes(reminderDate.getMinutes() - reminderMinutes);
 
-          await scheduleNotification({
-            userId,
-            type: 'calendar_reminder',
-            title: `Recordatorio: ${formData.title}`,
-            message: `Tu evento "${formData.title}" comienza en ${reminderMinutes === 15 ? '15 minutos' : reminderMinutes === 60 ? '1 hora' : '1 día'}`,
-            scheduledFor: reminderDate.toISOString(),
-            channel: 'telegram',
-            metadata: {
-              eventId: response.eventId,
-              eventTitle: formData.title,
-              eventStartTime: from,
-            },
-          });
-        }
-
-        // SOLO SI success=true: Mostrar "Evento creado correctamente"
-        toast({
-          title: 'Evento creado correctamente',
-          description: formData.reminder 
-            ? `"${formData.title}" se creó con recordatorio`
-            : `"${formData.title}"`,
+        await scheduleNotification({
+          userId,
+          type: 'calendar_reminder',
+          title: `Recordatorio: ${formData.title}`,
+          message: `Tu evento "${formData.title}" comienza en ${reminderMinutes === 15 ? '15 minutos' : reminderMinutes === 60 ? '1 hora' : '1 día'}`,
+          scheduledFor: reminderDate.toISOString(),
+          channel: 'telegram',
+          metadata: {
+            eventId: createdEvent.id,
+            eventTitle: formData.title,
+            eventStartTime: startTime,
+          },
         });
-
-        // Limpiar draft después de éxito
-        try {
-          localStorage.removeItem(STORAGE_KEY);
-        } catch (error) {
-          console.error('Error limpiando draft:', error);
-        }
-
-        // LISTAR EVENTOS DESPUÉS DE CREAR
-        onEventCreated();
-      } else {
-        // SI success=false O NO HAY eventId: NO MENTIR
-        throw new Error(response.message || 'No se pudo crear el evento');
       }
+
+      toast({
+        title: 'Evento creado',
+        description: formData.reminder 
+          ? `"${formData.title}" se creó con recordatorio`
+          : `"${formData.title}" se creó correctamente`,
+      });
+
+      // Limpiar draft después de éxito
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (error) {
+        console.error('Error limpiando draft:', error);
+      }
+
+      onEventCreated();
     } catch (error) {
-      // MOSTRAR ERROR DEL CORE TAL CUAL
       toast({
         variant: 'destructive',
         title: 'Error',

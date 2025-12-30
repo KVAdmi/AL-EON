@@ -480,7 +480,7 @@ export async function testEmailConnection(accountId) {
  * @param {Array} [mailData.cc] - CC (opcional)
  * @param {Array} [mailData.bcc] - BCC (opcional)
  * @param {Array} [mailData.attachments] - Adjuntos (opcional)
- * @returns {Promise<Object>} Resultado con { success, messageId?, message? }
+ * @returns {Promise<Object>} Resultado con provider_message_id
  */
 export async function sendEmail(mailData) {
   try {
@@ -493,14 +493,12 @@ export async function sendEmail(mailData) {
       body: JSON.stringify(mailData),
     });
 
-    const data = await response.json();
-
     if (!response.ok) {
-      throw new Error(data.message || 'Error al enviar email');
+      const error = await response.json();
+      throw new Error(error.message || 'Error al enviar email');
     }
 
-    // RETORNAR RESPUESTA DEL CORE TAL CUAL
-    return data;
+    return await response.json();
   } catch (error) {
     console.error('[EmailService] Error en sendEmail:', error);
     throw error;

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { updateEvent, deleteEvent } from '@/services/calendarService';
+import { updateEvent, cancelEvent, deleteEvent } from '@/services/calendarService';
 import { useToast } from '@/ui/use-toast';
-import { X, Clock, MapPin, Users, Edit3, Trash2, Loader2 } from 'lucide-react';
+import { X, Clock, MapPin, Users, Edit3, Trash2, Ban, Loader2 } from 'lucide-react';
 
 export default function EventDetail({ event, onClose, onEventUpdated, onEventDeleted }) {
   const { toast } = useToast();
@@ -56,6 +56,29 @@ export default function EventDetail({ event, onClose, onEventUpdated, onEventDel
         variant: 'destructive',
         title: 'Error',
         description: error.message || 'No se pudo actualizar el evento',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleCancel() {
+    if (!confirm('¿Cancelar este evento?')) return;
+
+    try {
+      setLoading(true);
+      await cancelEvent(event.id);
+      toast({
+        title: 'Evento cancelado',
+        description: 'El evento se canceló correctamente',
+      });
+      onEventUpdated();
+      onClose();
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'No se pudo cancelar el evento',
       });
     } finally {
       setLoading(false);
@@ -322,7 +345,18 @@ export default function EventDetail({ event, onClose, onEventUpdated, onEventDel
                   Editar
                 </button>
 
-                {/* ❌ BOTÓN CANCELAR ELIMINADO - NO SE USA /cancel */}
+                <button
+                  onClick={handleCancel}
+                  disabled={loading}
+                  className="px-4 py-2 rounded-lg font-medium border transition-all hover:opacity-80 flex items-center gap-2"
+                  style={{
+                    borderColor: 'var(--color-border)',
+                    color: '#f59e0b',
+                  }}
+                >
+                  <Ban size={16} />
+                  Cancelar evento
+                </button>
               </div>
 
               <button

@@ -3,14 +3,38 @@ import { useUserProfile } from '../contexts/UserProfileContext';
 import { Navigate, Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { TestTube } from 'lucide-react';
+import { useCapability } from '@/components/CapabilitiesGate';
 
 export default function IntegrationsPage() {
   const { isRoot, integrations, connectIntegration, disconnectIntegration, hasIntegration } = useUserProfile();
   const [connecting, setConnecting] = useState(null);
+  
+  // 🔒 VERIFICAR SI INTEGRACIONES ESTÁN HABILITADAS
+  const canUseIntegrations = useCapability('integrations');
 
   // 🔐 GUARD: Solo ROOT puede ver esta página
   if (!isRoot) {
     return <Navigate to="/chat" replace />;
+  }
+  
+  // 🔒 SI INTEGRACIONES ESTÁN DESHABILITADAS, MOSTRAR MENSAJE
+  if (!canUseIntegrations) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+        <div className="max-w-md w-full p-8 rounded-2xl text-center space-y-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+          <div className="text-6xl mb-4">🔒</div>
+          <h2 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
+            Integraciones No Disponibles
+          </h2>
+          <p style={{ color: 'var(--color-text-secondary)' }}>
+            Las integraciones están deshabilitadas en este momento.
+          </p>
+          <Link to="/chat">
+            <Button>Volver al Chat</Button>
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   const availableIntegrations = [

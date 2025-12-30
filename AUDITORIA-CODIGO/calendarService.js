@@ -47,28 +47,22 @@ export async function getEvents(userId, options = {}) {
  * @param {Object} eventData - Datos del evento
  * @param {string} eventData.userId - ID del usuario
  * @param {string} eventData.title - Título del evento
- * @param {string} eventData.from - Fecha/hora de inicio (ISO) - PARÁMETRO OBLIGATORIO
- * @param {string} eventData.to - Fecha/hora de fin (ISO) - PARÁMETRO OBLIGATORIO
+ * @param {string} eventData.startTime - Fecha/hora de inicio (ISO)
+ * @param {string} eventData.endTime - Fecha/hora de fin (ISO)
  * @param {string} [eventData.description] - Descripción
  * @param {string} [eventData.location] - Ubicación
  * @param {Array<string>} [eventData.attendees] - Lista de emails de asistentes
  * @param {Object} [eventData.reminder] - Configuración de recordatorio
- * @returns {Promise<Object>} Respuesta del CORE con { success, eventId?, message? }
+ * @returns {Promise<Object>} Evento creado
  */
 export async function createEvent(eventData) {
   try {
     // Transformar userId a ownerUserId para el backend
-    // USAR from/to EXCLUSIVAMENTE
     const payload = {
-      title: eventData.title,
-      from: eventData.from, // ← OBLIGATORIO
-      to: eventData.to,     // ← OBLIGATORIO
+      ...eventData,
       ownerUserId: eventData.userId || eventData.ownerUserId,
-      description: eventData.description,
-      location: eventData.location,
-      attendees: eventData.attendees,
-      reminder: eventData.reminder
     };
+    delete payload.userId; // Remover userId si existe
     
     const response = await fetch(`${BACKEND_URL}/api/calendar/events`, {
       method: 'POST',
@@ -79,14 +73,12 @@ export async function createEvent(eventData) {
       body: JSON.stringify(payload),
     });
 
-    const data = await response.json();
-    
     if (!response.ok) {
-      throw new Error(data.message || 'Error al crear evento');
+      const error = await response.json();
+      throw new Error(error.message || 'Error al crear evento');
     }
 
-    // RETORNAR RESPUESTA DEL CORE TAL CUAL
-    return data;
+    return await response.json();
   } catch (error) {
     console.error('[CalendarService] Error en createEvent:', error);
     throw error;
@@ -123,6 +115,33 @@ export async function updateEvent(eventId, eventData) {
 }
 
 /**
+ * Cancela un evento
+ * @param {string} eventId - ID del evento
+ * @returns {Promise<void>}
+ */
+export async function cancelEvent(eventId) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/calendar/events/${eventId}/cancel`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al cancelar evento');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[CalendarService] Error en cancelEvent:', error);
+    throw error;
+  }
+}
+
+/**
  * Elimina un evento permanentemente
  * @param {string} eventId - ID del evento
  * @returns {Promise<void>}
@@ -148,9 +167,6 @@ export async function deleteEvent(eventId) {
     throw error;
   }
 }
-
-// ❌ FUNCIÓN cancelEvent ELIMINADA - NO SE USA /cancel
-// El CORE maneja cancelaciones internamente via deleteEvent o updateEvent
 
 /**
  * Obtiene eventos del día actual

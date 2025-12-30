@@ -80,34 +80,29 @@ export default function ComposeModal({ accounts, defaultAccountId, onClose }) {
         ...(formData.bcc && { bcc: formData.bcc.split(',').map(e => e.trim()) }),
       };
 
-      // ESPERAR RESPUESTA DEL CORE
-      const response = await sendEmail(payload);
+      const result = await sendEmail(payload);
       
-      // CONFIRMAR ENVÍO SOLO SI HAY messageId
-      if (response.messageId) {
-        setSendStatus('sent');
-        setMessageId(response.messageId);
+      setSendStatus('sent');
+      setMessageId(result.provider_message_id || result.messageId);
 
-        toast({
-          title: 'Email enviado correctamente',
-          description: `ID: ${response.messageId}`,
-        });
+      toast({
+        title: 'Email enviado',
+        description: result.provider_message_id 
+          ? `ID: ${result.provider_message_id}`
+          : 'El email se envió correctamente',
+      });
 
-        // Limpiar draft después de envío exitoso
-        try {
-          localStorage.removeItem(STORAGE_KEY);
-        } catch (error) {
-          console.error('Error limpiando draft:', error);
-        }
-
-        // Cerrar después de 2 segundos
-        setTimeout(() => {
-          onClose();
-        }, 2000);
-      } else {
-        // SI NO HAY messageId: NO CONFIRMAR
-        throw new Error(response.message || 'No se pudo enviar el email');
+      // Limpiar draft después de envío exitoso
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (error) {
+        console.error('Error limpiando draft:', error);
       }
+
+      // Cerrar después de 2 segundos
+      setTimeout(() => {
+        onClose();
+      }, 2000);
 
     } catch (error) {
       setSendStatus('failed');

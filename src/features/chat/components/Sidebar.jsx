@@ -17,6 +17,7 @@ import { ProjectDocumentsModal } from '@/features/projects/components/ProjectDoc
 import NotificationBell from '@/components/NotificationBell';
 import { createProject, getProjects, deleteProject } from '@/services/projectsService';
 import { useToast } from '@/ui/use-toast';
+import { useCapability } from '@/components/CapabilitiesGate';
 
 function Sidebar({
   conversations,
@@ -32,6 +33,10 @@ function Sidebar({
   const scrollRef = useRef(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // 🔒 VERIFICAR CAPACIDADES
+  const canSendEmail = useCapability('mail.send');
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -212,19 +217,21 @@ function Sidebar({
         </div>
 
         {/* Navegación rápida: Email, Calendar, Telegram */}
-        <div className="grid grid-cols-3 gap-2">
-          <button
-            onClick={() => navigate('/mail')}
-            className="flex items-center justify-center py-3 px-2 rounded-xl transition-all hover:opacity-80"
-            style={{
-              backgroundColor: 'var(--color-bg-secondary)',
-              border: '1px solid var(--color-border)',
-              color: 'var(--color-text-primary)'
-            }}
-            title="Email"
-          >
-            <Mail size={22} />
-          </button>
+        <div className={`grid gap-2 ${canSendEmail ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          {canSendEmail && (
+            <button
+              onClick={() => navigate('/mail')}
+              className="flex items-center justify-center py-3 px-2 rounded-xl transition-all hover:opacity-80"
+              style={{
+                backgroundColor: 'var(--color-bg-secondary)',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-text-primary)'
+              }}
+              title="Email"
+            >
+              <Mail size={22} />
+            </button>
+          )}
           
           <button
             onClick={() => navigate('/calendar')}
