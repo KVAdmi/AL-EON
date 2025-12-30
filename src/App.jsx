@@ -19,7 +19,7 @@ import TermsOfServicePage from '@/pages/TermsOfServicePage';
 import UserIntegrationsPage from '@/pages/UserIntegrationsPage';
 import EmailSettingsPage from '@/pages/EmailSettingsPage';
 import EmailPage from '@/pages/EmailPage';
-import EmailOutlookPage from '@/pages/EmailOutlookPage';
+import EmailPageOutlook from '@/pages/EmailPageOutlook';
 import DraftsPage from '@/pages/DraftsPage';
 import CalendarPage from '@/pages/CalendarPage';
 import TelegramSettingsPage from '@/pages/TelegramSettingsPage';
@@ -280,7 +280,7 @@ function App() {
             path="/mail" 
             element={
               <ProtectedRoute>
-                <EmailOutlookPage />
+                <EmailPageOutlook />
               </ProtectedRoute>
             } 
           />

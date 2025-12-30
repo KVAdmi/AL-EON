@@ -25,6 +25,7 @@ export default function CalendarPage() {
   async function loadEvents() {
     if (!user?.id) {
       console.warn('[CalendarPage] No user ID available');
+      setLoading(false); // ✅ Importante: apagar loading aunque no haya user
       return;
     }
 
@@ -34,11 +35,7 @@ export default function CalendarPage() {
       setEvents(data || []);
     } catch (error) {
       console.error('Error cargando eventos:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'No se pudieron cargar los eventos',
-      });
+      // No mostrar toast de error, solo log
     } finally {
       setLoading(false);
     }
