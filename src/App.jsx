@@ -281,7 +281,7 @@ function App() {
             path="/mail" 
             element={
               <ProtectedRoute>
-                <EmailPageOutlook />
+                <EmailPage />
               </ProtectedRoute>
             } 
           />
