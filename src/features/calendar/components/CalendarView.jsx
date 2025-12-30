@@ -31,6 +31,11 @@ export default function CalendarView({ events, selectedDate, onDateChange, onEve
     const dayEnd = new Date(day);
     dayEnd.setHours(23, 59, 59, 999);
 
+    // ✅ FIX: Verificar que events sea un array antes de filtrar
+    if (!Array.isArray(events)) {
+      return [];
+    }
+
     return events.filter(event => {
       const eventStart = new Date(event.startTime);
       return eventStart >= dayStart && eventStart <= dayEnd;

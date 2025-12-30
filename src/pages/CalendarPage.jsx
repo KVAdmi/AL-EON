@@ -25,12 +25,11 @@ export default function CalendarPage() {
   async function loadEvents() {
     if (!user?.id) {
       console.warn('[CalendarPage] No user ID available');
-      setLoading(false); // ✅ Importante: apagar loading aunque no haya user
+      setLoading(false);
       return;
     }
 
     try {
-      setLoading(true);
       const data = await getWeekEvents(user.id);
       setEvents(data || []);
     } catch (error) {
@@ -129,25 +128,16 @@ export default function CalendarPage() {
 
         {/* Content */}
         <div className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
-          {loading ? (
-            <div 
-              className="h-full flex items-center justify-center text-sm sm:text-base"
-              style={{ color: 'var(--color-text-secondary)' }}
-            >
-              Cargando agenda...
-            </div>
-          ) : (
-            <CalendarView
-              events={events}
-              selectedDate={selectedDate}
-              onDateChange={setSelectedDate}
-              onEventClick={(event) => {
-                // TODO: Open event detail modal
-                console.log('Event clicked:', event);
-              }}
-              onEventUpdated={handleEventUpdated}
-            />
-          )}
+          <CalendarView
+            events={events}
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+            onEventClick={(event) => {
+              // TODO: Open event detail modal
+              console.log('Event clicked:', event);
+            }}
+            onEventUpdated={handleEventUpdated}
+          />
         </div>
       </div>
 
