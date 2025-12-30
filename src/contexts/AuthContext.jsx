@@ -79,10 +79,12 @@ export function AuthProvider({ children }) {
           if (session?.user) {
             await loadUserProfile(session.user.id);
             
-            // 🔥 CARGAR CAPABILITIES del CORE después de cargar perfil
+            // ⚡ CARGAR CAPABILITIES EN BACKGROUND (NO BLOQUEAR)
             if (session.access_token) {
-              console.log('[BOOT] 📡 Cargando capabilities del CORE...');
-              await loadCapabilities(session.access_token);
+              console.log('[BOOT] 📡 Cargando capabilities en background...');
+              loadCapabilities(session.access_token).catch(err => {
+                console.warn('[BOOT] ⚠️ Capabilities falló, continuando sin bloquear:', err);
+              });
             }
           }
           

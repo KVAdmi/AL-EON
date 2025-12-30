@@ -49,13 +49,20 @@ export function CapabilitiesProvider({ children }) {
       const url = `${BASE_URL}/api/runtime-capabilities`;
       console.log('[CAPABILITIES] 📡 Cargando desde:', url);
 
+      // ⚡ TIMEOUT DE 3 SEGUNDOS - No bloquear UI
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+
       const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
-        }
+        },
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -76,7 +83,10 @@ export function CapabilitiesProvider({ children }) {
         integrations: false,
         collaboration: false,
         actions: false,
-        memory: false
+        memory: false,
+        'mail.send': false,
+        'calendar.create': false,
+        'calendar.list': false
       });
     } finally {
       setIsLoading(false);
