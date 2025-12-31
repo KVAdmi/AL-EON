@@ -154,19 +154,22 @@ export default function CreateEventModal({ userId, initialDate, onClose, onEvent
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
       onClick={onClose}
     >
       <div 
-        className="w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden"
+        className="w-full max-w-2xl my-8 rounded-2xl shadow-2xl"
         style={{ backgroundColor: 'var(--color-bg-secondary)' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div 
-          className="px-6 py-4 border-b flex items-center justify-between"
-          style={{ borderColor: 'var(--color-border)' }}
+          className="px-6 py-4 border-b flex items-center justify-between sticky top-0 z-10"
+          style={{ 
+            borderColor: 'var(--color-border)',
+            backgroundColor: 'var(--color-bg-secondary)'
+          }}
         >
           <div className="flex items-center gap-3">
             <Calendar size={24} style={{ color: 'var(--color-accent)' }} />

@@ -37,9 +37,14 @@ export default function CalendarView({ events, selectedDate, onDateChange, onEve
     }
 
     return events.filter(event => {
-      const eventStart = new Date(event.startTime);
+      // ✅ CORE devuelve 'from' y 'to', no 'startTime'
+      const eventStart = new Date(event.from || event.startTime);
       return eventStart >= dayStart && eventStart <= dayEnd;
-    }).sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+    }).sort((a, b) => {
+      const aStart = new Date(a.from || a.startTime);
+      const bStart = new Date(b.from || b.startTime);
+      return aStart - bStart;
+    });
   }
 
   function handlePrevWeek() {

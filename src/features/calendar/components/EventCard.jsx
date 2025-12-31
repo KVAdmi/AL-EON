@@ -2,6 +2,10 @@ import React from 'react';
 import { Clock, MapPin, Users } from 'lucide-react';
 
 export default function EventCard({ event, compact = false, onClick }) {
+  // ✅ Soportar tanto 'from/to' (CORE) como 'startTime/endTime' (legacy)
+  const startTime = event.from || event.startTime;
+  const endTime = event.to || event.endTime;
+
   function formatTime(dateString) {
     const date = new Date(dateString);
     return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
@@ -40,7 +44,7 @@ export default function EventCard({ event, compact = false, onClick }) {
           className="text-xs font-medium mb-1"
           style={{ color: 'var(--color-text-tertiary)' }}
         >
-          {formatTime(event.startTime)}
+          {formatTime(startTime)}
         </div>
         <div 
           className="text-sm font-semibold line-clamp-2"
@@ -77,7 +81,7 @@ export default function EventCard({ event, compact = false, onClick }) {
             color: accentColor,
           }}
         >
-          {getDuration(event.startTime, event.endTime)}
+          {getDuration(startTime, endTime)}
         </span>
       </div>
 
@@ -88,7 +92,7 @@ export default function EventCard({ event, compact = false, onClick }) {
         >
           <Clock size={14} />
           <span>
-            {formatTime(event.startTime)} - {formatTime(event.endTime)}
+            {formatTime(startTime)} - {formatTime(endTime)}
           </span>
         </div>
 

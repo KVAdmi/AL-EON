@@ -7,6 +7,11 @@ export default function EventDetail({ event, onClose, onEventUpdated, onEventDel
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  
+  // ✅ Soportar tanto 'from/to' (CORE) como 'startTime/endTime' (legacy)
+  const startTime = event.from || event.startTime;
+  const endTime = event.to || event.endTime;
+  
   const [formData, setFormData] = useState({
     title: event.title,
     description: event.description || '',
@@ -201,19 +206,19 @@ export default function EventDetail({ event, onClose, onEventUpdated, onEventDel
                       className="font-medium capitalize"
                       style={{ color: 'var(--color-text-primary)' }}
                     >
-                      {formatDateTime(event.startTime)}
+                      {formatDateTime(startTime)}
                     </p>
                     <p 
                       className="text-sm mt-1"
                       style={{ color: 'var(--color-text-secondary)' }}
                     >
-                      Hasta: {formatDateTime(event.endTime)}
+                      Hasta: {formatDateTime(endTime)}
                     </p>
                     <p 
                       className="text-sm mt-1"
                       style={{ color: 'var(--color-text-tertiary)' }}
                     >
-                      Duración: {getDuration(event.startTime, event.endTime)}
+                      Duración: {getDuration(startTime, endTime)}
                     </p>
                   </div>
                 </div>
