@@ -1,63 +1,21 @@
 /**
  * EmailPage.jsx
- * Módulo de Email tipo Outlook con capability gate
+ * Módulo de Email tipo Outlook
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { useCapability } from '@/components/CapabilitiesGate';
-import { Mail, Send, Inbox, Trash2, AlertCircle, FileText, ArrowLeft, Menu, X, ChevronLeft, Ban } from 'lucide-react';
+import { Mail, Send, Inbox, Trash2, AlertCircle, FileText, ArrowLeft, Menu, X, ChevronLeft } from 'lucide-react';
 
 export default function EmailPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  
-  // 🔒 VERIFICAR SI ENVÍO DE CORREO ESTÁ HABILITADO
-  const canSendEmail = useCapability('mail.send');
 
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmail, setSelectedEmail] = useState(null);
   const [showSidebar, setShowSidebar] = useState(false);
   const [view, setView] = useState('list'); // 'list' o 'detail' para mobile
-
-  // 🚫 SI mail.send=false, BLOQUEAR COMPLETAMENTE
-  if (!canSendEmail) {
-    return (
-      <div 
-        className="min-h-screen flex items-center justify-center p-4"
-        style={{ backgroundColor: 'var(--color-bg-primary)' }}
-      >
-        <div 
-          className="max-w-md w-full p-8 rounded-2xl text-center space-y-6"
-          style={{ 
-            backgroundColor: 'var(--color-bg-secondary)',
-            border: '1px solid var(--color-border)'
-          }}
-        >
-          <Ban size={64} className="mx-auto" style={{ color: 'var(--color-text-tertiary)' }} />
-          
-          <h2 
-            className="text-2xl font-bold"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            El envío de correos aún no está configurado.
-          </h2>
-          
-          <button
-            onClick={() => navigate('/chat')}
-            className="w-full px-4 py-3 rounded-lg font-medium transition-all hover:opacity-80"
-            style={{
-              backgroundColor: 'var(--color-accent)',
-              color: '#FFFFFF'
-            }}
-          >
-            Volver al Chat
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   // Carpetas simuladas tipo Outlook
   const folders = [
