@@ -27,6 +27,7 @@ function normalizeEvent(event) {
  * @param {Object} options - Opciones de filtrado
  * @param {Date} [options.startDate] - Fecha de inicio
  * @param {Date} [options.endDate] - Fecha de fin
+ * @param {string} [options.accessToken] - Token de autenticación
  * @returns {Promise<Array>} Lista de eventos
  */
 export async function getEvents(userId, options = {}) {
@@ -37,11 +38,18 @@ export async function getEvents(userId, options = {}) {
       ...(options.endDate && { endDate: options.endDate.toISOString() }),
     });
 
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+
+    // Agregar Authorization header si hay token
+    if (options.accessToken) {
+      headers['Authorization'] = `Bearer ${options.accessToken}`;
+    }
+
     const response = await fetch(`${BACKEND_URL}/api/calendar/events?${params}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       credentials: 'include',
     });
 
@@ -184,9 +192,10 @@ export async function deleteEvent(eventId) {
 /**
  * Obtiene eventos del día actual
  * @param {string} userId - ID del usuario
+ * @param {string} accessToken - Token de autenticación
  * @returns {Promise<Array>} Eventos de hoy
  */
-export async function getTodayEvents(userId) {
+export async function getTodayEvents(userId, accessToken) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
@@ -196,15 +205,17 @@ export async function getTodayEvents(userId) {
   return getEvents(userId, {
     startDate: today,
     endDate: tomorrow,
+    accessToken,
   });
 }
 
 /**
  * Obtiene eventos de la semana actual
  * @param {string} userId - ID del usuario
+ * @param {string} accessToken - Token de autenticación
  * @returns {Promise<Array>} Eventos de la semana
  */
-export async function getWeekEvents(userId) {
+export async function getWeekEvents(userId, accessToken) {
   const today = new Date();
   const startOfWeek = new Date(today);
   startOfWeek.setDate(today.getDate() - today.getDay()); // Domingo
@@ -216,5 +227,6 @@ export async function getWeekEvents(userId) {
   return getEvents(userId, {
     startDate: startOfWeek,
     endDate: endOfWeek,
+    accessToken,
   });
 }

@@ -29,8 +29,14 @@ export default function CalendarPage() {
       return;
     }
 
+    if (!accessToken) {
+      console.warn('[CalendarPage] No access token available');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const data = await getWeekEvents(user.id);
+      const data = await getWeekEvents(user.id, accessToken);
       setEvents(data || []);
     } catch (error) {
       console.error('Error cargando eventos:', error);
