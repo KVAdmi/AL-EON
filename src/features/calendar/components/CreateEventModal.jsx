@@ -134,8 +134,9 @@ export default function CreateEventModal({ userId, initialDate, onClose, onEvent
           console.error('Error limpiando draft:', error);
         }
 
-        // LISTAR EVENTOS DESPUÉS DE CREAR
-        onEventCreated();
+        // CERRAR MODAL Y RECARGAR EVENTOS
+        onClose(); // ✅ CERRAR MODAL PRIMERO
+        onEventCreated(); // Recargar eventos
       } else {
         // SI success=false O NO HAY eventId: NO MENTIR
         throw new Error(response.message || 'No se pudo crear el evento');
