@@ -53,9 +53,10 @@ export async function getEvents(userId, options = {}) {
  * @param {string} [eventData.location] - Ubicación
  * @param {Array<string>} [eventData.attendees] - Lista de emails de asistentes
  * @param {Object} [eventData.reminder] - Configuración de recordatorio
+ * @param {string} accessToken - Token de autenticación del usuario
  * @returns {Promise<Object>} Respuesta del CORE con { success, eventId?, message? }
  */
-export async function createEvent(eventData) {
+export async function createEvent(eventData, accessToken) {
   try {
     // Transformar userId a ownerUserId para el backend
     // USAR from/to EXCLUSIVAMENTE
@@ -74,6 +75,7 @@ export async function createEvent(eventData) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
       },
       credentials: 'include',
       body: JSON.stringify(payload),

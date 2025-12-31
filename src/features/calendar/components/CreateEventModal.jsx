@@ -6,7 +6,7 @@ import { X, Calendar, Clock, MapPin, Users, Bell, Loader2 } from 'lucide-react';
 
 const STORAGE_KEY = 'ale_calendar_event_draft';
 
-export default function CreateEventModal({ userId, initialDate, onClose, onEventCreated }) {
+export default function CreateEventModal({ userId, accessToken, initialDate, onClose, onEventCreated }) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
@@ -94,7 +94,7 @@ export default function CreateEventModal({ userId, initialDate, onClose, onEvent
       };
 
       // ESPERAR RESPUESTA DEL CORE
-      const response = await createEvent(eventData);
+      const response = await createEvent(eventData, accessToken);
 
       // VERIFICAR success=true Y eventId EXISTE
       if (response.success === true && response.eventId) {

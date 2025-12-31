@@ -8,7 +8,7 @@ import CreateEventModal from '@/features/calendar/components/CreateEventModal';
 import { useToast } from '@/ui/use-toast';
 
 export default function CalendarPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, accessToken, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
@@ -156,6 +156,7 @@ export default function CalendarPage() {
       {showCreateModal && (
         <CreateEventModal
           userId={user?.id}
+          accessToken={accessToken}
           initialDate={selectedDate}
           onClose={() => setShowCreateModal(false)}
           onEventCreated={handleEventCreated}
