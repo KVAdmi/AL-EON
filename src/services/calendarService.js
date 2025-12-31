@@ -122,8 +122,17 @@ export async function createEvent(eventData, accessToken) {
       throw new Error(data.message || 'Error al crear evento');
     }
 
-    // RETORNAR RESPUESTA DEL CORE TAL CUAL
-    return data;
+    // El backend devuelve { success, action, evidence, userMessage, event }
+    // Extraer eventId del objeto event si existe
+    const eventId = data.event?.id || data.eventId;
+    
+    // RETORNAR en formato esperado por el frontend
+    return {
+      success: data.success || response.ok,
+      eventId: eventId,
+      message: data.userMessage || data.message,
+      event: data.event
+    };
   } catch (error) {
     console.error('[CalendarService] Error en createEvent:', error);
     throw error;
