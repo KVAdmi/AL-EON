@@ -71,6 +71,9 @@ export async function createEvent(eventData, accessToken) {
       reminder: eventData.reminder
     };
     
+    console.log('🚀 [CalendarService] Payload ANTES de enviar:', JSON.stringify(payload, null, 2));
+    console.log('🔑 [CalendarService] Token presente:', !!accessToken, 'Length:', accessToken?.length);
+    
     const response = await fetch(`${BACKEND_URL}/api/calendar/events`, {
       method: 'POST',
       headers: {
@@ -82,6 +85,12 @@ export async function createEvent(eventData, accessToken) {
     });
 
     const data = await response.json();
+    
+    console.log('📥 [CalendarService] Respuesta del backend:', {
+      status: response.status,
+      ok: response.ok,
+      data: data
+    });
     
     if (!response.ok) {
       throw new Error(data.message || 'Error al crear evento');

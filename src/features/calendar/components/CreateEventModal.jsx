@@ -9,6 +9,14 @@ const STORAGE_KEY = 'ale_calendar_event_draft';
 export default function CreateEventModal({ userId, accessToken, initialDate, onClose, onEventCreated }) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const modalRef = React.useRef(null);
+
+  // 🔥 Scroll al inicio cuando se abre el modal
+  useEffect(() => {
+    if (modalRef.current) {
+      modalRef.current.scrollTop = 0;
+    }
+  }, []);
 
   // Recuperar draft de localStorage
   const getInitialFormData = () => {
@@ -66,6 +74,17 @@ export default function CreateEventModal({ userId, accessToken, initialDate, onC
     try {
       setLoading(true);
 
+      // 🔥 VALIDAR TÍTULO OBLIGATORIO
+      if (!formData.title || !formData.title.trim()) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'El título del evento es obligatorio',
+        });
+        setLoading(false);
+        return;
+      }
+
       // Construir fechas ISO usando from/to
       const from = new Date(`${formData.startDate}T${formData.startTime}`).toISOString();
       const to = new Date(`${formData.endDate}T${formData.endTime}`).toISOString();
@@ -83,7 +102,7 @@ export default function CreateEventModal({ userId, accessToken, initialDate, onC
 
       const eventData = {
         userId,
-        title: formData.title,
+        title: formData.title.trim(),
         from, // ← PARÁMETRO OBLIGATORIO
         to,   // ← PARÁMETRO OBLIGATORIO
         ...(formData.description && { description: formData.description }),
@@ -92,6 +111,12 @@ export default function CreateEventModal({ userId, accessToken, initialDate, onC
           attendees: formData.attendees.split(',').map(e => e.trim()).filter(e => e)
         }),
       };
+
+      console.log('📅 [CreateEvent] Enviando al backend:', {
+        ...eventData,
+        hasToken: !!accessToken,
+        tokenLength: accessToken?.length
+      });
 
       // ESPERAR RESPUESTA DEL CORE
       const response = await createEvent(eventData, accessToken);
@@ -155,6 +180,7 @@ export default function CreateEventModal({ userId, accessToken, initialDate, onC
 
   return (
     <div 
+      ref={modalRef}
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto"
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
       onClick={onClose}
