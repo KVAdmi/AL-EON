@@ -155,12 +155,12 @@ export default function CreateEventModal({ userId, initialDate, onClose, onEvent
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto"
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
       onClick={onClose}
     >
       <div 
-        className="w-full max-w-2xl my-8 rounded-2xl shadow-2xl"
+        className="w-full max-w-2xl my-8 rounded-2xl shadow-2xl relative z-[10000]"
         style={{ backgroundColor: 'var(--color-bg-secondary)' }}
         onClick={(e) => e.stopPropagation()}
       >
