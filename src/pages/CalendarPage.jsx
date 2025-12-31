@@ -112,9 +112,13 @@ export default function CalendarPage() {
             </div>
           </div>
           
+          {/* ⚠️ DEBUG: Este botón DEBE desaparecer cuando showCreateModal=true */}
           {!showCreateModal && (
             <button
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => {
+                console.log('🔵 Abriendo modal, botón debe desaparecer');
+                setShowCreateModal(true);
+              }}
               className="py-2 sm:py-2.5 px-4 sm:px-5 rounded-xl font-medium transition-all hover:opacity-90 flex items-center gap-2 text-sm sm:text-base w-full sm:w-auto justify-center"
               style={{
                 backgroundColor: 'var(--color-accent)',
@@ -125,6 +129,11 @@ export default function CalendarPage() {
               <span className="hidden sm:inline">Nuevo evento</span>
               <span className="sm:hidden">Nuevo</span>
             </button>
+          )}
+          {showCreateModal && (
+            <div className="py-2 sm:py-2.5 px-4 sm:px-5 text-sm text-green-500">
+              ✅ Modal abierto - botón oculto
+            </div>
           )}
         </div>
 

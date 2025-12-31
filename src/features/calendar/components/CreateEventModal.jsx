@@ -164,26 +164,23 @@ export default function CreateEventModal({ userId, initialDate, onClose, onEvent
         style={{ backgroundColor: 'var(--color-bg-secondary)' }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* Header - Compacto */}
         <div 
-          className="px-6 py-4 border-b flex items-center justify-between sticky top-0 z-10"
+          className="px-4 py-3 border-b flex items-center justify-between"
           style={{ 
             borderColor: 'var(--color-border)',
             backgroundColor: 'var(--color-bg-secondary)'
           }}
         >
-          <div className="flex items-center gap-3">
-            <Calendar size={24} style={{ color: 'var(--color-accent)' }} />
-            <h2 
-              className="text-xl font-bold"
-              style={{ color: 'var(--color-text-primary)' }}
-            >
-              Nuevo evento
-            </h2>
-          </div>
+          <h2 
+            className="text-lg font-semibold"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
+            Nuevo evento
+          </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg transition-all hover:opacity-80"
+            className="p-1.5 rounded-lg transition-all hover:opacity-80"
             style={{ color: 'var(--color-text-secondary)' }}
           >
             <X size={20} />
