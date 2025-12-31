@@ -49,7 +49,7 @@ export async function getEvents(userId, options = {}) {
  * @param {string} eventData.title - Título del evento
  * @param {string} eventData.from - Fecha/hora de inicio (ISO) - PARÁMETRO OBLIGATORIO
  * @param {string} eventData.to - Fecha/hora de fin (ISO) - PARÁMETRO OBLIGATORIO
- * @param {string} [eventData.description] - Descripción
+ * @param {string} [eventData.description] - Descripción (se usa como reason si está presente)
  * @param {string} [eventData.location] - Ubicación
  * @param {Array<string>} [eventData.attendees] - Lista de emails de asistentes
  * @param {Object} [eventData.reminder] - Configuración de recordatorio
@@ -65,6 +65,7 @@ export async function createEvent(eventData, accessToken) {
       from: eventData.from, // ← OBLIGATORIO
       to: eventData.to,     // ← OBLIGATORIO
       ownerUserId: eventData.userId || eventData.ownerUserId,
+      reason: eventData.description || eventData.title, // ← OBLIGATORIO: usar descripción o título como reason
       description: eventData.description,
       location: eventData.location,
       attendees: eventData.attendees,
