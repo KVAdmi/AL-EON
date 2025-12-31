@@ -7,6 +7,21 @@
 const BACKEND_URL = 'https://api.al-eon.com';
 
 /**
+ * Transforma eventos de la BD al formato del frontend
+ * BD usa: start_at, end_at
+ * Frontend usa: from, to, startTime, endTime
+ */
+function normalizeEvent(event) {
+  return {
+    ...event,
+    from: event.start_at || event.from,
+    to: event.end_at || event.to,
+    startTime: event.start_at || event.from || event.startTime,
+    endTime: event.end_at || event.to || event.endTime,
+  };
+}
+
+/**
  * Obtiene todos los eventos del usuario
  * @param {string} userId - ID del usuario
  * @param {Object} options - Opciones de filtrado
@@ -35,7 +50,10 @@ export async function getEvents(userId, options = {}) {
       throw new Error(error.message || 'Error al obtener eventos');
     }
 
-    return await response.json();
+    const events = await response.json();
+    
+    // Normalizar eventos para que tengan campos consistentes
+    return Array.isArray(events) ? events.map(normalizeEvent) : [];
   } catch (error) {
     console.error('[CalendarService] Error en getEvents:', error);
     throw error;
@@ -58,18 +76,17 @@ export async function getEvents(userId, options = {}) {
  */
 export async function createEvent(eventData, accessToken) {
   try {
-    // Transformar userId a ownerUserId para el backend
-    // USAR from/to EXCLUSIVAMENTE
+    // Transformar campos del frontend a los nombres que espera la BD
     const payload = {
       title: eventData.title,
-      from: eventData.from, // ← OBLIGATORIO
-      to: eventData.to,     // ← OBLIGATORIO
+      start_at: eventData.from, // ← BD usa start_at
+      end_at: eventData.to,     // ← BD usa end_at
       ownerUserId: eventData.userId || eventData.ownerUserId,
-      reason: eventData.description || eventData.title, // ← OBLIGATORIO: usar descripción o título como reason
+      reason: eventData.description || eventData.title, // ← OBLIGATORIO
       description: eventData.description,
       location: eventData.location,
       attendees: eventData.attendees,
-      reminder: eventData.reminder
+      notification_minutes: eventData.reminder ? parseInt(eventData.reminder) : null
     };
     
     console.log('🚀 [CalendarService] Payload ANTES de enviar:', JSON.stringify(payload, null, 2));
