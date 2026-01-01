@@ -9,15 +9,28 @@ const BACKEND_URL = 'https://api.al-eon.com';
 /**
  * Transforma eventos de la BD al formato del frontend
  * BD usa: start_at, end_at
- * Frontend usa: from, to, startTime, endTime
+ * Frontend usa: from, to, startTime, endTime, start, end
  */
 function normalizeEvent(event) {
+  const startAt = event.start_at || event.from;
+  const endAt = event.end_at || event.to;
+  
   return {
     ...event,
-    from: event.start_at || event.from,
-    to: event.end_at || event.to,
-    startTime: event.start_at || event.from || event.startTime,
-    endTime: event.end_at || event.to || event.endTime,
+    id: event.id,
+    title: event.title,
+    description: event.description,
+    location: event.location,
+    // Campos ISO string
+    from: startAt,
+    to: endAt,
+    startTime: startAt,
+    endTime: endAt,
+    start_at: startAt,
+    end_at: endAt,
+    // Objetos Date para cálculos
+    start: startAt ? new Date(startAt) : null,
+    end: endAt ? new Date(endAt) : null,
   };
 }
 
