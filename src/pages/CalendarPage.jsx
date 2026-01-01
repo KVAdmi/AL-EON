@@ -5,6 +5,7 @@ import { getWeekEvents } from '@/services/calendarService';
 import { Calendar as CalendarIcon, Plus, ArrowLeft } from 'lucide-react';
 import CalendarView from '@/features/calendar/components/CalendarView';
 import CreateEventModal from '@/features/calendar/components/CreateEventModal';
+import EventDetail from '@/features/calendar/components/EventDetail';
 import { useToast } from '@/ui/use-toast';
 
 export default function CalendarPage() {
@@ -15,6 +16,7 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -81,10 +83,15 @@ export default function CalendarPage() {
     loadEvents();
   }
 
+  function handleEventDeleted() {
+    loadEvents();
+    setSelectedEvent(null);
+  }
+
   return (
     <>
       <div 
-        className="min-h-screen flex flex-col"
+        className="h-screen flex flex-col overflow-hidden"
         style={{ backgroundColor: 'var(--color-bg-primary)' }}
       >
         {/* Header */}
@@ -150,8 +157,8 @@ export default function CalendarPage() {
             selectedDate={selectedDate}
             onDateChange={setSelectedDate}
             onEventClick={(event) => {
-              // TODO: Open event detail modal
-              console.log('Event clicked:', event);
+              console.log('📅 [CalendarPage] Evento clickeado:', event);
+              setSelectedEvent(event);
             }}
             onEventUpdated={handleEventUpdated}
           />
@@ -166,6 +173,16 @@ export default function CalendarPage() {
           initialDate={selectedDate}
           onClose={() => setShowCreateModal(false)}
           onEventCreated={handleEventCreated}
+        />
+      )}
+
+      {/* Event detail modal */}
+      {selectedEvent && (
+        <EventDetail
+          event={selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+          onEventUpdated={handleEventUpdated}
+          onEventDeleted={handleEventDeleted}
         />
       )}
     </>
