@@ -33,18 +33,41 @@ export default function CalendarView({ events, selectedDate, onDateChange, onEve
 
     // ✅ FIX: Verificar que events sea un array antes de filtrar
     if (!Array.isArray(events)) {
+      console.warn('[CalendarView] events no es un array:', events);
       return [];
     }
 
-    return events.filter(event => {
-      // ✅ CORE devuelve 'from' y 'to', no 'startTime'
-      const eventStart = new Date(event.from || event.startTime);
-      return eventStart >= dayStart && eventStart <= dayEnd;
+    console.log('[CalendarView] Filtrando eventos para día:', day.toDateString(), {
+      totalEvents: events.length,
+      dayStart: dayStart.toISOString(),
+      dayEnd: dayEnd.toISOString()
+    });
+
+    const filtered = events.filter(event => {
+      // Buscar fecha de inicio en múltiples campos posibles
+      const eventStart = new Date(event.from || event.start_at || event.startTime || event.start);
+      
+      const isInRange = eventStart >= dayStart && eventStart <= dayEnd;
+      
+      if (!isInRange) {
+        console.log('[CalendarView] Evento fuera de rango:', {
+          title: event.title,
+          eventStart: eventStart.toISOString(),
+          dayStart: dayStart.toISOString(),
+          dayEnd: dayEnd.toISOString()
+        });
+      }
+      
+      return isInRange;
     }).sort((a, b) => {
-      const aStart = new Date(a.from || a.startTime);
-      const bStart = new Date(b.from || b.startTime);
+      const aStart = new Date(a.from || a.start_at || a.startTime || a.start);
+      const bStart = new Date(b.from || b.start_at || b.startTime || b.start);
       return aStart - bStart;
     });
+
+    console.log('[CalendarView] Eventos filtrados para', day.toDateString(), ':', filtered.length);
+    
+    return filtered;
   }
 
   function handlePrevWeek() {

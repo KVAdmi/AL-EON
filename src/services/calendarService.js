@@ -99,8 +99,9 @@ export async function createEvent(eventData, accessToken) {
   // Transformar campos del frontend a los nombres que espera la BD
   const payload = {
     title: eventData.title,
-    start_at: eventData.from, // ← BD usa start_at
-    end_at: eventData.to,     // ← BD usa end_at
+    start_at: eventData.from, // ISO string
+    end_at: eventData.to,     // ISO string
+    timezone: 'America/Mexico_City', // ← AGREGAR TIMEZONE
     ownerUserId: eventData.userId || eventData.ownerUserId,
     reason: eventData.description || eventData.title, // ← OBLIGATORIO
     description: eventData.description,

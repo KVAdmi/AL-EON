@@ -85,12 +85,13 @@ export default function CreateEventModal({ userId, accessToken, initialDate, onC
         return;
       }
 
-      // Construir fechas ISO usando from/to
-      const from = new Date(`${formData.startDate}T${formData.startTime}`).toISOString();
-      const to = new Date(`${formData.endDate}T${formData.endTime}`).toISOString();
+      // Construir fechas manteniendo el timezone local del usuario
+      // No usar .toISOString() porque convierte a UTC
+      const fromDate = new Date(`${formData.startDate}T${formData.startTime}`);
+      const toDate = new Date(`${formData.endDate}T${formData.endTime}`);
 
       // Validar que to > from
-      if (new Date(to) <= new Date(from)) {
+      if (toDate <= fromDate) {
         toast({
           variant: 'destructive',
           title: 'Error',
@@ -99,6 +100,10 @@ export default function CreateEventModal({ userId, accessToken, initialDate, onC
         setLoading(false);
         return;
       }
+
+      // Convertir a ISO string con timezone offset
+      const from = fromDate.toISOString();
+      const to = toDate.toISOString();
 
       const eventData = {
         userId,
