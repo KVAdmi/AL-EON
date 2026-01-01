@@ -83,60 +83,69 @@ export async function getEvents(userId, options = {}) {
  * @returns {Promise<Object>} Respuesta del CORE con { success, eventId?, message? }
  */
 export async function createEvent(eventData, accessToken) {
-  try {
-    // Transformar campos del frontend a los nombres que espera la BD
-    const payload = {
-      title: eventData.title,
-      start_at: eventData.from, // ← BD usa start_at
-      end_at: eventData.to,     // ← BD usa end_at
-      ownerUserId: eventData.userId || eventData.ownerUserId,
-      reason: eventData.description || eventData.title, // ← OBLIGATORIO
-      description: eventData.description,
-      location: eventData.location,
-      attendees: eventData.attendees,
-      notification_minutes: eventData.reminder ? parseInt(eventData.reminder) : null
-    };
-    
-    console.log('🚀 [CalendarService] Payload ANTES de enviar:', JSON.stringify(payload, null, 2));
-    console.log('🔑 [CalendarService] Token presente:', !!accessToken, 'Length:', accessToken?.length);
-    
-    const response = await fetch(`${BACKEND_URL}/api/calendar/events`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-      },
-      credentials: 'include',
-      body: JSON.stringify(payload),
-    });
+  // Transformar campos del frontend a los nombres que espera la BD
+  const payload = {
+    title: eventData.title,
+    start_at: eventData.from, // ← BD usa start_at
+    end_at: eventData.to,     // ← BD usa end_at
+    ownerUserId: eventData.userId || eventData.ownerUserId,
+    reason: eventData.description || eventData.title, // ← OBLIGATORIO
+    description: eventData.description,
+    location: eventData.location,
+    attendees: eventData.attendees,
+    notification_minutes: eventData.reminder ? parseInt(eventData.reminder) : null
+  };
+  
+  console.log('🚀 [CalendarService] Payload ANTES de enviar:', JSON.stringify(payload, null, 2));
+  console.log('🔑 [CalendarService] Token presente:', !!accessToken, 'Length:', accessToken?.length);
+  
+  const res = await fetch(`${BACKEND_URL}/api/calendar/events`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    credentials: 'include',
+    body: JSON.stringify(payload),
+  });
 
-    const data = await response.json();
-    
-    console.log('📥 [CalendarService] Respuesta del backend:', {
-      status: response.status,
-      ok: response.ok,
-      data: data
-    });
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Error al crear evento');
-    }
-
-    // El backend devuelve { success, action, evidence, userMessage, event }
-    // Extraer eventId del objeto event si existe
-    const eventId = data.event?.id || data.eventId;
-    
-    // RETORNAR en formato esperado por el frontend
-    return {
-      success: data.success || response.ok,
-      eventId: eventId,
-      message: data.userMessage || data.message,
-      event: data.event
-    };
-  } catch (error) {
-    console.error('[CalendarService] Error en createEvent:', error);
-    throw error;
+  // Si no es 2xx => error real
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    console.error('❌ [CalendarService] Error HTTP:', res.status, text);
+    throw new Error(text || `HTTP ${res.status}`);
   }
+
+  // Si es 2xx pero body raro => aún así revisa id
+  const data = await res.json().catch(() => ({}));
+  
+  console.log('📥 [CalendarService] Respuesta del backend:', {
+    status: res.status,
+    ok: res.ok,
+    data: data
+  });
+
+  // Extraer id de múltiples posibles ubicaciones
+  const id = data.eventId || data.id || data?.event?.id || data?.evidence?.id;
+  
+  if (!id) {
+    console.warn('⚠️ Evento creado pero respuesta sin id (backend contract mismatch)', data);
+    // Aún así considerar éxito si es 2xx
+    return { 
+      success: true, 
+      eventId: null,
+      message: data.userMessage || data.message || 'Evento creado',
+      data 
+    };
+  }
+
+  return { 
+    success: true, 
+    eventId: id, 
+    message: data.userMessage || data.message || 'Evento creado',
+    event: data.event || data,
+    data 
+  };
 }
 
 /**

@@ -121,10 +121,11 @@ export default function CreateEventModal({ userId, accessToken, initialDate, onC
       // ESPERAR RESPUESTA DEL CORE
       const response = await createEvent(eventData, accessToken);
 
-      // VERIFICAR success=true Y eventId EXISTE
-      if (response.success === true && response.eventId) {
-        // Si hay recordatorio, programarlo
-        if (formData.reminder) {
+      console.log('✅ [CreateEvent] Evento creado exitosamente:', response);
+
+      // Si hay recordatorio, programarlo (no bloquear si falla)
+      if (formData.reminder && response.eventId) {
+        try {
           const reminderMinutes = parseInt(formData.reminder);
           const reminderDate = new Date(from);
           reminderDate.setMinutes(reminderDate.getMinutes() - reminderMinutes);
@@ -142,35 +143,45 @@ export default function CreateEventModal({ userId, accessToken, initialDate, onC
               eventStartTime: from,
             },
           });
+        } catch (reminderError) {
+          console.warn('⚠️ [CreateEvent] No se pudo crear recordatorio:', reminderError);
+          // No fallar si el recordatorio falla
         }
-
-        // SOLO SI success=true: Mostrar "Evento creado correctamente"
-        toast({
-          title: 'Evento creado correctamente',
-          description: formData.reminder 
-            ? `"${formData.title}" se creó con recordatorio`
-            : `"${formData.title}"`,
-        });
-
-        // Limpiar draft después de éxito
-        try {
-          localStorage.removeItem(STORAGE_KEY);
-        } catch (error) {
-          console.error('Error limpiando draft:', error);
-        }
-
-        // CERRAR MODAL Y RECARGAR EVENTOS
-        onClose(); // ✅ CERRAR MODAL PRIMERO
-        onEventCreated(); // Recargar eventos
-      } else {
-        // SI success=false O NO HAY eventId: NO MENTIR
-        throw new Error(response.message || 'No se pudo crear el evento');
       }
+
+      // Mostrar toast de éxito
+      toast({
+        title: 'Evento creado correctamente',
+        description: response.message || (formData.reminder 
+          ? `"${formData.title}" se creó con recordatorio`
+          : `"${formData.title}"`),
+      });
+
+      // Limpiar draft después de éxito
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (error) {
+        console.error('Error limpiando draft:', error);
+      }
+
+      // CERRAR MODAL PRIMERO
+      onClose();
+      
+      // RECARGAR EVENTOS (no bloquear si falla)
+      try {
+        await onEventCreated();
+      } catch (refetchError) {
+        console.warn('⚠️ [CreateEvent] No se pudo recargar lista de eventos:', refetchError);
+        // Ya cerramos modal y mostramos éxito, solo log si refetch falla
+      }
+
     } catch (error) {
-      // MOSTRAR ERROR DEL CORE TAL CUAL
+      console.error('❌ [CreateEvent] Error al crear evento:', error);
+      
+      // MOSTRAR ERROR
       toast({
         variant: 'destructive',
-        title: 'Error',
+        title: 'Error al crear evento',
         description: error.message || 'No se pudo crear el evento',
       });
     } finally {
