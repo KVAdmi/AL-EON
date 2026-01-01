@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Check, X, Users } from 'lucide-react';
+import { Bell, Check, X, Users, Calendar, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
@@ -119,18 +119,20 @@ export function NotificationBell() {
 
   return (
     <div className="relative">
-      {/* Bell Button */}
+      {/* Bell Button - Responsivo */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-lg transition-colors hover:bg-[var(--color-bg-hover)]"
+        className="relative p-2 rounded-lg transition-colors hover:bg-[var(--color-bg-hover)] flex items-center gap-2"
         style={{ color: 'var(--color-text-secondary)' }}
+        aria-label="Notificaciones"
       >
         <Bell size={20} />
+        <span className="hidden sm:inline text-sm font-medium">Notificaciones</span>
         {unreadCount > 0 && (
           <span 
-            className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center"
+            className="absolute -top-1 -right-1 sm:relative sm:top-0 sm:right-0 min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold flex items-center justify-center shadow-lg"
             style={{ 
-              backgroundColor: 'var(--color-accent)',
+              backgroundColor: '#EF4444', // Rojo intenso
               color: 'white'
             }}
           >
@@ -139,15 +141,20 @@ export function NotificationBell() {
         )}
       </button>
 
-      {/* Dropdown */}
+      {/* Dropdown - Modal en móvil, dropdown en desktop */}
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div className="fixed inset-0 z-[9998] bg-black/50" onClick={() => setIsOpen(false)} />
           <div
-            className="absolute right-0 top-full mt-2 w-96 rounded-lg shadow-2xl z-50 border overflow-hidden"
+            className="fixed sm:absolute left-0 right-0 bottom-0 sm:left-auto sm:right-0 sm:top-full sm:bottom-auto mt-0 sm:mt-2 w-full sm:w-96 sm:rounded-lg shadow-2xl z-[9999] border-t sm:border overflow-hidden"
             style={{
               backgroundColor: 'var(--color-bg-primary)',
-              borderColor: 'var(--color-border)'
+              borderColor: 'var(--color-border)',
+              maxHeight: '80vh',
+              borderRadius: '16px 16px 0 0',
+              '@media (min-width: 640px)': {
+                borderRadius: '8px'
+              }
             }}
           >
             {/* Header */}
@@ -177,18 +184,44 @@ export function NotificationBell() {
                 notifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`p-4 border-b transition-colors ${
+                    className={`p-4 border-b transition-colors cursor-pointer hover:bg-[var(--color-bg-hover)] ${
                       !notification.is_read ? 'bg-[var(--color-bg-secondary)]' : ''
                     }`}
                     style={{ borderColor: 'var(--color-border)' }}
+                    onClick={() => {
+                      if (notification.type === 'calendar_reminder' && notification.metadata?.eventId) {
+                        navigate('/calendar');
+                        setIsOpen(false);
+                      }
+                      if (!notification.is_read) {
+                        handleMarkAsRead(notification.id);
+                      }
+                    }}
                   >
                     <div className="flex items-start gap-3">
+                      {/* Iconos por tipo */}
                       {notification.type === 'project_invite' && (
                         <div 
                           className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
                           style={{ backgroundColor: 'var(--color-accent)' }}
                         >
                           <Users size={20} className="text-white" />
+                        </div>
+                      )}
+                      {notification.type === 'calendar_reminder' && (
+                        <div 
+                          className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                          style={{ backgroundColor: '#3B82F6' }}
+                        >
+                          <Calendar size={20} className="text-white" />
+                        </div>
+                      )}
+                      {!notification.type && (
+                        <div 
+                          className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                          style={{ backgroundColor: '#6B7280' }}
+                        >
+                          <AlertCircle size={20} className="text-white" />
                         </div>
                       )}
                       
