@@ -1,30 +1,44 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { UserProfileProvider } from '@/contexts/UserProfileContext';
 import { CapabilitiesProvider } from '@/contexts/CapabilitiesContext';
 import MainLayout from '@/components/MainLayout';
-import LandingPage from '@/pages/LandingPage';
-import ChatPage from '@/features/chat/pages/ChatPage';
-import LoginPage from '@/pages/LoginPage';
-import SignupPage from '@/pages/SignupPage';
-import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
-import ProfilePage from '@/pages/ProfilePage';
-import SettingsPage from '@/pages/SettingsPage';
-import SecurityPage from '@/pages/SecurityPage';
-import IntegrationsPage from '@/pages/IntegrationsPage';
-import PlatformsPage from '@/pages/PlatformsPage';
-import HistoryPage from '@/pages/HistoryPage';
-import PrivacyPolicyPage from '@/pages/PrivacyPolicyPage';
-import TermsOfServicePage from '@/pages/TermsOfServicePage';
-import UserIntegrationsPage from '@/pages/UserIntegrationsPage';
-import EmailSettingsPage from '@/pages/EmailSettingsPage';
-import EmailPage from '@/pages/EmailPage';
-import EmailPageOutlook from '@/pages/EmailPageOutlook';
-import DraftsPage from '@/pages/DraftsPage';
-import CalendarPage from '@/pages/CalendarPage';
-import TelegramSettingsPage from '@/pages/TelegramSettingsPage';
-import TelegramPage from '@/pages/TelegramPage';
+
+// ✅ LAZY LOADING: Solo cargar páginas cuando se necesitan
+const LandingPage = lazy(() => import('@/pages/LandingPage'));
+const ChatPage = lazy(() => import('@/features/chat/pages/ChatPage'));
+const LoginPage = lazy(() => import('@/pages/LoginPage'));
+const SignupPage = lazy(() => import('@/pages/SignupPage'));
+const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage'));
+const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
+const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
+const SecurityPage = lazy(() => import('@/pages/SecurityPage'));
+const IntegrationsPage = lazy(() => import('@/pages/IntegrationsPage'));
+const PlatformsPage = lazy(() => import('@/pages/PlatformsPage'));
+const HistoryPage = lazy(() => import('@/pages/HistoryPage'));
+const PrivacyPolicyPage = lazy(() => import('@/pages/PrivacyPolicyPage'));
+const TermsOfServicePage = lazy(() => import('@/pages/TermsOfServicePage'));
+const UserIntegrationsPage = lazy(() => import('@/pages/UserIntegrationsPage'));
+const EmailSettingsPage = lazy(() => import('@/pages/EmailSettingsPage'));
+const EmailPage = lazy(() => import('@/pages/EmailPage'));
+const EmailPageOutlook = lazy(() => import('@/pages/EmailPageOutlook'));
+const DraftsPage = lazy(() => import('@/pages/DraftsPage'));
+const CalendarPage = lazy(() => import('@/pages/CalendarPage'));
+const TelegramSettingsPage = lazy(() => import('@/pages/TelegramSettingsPage'));
+const TelegramPage = lazy(() => import('@/pages/TelegramPage'));
+
+// Loading component
+function PageLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+      <div className="text-center">
+        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" style={{ color: 'var(--color-primary)' }} />
+        <p className="mt-4" style={{ color: 'var(--color-text-secondary)' }}>Cargando...</p>
+      </div>
+    </div>
+  );
+}
 
 // ✅ GLOBAL: AbortController para cancelar requests pendientes
 let globalAbortController = null;
@@ -219,7 +233,8 @@ function App() {
   }, []);
 
   return (
-    <Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
         {/* Rutas protegidas */}
         <Route 
           path="/chat" 
@@ -229,147 +244,148 @@ function App() {
             </ProtectedRoute>
           } 
         />
-          <Route 
-            path="/history" 
-            element={
-              <ProtectedRoute>
-                <HistoryPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/profile" 
-            element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/settings" 
-            element={
-              <ProtectedRoute>
-                <SettingsPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/settings/integrations" 
-            element={
-              <ProtectedRoute>
-                <UserIntegrationsPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/settings/email" 
-            element={
-              <ProtectedRoute>
-                <EmailSettingsPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/settings/telegram" 
-            element={
-              <ProtectedRoute>
-                <TelegramSettingsPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/mail" 
-            element={
-              <ProtectedRoute>
-                <EmailPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/drafts" 
-            element={
-              <ProtectedRoute>
-                <DraftsPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/calendar" 
-            element={
-              <ProtectedRoute>
-                <CalendarPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/telegram" 
-            element={
-              <ProtectedRoute>
-                <TelegramPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/security" 
-            element={
-              <ProtectedRoute>
-                <SecurityPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/integrations" 
-            element={
-              <ProtectedRoute>
-                <IntegrationsPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/platforms" 
-            element={
-              <ProtectedRoute>
-                <PlatformsPage />
-              </ProtectedRoute>
-            } 
-          />
+        <Route 
+          path="/history" 
+          element={
+            <ProtectedRoute>
+              <HistoryPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/profile" 
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/settings" 
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/settings/integrations" 
+          element={
+            <ProtectedRoute>
+              <UserIntegrationsPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/settings/email" 
+          element={
+            <ProtectedRoute>
+              <EmailSettingsPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/settings/telegram" 
+          element={
+            <ProtectedRoute>
+              <TelegramSettingsPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/mail" 
+          element={
+            <ProtectedRoute>
+              <EmailPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/drafts" 
+          element={
+            <ProtectedRoute>
+              <DraftsPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/calendar" 
+          element={
+            <ProtectedRoute>
+              <CalendarPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/telegram" 
+          element={
+            <ProtectedRoute>
+              <TelegramPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/security" 
+          element={
+            <ProtectedRoute>
+              <SecurityPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/integrations" 
+          element={
+            <ProtectedRoute>
+              <IntegrationsPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/platforms" 
+          element={
+            <ProtectedRoute>
+              <PlatformsPage />
+            </ProtectedRoute>
+          } 
+        />
 
-          {/* Rutas públicas */}
-          <Route 
-            path="/login" 
-            element={
-              <PublicRoute>
-                <LoginPage />
-              </PublicRoute>
-            } 
-          />
-          <Route 
-            path="/signup" 
-            element={
-              <PublicRoute>
-                <SignupPage />
-              </PublicRoute>
-            } 
-          />
-          <Route 
-            path="/forgot-password" 
-            element={
-              <PublicRoute>
-                <ForgotPasswordPage />
-              </PublicRoute>
-            } 
-          />
+        {/* Rutas públicas */}
+        <Route 
+          path="/login" 
+          element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          } 
+        />
+        <Route 
+          path="/signup" 
+          element={
+            <PublicRoute>
+              <SignupPage />
+            </PublicRoute>
+          } 
+        />
+        <Route 
+          path="/forgot-password" 
+          element={
+            <PublicRoute>
+              <ForgotPasswordPage />
+            </PublicRoute>
+          } 
+        />
 
-          {/* Páginas legales (públicas) */}
-          <Route path="/privacy" element={<PrivacyPolicyPage />} />
-          <Route path="/terms" element={<TermsOfServicePage />} />
+        {/* Páginas legales (públicas) */}
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/terms" element={<TermsOfServicePage />} />
 
-          {/* Landing Page (pública) */}
-          <Route path="/" element={<LandingPage />} />
-          
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        {/* Landing Page (pública) */}
+        <Route path="/" element={<LandingPage />} />
+        
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 

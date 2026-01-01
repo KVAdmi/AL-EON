@@ -92,12 +92,12 @@ export default function EventDetail({ event, onClose, onEventUpdated, onEventDel
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto"
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
       onClick={onClose}
     >
       <div 
-        className="w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden"
+        className="w-full max-w-2xl my-8 rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto"
         style={{ backgroundColor: 'var(--color-bg-secondary)' }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -224,11 +224,40 @@ export default function EventDetail({ event, onClose, onEventUpdated, onEventDel
                 </div>
 
                 {event.location && (
-                  <div className="flex items-start gap-3">
-                    <MapPin size={20} style={{ color: 'var(--color-accent)', marginTop: '2px' }} />
-                    <p style={{ color: 'var(--color-text-primary)' }}>
-                      {event.location}
-                    </p>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <MapPin size={20} style={{ color: 'var(--color-accent)', marginTop: '2px' }} />
+                      <div className="flex-1">
+                        <p 
+                          className="font-medium mb-1"
+                          style={{ color: 'var(--color-text-primary)' }}
+                        >
+                          {event.location}
+                        </p>
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm hover:underline"
+                          style={{ color: 'var(--color-accent)' }}
+                        >
+                          Ver en Google Maps →
+                        </a>
+                      </div>
+                    </div>
+                    
+                    {/* Mapa embebido */}
+                    <div className="w-full h-64 rounded-lg overflow-hidden border" style={{ borderColor: 'var(--color-border)' }}>
+                      <iframe
+                        width="100%"
+                        height="100%"
+                        frameBorder="0"
+                        style={{ border: 0 }}
+                        referrerPolicy="no-referrer-when-downgrade"
+                        src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(event.location)}&zoom=15`}
+                        allowFullScreen
+                      />
+                    </div>
                   </div>
                 )}
 
