@@ -71,7 +71,16 @@ export async function getEvents(userId, options = {}) {
       throw new Error(error.message || 'Error al obtener eventos');
     }
 
-    const events = await response.json();
+    const data = await response.json();
+    
+    console.log('📥 [CalendarService] Respuesta GET eventos:', {
+      success: data.success,
+      count: data.events?.length || 0,
+      hasEvents: !!data.events
+    });
+    
+    // Core devuelve { success, events: [...] }, NO un array directo
+    const events = data.events || data || [];
     
     // Normalizar eventos para que tengan campos consistentes
     return Array.isArray(events) ? events.map(normalizeEvent) : [];
@@ -139,25 +148,24 @@ export async function createEvent(eventData, accessToken) {
     data: data
   });
 
-  // Extraer id de múltiples posibles ubicaciones
-  const id = data.eventId || data.id || data?.event?.id || data?.evidence?.id;
+  // Core devuelve { success, action, evidence: { id }, userMessage, event: { id } }
+  const id = data.event?.id || data.evidence?.id || data.id;
   
   if (!id) {
-    console.warn('⚠️ Evento creado pero respuesta sin id (backend contract mismatch)', data);
-    // Aún así considerar éxito si es 2xx
+    console.warn('⚠️ Evento creado pero respuesta sin id', data);
     return { 
-      success: true, 
+      success: data.success || true, 
       eventId: null,
-      message: data.userMessage || data.message || 'Evento creado',
+      message: data.userMessage || 'Evento creado',
       data 
     };
   }
 
   return { 
-    success: true, 
+    success: data.success || true, 
     eventId: id, 
-    message: data.userMessage || data.message || 'Evento creado',
-    event: data.event || data,
+    message: data.userMessage || 'Evento creado',
+    event: data.event,
     data 
   };
 }
