@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Send, Inbox, Trash2, AlertCircle, FileText, ArrowLeft, Menu, X, ChevronLeft } from 'lucide-react';
+import { Mail, Send, Inbox, Trash2, AlertCircle, FileText, ArrowLeft, Menu, X, ChevronLeft, Settings } from 'lucide-react';
 
 export default function EmailPage() {
   const { user } = useAuth();
@@ -78,6 +78,17 @@ export default function EmailPage() {
           </button>
           <h1 className="text-lg sm:text-xl font-semibold truncate" style={{ color: 'var(--color-text-primary)' }}>AL-E Mail</h1>
         </div>
+        
+        {/* Botón de configuración en la barra superior */}
+        <button
+          onClick={() => navigate('/settings/email')}
+          className="p-2 hover:opacity-80 rounded shrink-0 flex items-center gap-2"
+          style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }}
+          title="Configurar cuentas SMTP/IMAP"
+        >
+          <Settings className="w-5 h-5" />
+          <span className="hidden sm:inline text-sm">Configurar</span>
+        </button>
       </div>
 
       {/* Main Layout */}
@@ -154,6 +165,27 @@ export default function EmailPage() {
                   </button>
                 );
               })}
+            </div>
+
+            {/* Sección de Configuración */}
+            <div className="mt-6 pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
+              <div className="text-xs font-semibold mb-2 px-2 uppercase" style={{ color: 'var(--color-text-tertiary)' }}>
+                Configuración
+              </div>
+              <button
+                onClick={() => {
+                  navigate('/settings/email');
+                  setShowSidebar(false);
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded mb-1 hover:opacity-80"
+                style={{
+                  backgroundColor: 'transparent',
+                  color: 'var(--color-text-primary)'
+                }}
+              >
+                <Settings className="w-4 h-4 shrink-0" />
+                <span className="text-sm">Cuentas SMTP/IMAP</span>
+              </button>
             </div>
           </div>
         </div>
