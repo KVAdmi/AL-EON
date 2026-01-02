@@ -188,37 +188,34 @@ export function NotificationBell() {
       {/* Dropdown - Modal en móvil, dropdown en desktop */}
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-[9998] bg-black/50" onClick={() => setIsOpen(false)} />
+          <div className="fixed inset-0 z-[9998] bg-black/50 sm:hidden" onClick={() => setIsOpen(false)} />
           <div
-            className="fixed sm:absolute left-0 right-0 bottom-0 sm:left-auto sm:right-0 sm:top-full sm:bottom-auto mt-0 sm:mt-2 w-full sm:w-96 sm:rounded-lg shadow-2xl z-[9999] border-t sm:border overflow-hidden"
+            className="fixed sm:absolute left-0 right-0 bottom-0 sm:left-auto sm:right-0 sm:top-full sm:bottom-auto sm:mt-2 w-full sm:w-96 rounded-t-2xl sm:rounded-lg shadow-2xl z-[9999] flex flex-col"
             style={{
               backgroundColor: 'var(--color-bg-primary)',
               borderColor: 'var(--color-border)',
-              maxHeight: '80vh',
-              borderRadius: '16px 16px 0 0',
-              '@media (min-width: 640px)': {
-                borderRadius: '8px'
-              }
+              border: '1px solid var(--color-border)',
+              maxHeight: '85vh',
             }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
-              <h3 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+            <div className="flex items-center justify-between p-4 border-b shrink-0" style={{ borderColor: 'var(--color-border)' }}>
+              <h3 className="font-semibold text-base" style={{ color: 'var(--color-text-primary)' }}>
                 Notificaciones
               </h3>
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllAsRead}
-                  className="text-xs hover:underline"
+                  className="text-xs hover:underline shrink-0"
                   style={{ color: 'var(--color-accent)' }}
                 >
-                  Marcar todas como leídas
+                  Marcar como leídas
                 </button>
               )}
             </div>
 
             {/* List */}
-            <div className="max-h-96 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto">
               {notifications.length === 0 && calendarEvents.length === 0 ? (
                 <div className="p-8 text-center" style={{ color: 'var(--color-text-tertiary)' }}>
                   <Bell size={48} className="mx-auto mb-3 opacity-50" />
