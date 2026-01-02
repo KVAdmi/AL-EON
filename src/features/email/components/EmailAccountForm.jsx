@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createEmailAccount, updateEmailAccount, testEmailConnection } from '@/services/emailService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/ui/use-toast';
-import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Upload, X } from 'lucide-react';
 
 const STORAGE_KEY = 'ale_email_form_draft';
 
@@ -52,6 +52,13 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
     return {
       fromName: '',
       fromEmail: '',
+      signature: '',
+      signatureImage: null,
+      enableFlags: true,
+      enableSpamFilter: true,
+      awsRegion: 'us-east-1',
+      awsAccessKeyId: '',
+      awsSecretAccessKey: '',
       smtp: {
         host: '',
         port: 587,
@@ -71,6 +78,7 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
   };
 
   const [formData, setFormData] = useState(getInitialFormData);
+  const [signatureImagePreview, setSignatureImagePreview] = useState(account?.signatureImageUrl || null);
 
   // Guardar draft automáticamente cuando cambian los datos (solo si NO estamos editando)
   useEffect(() => {
@@ -99,6 +107,50 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
       }));
     }
     setTestResult(null); // Reset test result cuando cambian datos
+  }
+
+  function handleImageUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo de archivo
+    if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+      toast({
+        variant: 'destructive',
+        title: 'Formato no válido',
+        description: 'Solo se permiten archivos JPG y PNG',
+      });
+      return;
+    }
+
+    // Validar tamaño (máximo 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        variant: 'destructive',
+        title: 'Archivo muy grande',
+        description: 'La imagen no debe superar 2MB',
+      });
+      return;
+    }
+
+    // Convertir a base64
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setSignatureImagePreview(reader.result);
+      setFormData(prev => ({
+        ...prev,
+        signatureImage: reader.result,
+      }));
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeSignatureImage() {
+    setSignatureImagePreview(null);
+    setFormData(prev => ({
+      ...prev,
+      signatureImage: null,
+    }));
   }
 
   async function handleSubmit(e) {
@@ -130,6 +182,13 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
         ownerUserId: user.id,  // ✅ Backend requiere "ownerUserId" no "userId"
         fromName: formData.fromName.trim(),
         fromEmail: formData.fromEmail,
+        signature: formData.signature,
+        signatureImage: formData.signatureImage,
+        enableFlags: formData.enableFlags,
+        enableSpamFilter: formData.enableSpamFilter,
+        awsRegion: formData.awsRegion,
+        awsAccessKeyId: formData.awsAccessKeyId,
+        awsSecretAccessKey: formData.awsSecretAccessKey,
         smtpHost: formData.smtp.host,
         smtpPort: parseInt(formData.smtp.port),
         smtpSecure: formData.smtp.secure,
@@ -269,6 +328,256 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
             placeholder="tu@email.com"
             required
           />
+        </div>
+      </div>
+
+      {/* Firma de correo */}
+      <div 
+        className="p-4 rounded-lg border"
+        style={{
+          backgroundColor: 'var(--color-bg-primary)',
+          borderColor: 'var(--color-border)',
+        }}
+      >
+        <h4 
+          className="font-semibold mb-3"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          Firma de correo
+        </h4>
+        
+        <div className="space-y-4">
+          <div>
+            <label 
+              className="block text-sm font-medium mb-1.5"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              Texto de firma
+            </label>
+            <textarea
+              value={formData.signature}
+              onChange={(e) => handleChange(null, 'signature', e.target.value)}
+              rows={3}
+              className="w-full px-4 py-2.5 rounded-lg border resize-none"
+              style={{
+                backgroundColor: 'var(--color-bg-primary)',
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-text-primary)',
+              }}
+              placeholder="Saludos,&#10;Tu nombre&#10;Tu empresa"
+            />
+          </div>
+
+          <div>
+            <label 
+              className="block text-sm font-medium mb-1.5"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              Imagen de firma (JPG/PNG, máx 2MB)
+            </label>
+            
+            {signatureImagePreview ? (
+              <div className="relative inline-block">
+                <img 
+                  src={signatureImagePreview} 
+                  alt="Firma" 
+                  className="max-h-32 rounded border"
+                  style={{ borderColor: 'var(--color-border)' }}
+                />
+                <button
+                  type="button"
+                  onClick={removeSignatureImage}
+                  className="absolute -top-2 -right-2 p-1 rounded-full"
+                  style={{ backgroundColor: '#ef4444', color: 'white' }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              <label className="cursor-pointer">
+                <div 
+                  className="border-2 border-dashed rounded-lg p-6 text-center hover:opacity-80 transition-opacity"
+                  style={{ borderColor: 'var(--color-border)' }}
+                >
+                  <Upload 
+                    size={32} 
+                    className="mx-auto mb-2" 
+                    style={{ color: 'var(--color-text-tertiary)' }}
+                  />
+                  <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                    Click para subir imagen
+                  </p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--color-text-tertiary)' }}>
+                    JPG o PNG, máximo 2MB
+                  </p>
+                </div>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Configuración de banderas y spam */}
+      <div 
+        className="p-4 rounded-lg border"
+        style={{
+          backgroundColor: 'var(--color-bg-primary)',
+          borderColor: 'var(--color-border)',
+        }}
+      >
+        <h4 
+          className="font-semibold mb-3"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          Clasificación de correos
+        </h4>
+        
+        <div className="space-y-3">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.enableFlags}
+              onChange={(e) => handleChange(null, 'enableFlags', e.target.checked)}
+              className="w-5 h-5 rounded"
+              style={{ accentColor: 'var(--color-accent)' }}
+            />
+            <div>
+              <p className="font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                Habilitar banderas
+              </p>
+              <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                Permitir clasificar correos: Urgente, Importante, Pendiente, etc.
+              </p>
+            </div>
+          </label>
+
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.enableSpamFilter}
+              onChange={(e) => handleChange(null, 'enableSpamFilter', e.target.checked)}
+              className="w-5 h-5 rounded"
+              style={{ accentColor: 'var(--color-accent)' }}
+            />
+            <div>
+              <p className="font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                Filtro anti-spam
+              </p>
+              <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                Clasificar automáticamente correos como spam
+              </p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      {/* Configuración AWS SES */}
+      <div 
+        className="p-4 rounded-lg border"
+        style={{
+          backgroundColor: 'var(--color-bg-primary)',
+          borderColor: 'var(--color-border)',
+        }}
+      >
+        <h4 
+          className="font-semibold mb-3"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          AWS SES (Entrada de correos)
+        </h4>
+        
+        <div className="space-y-4">
+          <div>
+            <label 
+              className="block text-sm font-medium mb-1.5"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              AWS Region
+            </label>
+            <select
+              value={formData.awsRegion}
+              onChange={(e) => handleChange(null, 'awsRegion', e.target.value)}
+              className="w-full px-4 py-2.5 rounded-lg border"
+              style={{
+                backgroundColor: 'var(--color-bg-primary)',
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-text-primary)',
+              }}
+            >
+              <option value="us-east-1">US East (N. Virginia)</option>
+              <option value="us-east-2">US East (Ohio)</option>
+              <option value="us-west-1">US West (N. California)</option>
+              <option value="us-west-2">US West (Oregon)</option>
+              <option value="eu-west-1">EU (Ireland)</option>
+              <option value="eu-central-1">EU (Frankfurt)</option>
+            </select>
+          </div>
+
+          <div>
+            <label 
+              className="block text-sm font-medium mb-1.5"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              AWS Access Key ID
+            </label>
+            <input
+              type="text"
+              value={formData.awsAccessKeyId}
+              onChange={(e) => handleChange(null, 'awsAccessKeyId', e.target.value)}
+              className="w-full px-4 py-2.5 rounded-lg border font-mono text-sm"
+              style={{
+                backgroundColor: 'var(--color-bg-primary)',
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-text-primary)',
+              }}
+              placeholder="AKIAIOSFODNN7EXAMPLE"
+            />
+          </div>
+
+          <div>
+            <label 
+              className="block text-sm font-medium mb-1.5"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              AWS Secret Access Key
+            </label>
+            <input
+              type="password"
+              value={formData.awsSecretAccessKey}
+              onChange={(e) => handleChange(null, 'awsSecretAccessKey', e.target.value)}
+              className="w-full px-4 py-2.5 rounded-lg border font-mono text-sm"
+              style={{
+                backgroundColor: 'var(--color-bg-primary)',
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-text-primary)',
+              }}
+              placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+            />
+          </div>
+
+          <div 
+            className="p-3 rounded-lg text-xs"
+            style={{
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              color: 'var(--color-text-secondary)',
+            }}
+          >
+            <p className="font-medium mb-1" style={{ color: '#3b82f6' }}>
+              ℹ️ Configuración AWS SES
+            </p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Configura SES para recibir correos entrantes</li>
+              <li>Crea un bucket S3 para almacenar mensajes</li>
+              <li>Configura las reglas de recepción en SES</li>
+              <li>Las credenciales deben tener permisos: SES, S3</li>
+            </ul>
+          </div>
         </div>
       </div>
 

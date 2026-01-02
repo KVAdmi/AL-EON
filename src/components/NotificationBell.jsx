@@ -188,14 +188,17 @@ export function NotificationBell() {
       {/* Dropdown - Modal en móvil, dropdown en desktop */}
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-[9998] bg-black/50 sm:hidden" onClick={() => setIsOpen(false)} />
+          {/* Overlay */}
+          <div className="fixed inset-0 z-[9998] bg-black/50" onClick={() => setIsOpen(false)} />
+          
+          {/* Modal/Dropdown */}
           <div
-            className="fixed sm:absolute left-0 right-0 bottom-0 sm:left-auto sm:right-0 sm:top-full sm:bottom-auto sm:mt-2 w-full sm:w-96 rounded-t-2xl sm:rounded-lg shadow-2xl z-[9999] flex flex-col"
+            className="fixed bottom-16 left-4 sm:left-4 sm:bottom-auto sm:top-auto w-[calc(100%-2rem)] sm:w-96 rounded-xl shadow-2xl z-[9999] flex flex-col"
             style={{
               backgroundColor: 'var(--color-bg-primary)',
               borderColor: 'var(--color-border)',
               border: '1px solid var(--color-border)',
-              maxHeight: '85vh',
+              maxHeight: 'calc(100vh - 8rem)',
             }}
           >
             {/* Header */}
