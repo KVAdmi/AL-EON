@@ -64,7 +64,8 @@ export default function EmailConfigWizard({ onComplete, onCancel }) {
   const [saving, setSaving] = useState(false);
   
   const [formData, setFormData] = useState({
-    providerLabel: '',
+    provider: 'imap', // ses, gmail, outlook, imap
+    domain: '',
     fromName: '',
     fromEmail: '',
     imap: {
@@ -86,9 +87,14 @@ export default function EmailConfigWizard({ onComplete, onCancel }) {
   // Aplicar valores del proveedor seleccionado
   const handleProviderSelect = (provider) => {
     setSelectedProvider(provider);
+    
+    // Extraer dominio del email si existe
+    const domain = formData.fromEmail ? formData.fromEmail.split('@')[1] : '';
+    
     setFormData({
       ...formData,
-      providerLabel: provider.name,
+      provider: provider.id, // gmail, outlook, yahoo, o imap para 'other'
+      domain: domain || '',
       imap: { ...formData.imap, ...provider.imap },
       smtp: { ...formData.smtp, ...provider.smtp },
     });
@@ -101,7 +107,13 @@ export default function EmailConfigWizard({ onComplete, onCancel }) {
         [section]: { ...formData[section], [field]: value },
       });
     } else {
-      setFormData({ ...formData, [field]: value });
+      // Si se actualiza el fromEmail, extraer el dominio
+      if (field === 'fromEmail' && value.includes('@')) {
+        const domain = value.split('@')[1];
+        setFormData({ ...formData, [field]: value, domain: domain });
+      } else {
+        setFormData({ ...formData, [field]: value });
+      }
     }
   };
 
