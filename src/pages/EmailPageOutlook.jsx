@@ -10,7 +10,7 @@ import { getEmailAccounts, getFolders } from '@/services/emailService';
 import { Mail, Send, Inbox, Archive, Trash2, AlertCircle, FileText, Star, ArrowLeft, Search, Menu, X, ChevronLeft } from 'lucide-react';
 
 export default function EmailPageOutlook() {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const navigate = useNavigate();
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState(null);
@@ -36,7 +36,7 @@ export default function EmailPageOutlook() {
 
   async function loadAccounts() {
     try {
-      const data = await getEmailAccounts(user.id);
+      const data = await getEmailAccounts(user.id, accessToken);
       setAccounts(data || []);
       if (data && data.length > 0) {
         setSelectedAccount(data[0]);

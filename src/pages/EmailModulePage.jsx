@@ -25,7 +25,7 @@ import EmailMessageDetail from '../../features/email/components/EmailMessageDeta
 import EmailComposer from '../../features/email/components/EmailComposer';
 
 export default function EmailModulePage() {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const { toast } = useToast();
   const {
     currentAccount,
@@ -57,7 +57,7 @@ export default function EmailModulePage() {
   const loadAccounts = async () => {
     setLoading(true);
     try {
-      const data = await getEmailAccounts(user.id);
+      const data = await getEmailAccounts(user.id, accessToken);
       setAccounts(data);
       
       // Si hay cuentas y no hay una seleccionada, seleccionar la primera

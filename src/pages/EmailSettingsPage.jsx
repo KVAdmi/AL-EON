@@ -8,7 +8,7 @@ import EmailAccountsList from '@/features/email/components/EmailAccountsList';
 import { useToast } from '@/ui/use-toast';
 
 export default function EmailSettingsPage() {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [accounts, setAccounts] = useState([]);
@@ -25,7 +25,7 @@ export default function EmailSettingsPage() {
     
     try {
       setLoading(true);
-      const data = await getEmailAccounts(user.id);
+      const data = await getEmailAccounts(user.id, accessToken);
       setAccounts(data || []);
     } catch (error) {
       console.error('Error cargando cuentas:', error);

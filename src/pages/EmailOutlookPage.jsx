@@ -11,7 +11,7 @@ import { getEmailAccounts, getFolders, getDrafts } from '@/services/emailService
 import { Send, FileText, Inbox, Archive, Trash2, Star, ArrowLeft, Plus, Settings } from 'lucide-react';
 
 export default function EmailOutlookPage() {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const navigate = useNavigate();
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState(null);
@@ -35,7 +35,7 @@ export default function EmailOutlookPage() {
 
   async function loadAccounts() {
     try {
-      const data = await getEmailAccounts(user.id);
+      const data = await getEmailAccounts(user.id, accessToken);
       setAccounts(data || []);
       if (data?.length > 0) {
         setSelectedAccount(data[0]);

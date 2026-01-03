@@ -8,7 +8,7 @@ import DraftEditor from '@/components/email/DraftEditor';
 
 export default function DraftsPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const [drafts, setDrafts] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState(null);
@@ -29,7 +29,7 @@ export default function DraftsPage() {
     
     try {
       // Cargar cuentas
-      const accountsData = await getEmailAccounts(user.id);
+      const accountsData = await getEmailAccounts(user.id, accessToken);
       setAccounts(accountsData);
       
       if (accountsData.length > 0) {
