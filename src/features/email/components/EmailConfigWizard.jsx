@@ -70,8 +70,7 @@ export default function EmailConfigWizard({ onComplete, onCancel }) {
   });
   
   const [formData, setFormData] = useState({
-    provider: 'imap', // ses, gmail, outlook, imap
-    domain: '',
+    providerLabel: '', // Gmail, Outlook, Yahoo, Otro
     fromName: '',
     fromEmail: '',
     imap: {
@@ -94,13 +93,9 @@ export default function EmailConfigWizard({ onComplete, onCancel }) {
   const handleProviderSelect = (provider) => {
     setSelectedProvider(provider);
     
-    // Extraer dominio del email si existe
-    const domain = formData.fromEmail ? formData.fromEmail.split('@')[1] : '';
-    
     setFormData({
       ...formData,
-      provider: provider.id, // gmail, outlook, yahoo, o imap para 'other'
-      domain: domain || '',
+      providerLabel: provider.name, // Nombre del proveedor
       imap: { ...formData.imap, ...provider.imap },
       smtp: { ...formData.smtp, ...provider.smtp },
     });
@@ -113,13 +108,7 @@ export default function EmailConfigWizard({ onComplete, onCancel }) {
         [section]: { ...formData[section], [field]: value },
       });
     } else {
-      // Si se actualiza el fromEmail, extraer el dominio
-      if (field === 'fromEmail' && value.includes('@')) {
-        const domain = value.split('@')[1];
-        setFormData({ ...formData, [field]: value, domain: domain });
-      } else {
-        setFormData({ ...formData, [field]: value });
-      }
+      setFormData({ ...formData, [field]: value });
     }
   };
 
@@ -134,7 +123,7 @@ export default function EmailConfigWizard({ onComplete, onCancel }) {
     setTestResults({ ...testResults, imap: null });
 
     try {
-      const response = await fetch('https://api.al-eon.com/api/mail/test-imap', {
+      const response = await fetch('https://api.al-eon.com/api/email/test-imap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -169,7 +158,7 @@ export default function EmailConfigWizard({ onComplete, onCancel }) {
     setTestResults({ ...testResults, smtp: null });
 
     try {
-      const response = await fetch('https://api.al-eon.com/api/mail/test-smtp', {
+      const response = await fetch('https://api.al-eon.com/api/email/test-smtp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -203,7 +192,7 @@ export default function EmailConfigWizard({ onComplete, onCancel }) {
     setSaving(true);
 
     try {
-      const response = await fetch('https://api.al-eon.com/api/mail/accounts', {
+      const response = await fetch('https://api.al-eon.com/api/email/accounts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

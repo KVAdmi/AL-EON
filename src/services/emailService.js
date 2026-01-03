@@ -21,7 +21,7 @@ export async function getEmailAccounts(userId) {
   try {
     console.log('[EmailService] Obteniendo cuentas para userId:', userId);
     // Backend espera ownerUserId, no userId
-    const response = await fetch(`${BACKEND_URL}/api/mail/accounts?ownerUserId=${userId}`, {
+    const response = await fetch(`${BACKEND_URL}/api/email/accounts?ownerUserId=${userId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -370,7 +370,7 @@ export async function deleteAttachment(attachmentId) {
  */
 export async function createEmailAccount(accountData) {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/mail/accounts`, {
+    const response = await fetch(`${BACKEND_URL}/api/email/accounts`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -399,7 +399,7 @@ export async function createEmailAccount(accountData) {
  */
 export async function updateEmailAccount(accountId, accountData) {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/mail/accounts/${accountId}`, {
+    const response = await fetch(`${BACKEND_URL}/api/email/accounts/${accountId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -427,7 +427,7 @@ export async function updateEmailAccount(accountId, accountData) {
  */
 export async function deleteEmailAccount(accountId) {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/mail/accounts/${accountId}`, {
+    const response = await fetch(`${BACKEND_URL}/api/email/accounts/${accountId}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -454,7 +454,7 @@ export async function deleteEmailAccount(accountId) {
  */
 export async function testEmailConnection(accountId) {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/mail/accounts/${accountId}/test`, {
+    const response = await fetch(`${BACKEND_URL}/api/email/accounts/${accountId}/test`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -677,7 +677,7 @@ export async function moveToFolder(accountId, messageId, folderName) {
  */
 export async function syncEmailAccount(accountId) {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/mail/accounts/${accountId}/sync`, {
+    const response = await fetch(`${BACKEND_URL}/api/email/accounts/${accountId}/sync`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
