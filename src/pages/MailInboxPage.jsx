@@ -79,10 +79,9 @@ export default function MailInboxPage() {
   async function loadAccounts() {
     try {
       const { data: mailAccounts, error } = await supabase
-        .from('mail_accounts')
+        .from('email_accounts')
         .select('*')
-        .eq('user_id', user.id)
-        .eq('status', 'active');
+        .eq('user_id', user.id);
       
       if (error) throw error;
 
@@ -90,9 +89,9 @@ export default function MailInboxPage() {
         setAccounts(mailAccounts.map(acc => ({
           id: acc.id,
           email: acc.email,
-          name: acc.name || acc.email.split('@')[0],
-          provider: acc.provider,
-          isActive: acc.status === 'active'
+          name: acc.email.split('@')[0],
+          provider: acc.provider || 'imap',
+          isActive: true
         })));
         if (!selectedAccount) {
           setSelectedAccount(mailAccounts[0].id);
