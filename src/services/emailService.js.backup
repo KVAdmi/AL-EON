@@ -15,25 +15,17 @@ const BACKEND_URL = 'https://api.al-eon.com';
 /**
  * Obtiene todas las cuentas de email del usuario
  * @param {string} userId - ID del usuario
- * @param {string} accessToken - Token de autenticación Supabase
  * @returns {Promise<Array>} Lista de cuentas de email
  */
-export async function getEmailAccounts(userId, accessToken) {
+export async function getEmailAccounts(userId) {
   try {
     console.log('[EmailService] Obteniendo cuentas para userId:', userId);
-    
-    const headers = {
-      'Content-Type': 'application/json',
-    };
-    
-    if (accessToken) {
-      headers['Authorization'] = `Bearer ${accessToken}`;
-    }
-    
     // Backend espera ownerUserId, no userId
     const response = await fetch(`${BACKEND_URL}/api/email/accounts?ownerUserId=${userId}`, {
       method: 'GET',
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+      },
       credentials: 'include',
     });
 

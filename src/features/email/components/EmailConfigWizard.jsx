@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { testEmailConnection, syncEmailAccount } from '../../../services/emailService';
 import { useToast } from '../../../contexts/ToastContext';
+import { useAuth } from '../../../contexts/AuthContext';
 
 const PROVIDERS = [
   {
@@ -59,6 +60,7 @@ const PROVIDERS = [
 
 export default function EmailConfigWizard({ onComplete, onCancel }) {
   const { toast } = useToast();
+  const { accessToken } = useAuth();
   const [step, setStep] = useState(1);
   const [selectedProvider, setSelectedProvider] = useState(null);
   const [testing, setTesting] = useState({ imap: false, smtp: false });
@@ -192,9 +194,17 @@ export default function EmailConfigWizard({ onComplete, onCancel }) {
     setSaving(true);
 
     try {
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+
       const response = await fetch('https://api.al-eon.com/api/email/accounts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         credentials: 'include',
         body: JSON.stringify(formData),
       });
