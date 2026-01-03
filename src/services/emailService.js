@@ -711,30 +711,3 @@ export async function saveDraft(accountId, draftData) {
     throw error;
   }
 }
-
-/**
- * Elimina un borrador
- * @param {string} draftId - ID del borrador
- * @returns {Promise<Object>} Confirmación
- */
-export async function deleteDraft(draftId) {
-  try {
-    const response = await fetch(`${BACKEND_URL}/api/mail/drafts/${draftId}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error al eliminar borrador');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('[EmailService] Error en deleteDraft:', error);
-    throw error;
-  }
-}
