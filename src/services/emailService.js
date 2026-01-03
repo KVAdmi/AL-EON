@@ -567,3 +567,174 @@ export async function getMessage(accountId, messageId) {
     throw error;
   }
 }
+
+/**
+ * Marca un mensaje como leído
+ * @param {string} accountId - ID de la cuenta
+ * @param {string} messageId - ID del mensaje
+ * @returns {Promise<Object>} Confirmación
+ */
+export async function markAsRead(accountId, messageId) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/mail/messages/${messageId}/read`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ accountId, is_read: true }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al marcar como leído');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[EmailService] Error en markAsRead:', error);
+    throw error;
+  }
+}
+
+/**
+ * Toggle estrella en un mensaje
+ * @param {string} accountId - ID de la cuenta
+ * @param {string} messageId - ID del mensaje
+ * @returns {Promise<Object>} Confirmación
+ */
+export async function toggleStar(accountId, messageId) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/mail/messages/${messageId}/star`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ accountId }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al actualizar estrella');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[EmailService] Error en toggleStar:', error);
+    throw error;
+  }
+}
+
+/**
+ * Mueve un mensaje a otra carpeta
+ * @param {string} accountId - ID de la cuenta
+ * @param {string} messageId - ID del mensaje
+ * @param {string} folderName - Nombre de la carpeta destino
+ * @returns {Promise<Object>} Confirmación
+ */
+export async function moveToFolder(accountId, messageId, folderName) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/mail/messages/${messageId}/move`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ accountId, folder: folderName }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al mover mensaje');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[EmailService] Error en moveToFolder:', error);
+    throw error;
+  }
+}
+
+/**
+ * Sincroniza una cuenta de email (descarga nuevos mensajes)
+ * @param {string} accountId - ID de la cuenta
+ * @returns {Promise<Object>} Resultado de la sincronización
+ */
+export async function syncEmailAccount(accountId) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/email/accounts/${accountId}/sync`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al sincronizar cuenta');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[EmailService] Error en syncEmailAccount:', error);
+    throw error;
+  }
+}
+
+/**
+ * Guarda un borrador
+ * @param {string} accountId - ID de la cuenta
+ * @param {Object} draftData - Datos del borrador
+ * @returns {Promise<Object>} Borrador guardado
+ */
+export async function saveDraft(accountId, draftData) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/mail/drafts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ accountId, ...draftData }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al guardar borrador');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[EmailService] Error en saveDraft:', error);
+    throw error;
+  }
+}
+
+/**
+ * Elimina un borrador
+ * @param {string} draftId - ID del borrador
+ * @returns {Promise<Object>} Confirmación
+ */
+export async function deleteDraft(draftId) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/mail/drafts/${draftId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al eliminar borrador');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[EmailService] Error en deleteDraft:', error);
+    throw error;
+  }
+}
