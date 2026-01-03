@@ -31,10 +31,23 @@ export async function getEmailAccounts(userId) {
 
     console.log('[EmailService] Response status:', response.status);
 
+    // Si no es exitoso, intentar parsear como JSON
     if (!response.ok) {
-      const error = await response.json();
-      console.error('[EmailService] Error response:', error);
-      throw new Error(error.message || 'Error al obtener cuentas de email');
+      // Si el backend devuelve HTML (404, etc), devolver array vacío
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('text/html')) {
+        console.warn('[EmailService] Backend devolvió HTML, probablemente endpoint no existe');
+        return [];
+      }
+      
+      try {
+        const error = await response.json();
+        console.error('[EmailService] Error response:', error);
+        throw new Error(error.message || 'Error al obtener cuentas de email');
+      } catch (e) {
+        console.error('[EmailService] No se pudo parsear error:', e);
+        return [];
+      }
     }
 
     const data = await response.json();
@@ -55,7 +68,8 @@ export async function getEmailAccounts(userId) {
     }
   } catch (error) {
     console.error('[EmailService] Error en getEmailAccounts:', error);
-    throw error;
+    // No lanzar error, devolver array vacío para no romper la UI
+    return [];
   }
 }
 
