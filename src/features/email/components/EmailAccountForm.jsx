@@ -56,9 +56,6 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
       signatureImage: null,
       enableFlags: true,
       enableSpamFilter: true,
-      awsRegion: 'us-east-1',
-      awsAccessKeyId: '',
-      awsSecretAccessKey: '',
       smtp: {
         host: '',
         port: 587,
@@ -474,110 +471,6 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
               </p>
             </div>
           </label>
-        </div>
-      </div>
-
-      {/* Configuración AWS SES */}
-      <div 
-        className="p-4 rounded-lg border"
-        style={{
-          backgroundColor: 'var(--color-bg-primary)',
-          borderColor: 'var(--color-border)',
-        }}
-      >
-        <h4 
-          className="font-semibold mb-3"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          AWS SES (Entrada de correos)
-        </h4>
-        
-        <div className="space-y-4">
-          <div>
-            <label 
-              className="block text-sm font-medium mb-1.5"
-              style={{ color: 'var(--color-text-primary)' }}
-            >
-              AWS Region
-            </label>
-            <select
-              value={formData.awsRegion}
-              onChange={(e) => handleChange(null, 'awsRegion', e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border"
-              style={{
-                backgroundColor: 'var(--color-bg-primary)',
-                borderColor: 'var(--color-border)',
-                color: 'var(--color-text-primary)',
-              }}
-            >
-              <option value="us-east-1">US East (N. Virginia)</option>
-              <option value="us-east-2">US East (Ohio)</option>
-              <option value="us-west-1">US West (N. California)</option>
-              <option value="us-west-2">US West (Oregon)</option>
-              <option value="eu-west-1">EU (Ireland)</option>
-              <option value="eu-central-1">EU (Frankfurt)</option>
-            </select>
-          </div>
-
-          <div>
-            <label 
-              className="block text-sm font-medium mb-1.5"
-              style={{ color: 'var(--color-text-primary)' }}
-            >
-              AWS Access Key ID
-            </label>
-            <input
-              type="text"
-              value={formData.awsAccessKeyId}
-              onChange={(e) => handleChange(null, 'awsAccessKeyId', e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border font-mono text-sm"
-              style={{
-                backgroundColor: 'var(--color-bg-primary)',
-                borderColor: 'var(--color-border)',
-                color: 'var(--color-text-primary)',
-              }}
-              placeholder="AKIAIOSFODNN7EXAMPLE"
-            />
-          </div>
-
-          <div>
-            <label 
-              className="block text-sm font-medium mb-1.5"
-              style={{ color: 'var(--color-text-primary)' }}
-            >
-              AWS Secret Access Key
-            </label>
-            <input
-              type="password"
-              value={formData.awsSecretAccessKey}
-              onChange={(e) => handleChange(null, 'awsSecretAccessKey', e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border font-mono text-sm"
-              style={{
-                backgroundColor: 'var(--color-bg-primary)',
-                borderColor: 'var(--color-border)',
-                color: 'var(--color-text-primary)',
-              }}
-              placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-            />
-          </div>
-
-          <div 
-            className="p-3 rounded-lg text-xs"
-            style={{
-              backgroundColor: 'rgba(59, 130, 246, 0.1)',
-              color: 'var(--color-text-secondary)',
-            }}
-          >
-            <p className="font-medium mb-1" style={{ color: '#3b82f6' }}>
-              ℹ️ Configuración AWS SES
-            </p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>Configura SES para recibir correos entrantes</li>
-              <li>Crea un bucket S3 para almacenar mensajes</li>
-              <li>Configura las reglas de recepción en SES</li>
-              <li>Las credenciales deben tener permisos: SES, S3</li>
-            </ul>
-          </div>
         </div>
       </div>
 

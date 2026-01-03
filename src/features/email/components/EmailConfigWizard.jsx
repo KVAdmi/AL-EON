@@ -72,7 +72,7 @@ export default function EmailConfigWizard({ onComplete, onCancel }) {
   });
   
   const [formData, setFormData] = useState({
-    providerLabel: '', // Gmail, Outlook, Yahoo, Otro
+    provider: '', // gmail, outlook, yahoo, other
     fromName: '',
     fromEmail: '',
     imap: {
@@ -97,7 +97,7 @@ export default function EmailConfigWizard({ onComplete, onCancel }) {
     
     setFormData({
       ...formData,
-      providerLabel: provider.name, // Nombre del proveedor
+      provider: provider.id, // gmail, outlook, yahoo, other
       imap: { ...formData.imap, ...provider.imap },
       smtp: { ...formData.smtp, ...provider.smtp },
     });
