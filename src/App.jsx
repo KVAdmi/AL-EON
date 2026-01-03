@@ -27,6 +27,9 @@ const DraftsPage = lazy(() => import('@/pages/DraftsPage'));
 const CalendarPage = lazy(() => import('@/pages/CalendarPage'));
 const TelegramSettingsPage = lazy(() => import('@/pages/TelegramSettingsPage'));
 const TelegramPage = lazy(() => import('@/pages/TelegramPage'));
+const MailInboxPage = lazy(() => import('@/pages/MailInboxPage'));
+const MailDetailPage = lazy(() => import('@/pages/MailDetailPage'));
+const MailPendingPage = lazy(() => import('@/pages/MailPendingPage'));
 
 // Loading component
 function PageLoader() {
@@ -296,7 +299,23 @@ function App() {
           path="/mail" 
           element={
             <ProtectedRoute>
-              <EmailPage />
+              <MailInboxPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/mail/pending" 
+          element={
+            <ProtectedRoute>
+              <MailPendingPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/mail/:id" 
+          element={
+            <ProtectedRoute>
+              <MailDetailPage />
             </ProtectedRoute>
           } 
         />
