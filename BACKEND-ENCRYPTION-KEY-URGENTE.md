@@ -1,9 +1,18 @@
 # 🚨 URGENTE: Falta ENCRYPTION_KEY en Backend
 
-## ❌ Error Actual
+## ❌ Errores Actuales
+
+### 1. ENCRYPTION_KEY no definida
 ```
 Error: ENCRYPTION_KEY no definida en .env
 ```
+
+### 2. Columna 'provider' no existe
+```
+Could not find the 'provider' column of 'email_accounts' in the schema cache
+```
+
+**Causa:** El backend busca `provider` pero Supabase tiene `provider_label`
 
 ## 🎯 Solución para AL-E Core
 
@@ -93,7 +102,7 @@ const { encrypt, decrypt } = require('../utils/encryption');
 router.post('/api/email/accounts', authMiddleware, async (req, res) => {
   try {
     const {
-      providerLabel,
+      provider,      // ✅ Frontend envía: 'gmail', 'outlook', 'yahoo', 'other'
       fromName,
       fromEmail,
       imap,
@@ -102,33 +111,42 @@ router.post('/api/email/accounts', authMiddleware, async (req, res) => {
     
     const userId = req.user.id; // Del JWT
     
+    // ✅ Validar que existan datos SMTP
+    if (!smtp?.host || !smtp?.user || !smtp?.password) {
+      return res.status(400).json({ 
+        ok: false, 
+        error: 'Datos SMTP incompletos' 
+      });
+    }
+    
     // ✅ Encriptar contraseñas ANTES de guardar
-    const imapPassEnc = imap.pass ? encrypt(imap.pass) : null;
-    const smtpPassEnc = smtp.pass ? encrypt(smtp.pass) : null;
+    const imapPassEnc = imap?.password ? encrypt(imap.password) : null;
+    const smtpPassEnc = smtp?.password ? encrypt(smtp.password) : null;
     
     const { data, error } = await supabase
       .from('email_accounts')
       .insert({
         owner_user_id: userId,
-        provider_label: providerLabel,
+        provider_label: provider, // ✅ Usar provider_label para guardar
         from_name: fromName,
         from_email: fromEmail,
         
         // IMAP
-        imap_host: imap.host,
-        imap_port: imap.port,
-        imap_secure: imap.secure,
-        imap_user: imap.user,
-        imap_pass_enc: imapPassEnc, // ✅ Encriptado
+        imap_host: imap?.host || null,
+        imap_port: imap?.port || 993,
+        imap_secure: imap?.secure !== false, // Default true
+        imap_user: imap?.user || fromEmail,
+        imap_pass_enc: imapPassEnc,
         
         // SMTP
         smtp_host: smtp.host,
-        smtp_port: smtp.port,
-        smtp_secure: smtp.secure,
+        smtp_port: smtp.port || 587,
+        smtp_secure: smtp.secure || false,
         smtp_user: smtp.user,
-        smtp_pass_enc: smtpPassEnc, // ✅ Encriptado
+        smtp_pass_enc: smtpPassEnc,
         
-        is_active: true
+        is_active: true,
+        created_at: new Date().toISOString()
       })
       .select()
       .single();
@@ -186,14 +204,53 @@ Frontend debería funcionar sin cambios.
 
 ---
 
-## 🔐 Seguridad
+## � Checklist
 
-- ❌ **NUNCA** commitear `ENCRYPTION_KEY` a git
-- ❌ **NUNCA** compartir la clave en Slack/email
-- ✅ **SOLO** en variables de entorno del servidor
-- ✅ Hacer backup de la clave en gestor de secrets (AWS Secrets Manager, Vault, etc.)
+- [ ] Generar `ENCRYPTION_KEY` con crypto.randomBytes(32)
+- [ ] Agregar a `.env` del backend
+- [ ] Crear `utils/encryption.js`
+- [ ] Actualizar endpoint `/api/email/accounts`
+  - [ ] Leer `provider` del body (no `providerLabel`)
+  - [ ] Guardar en columna `provider_label` de Supabase
+  - [ ] Encriptar `imap.password` → `imap_pass_enc`
+  - [ ] Encriptar `smtp.password` → `smtp_pass_enc`
+  - [ ] Validar campos obligatorios de SMTP
+- [ ] Reiniciar servidor
+- [ ] Probar desde frontend que ya NO sale el error
 
 ---
+
+## 🔍 Debug: Ver qué envía el frontend
+
+El frontend envía este JSON:
+
+```json
+{
+  "provider": "gmail",
+  "fromName": "Patricia Garibay",
+  "fromEmail": "p.garibay@infinitykode.com",
+  "imap": {
+    "host": "imap.hostinger.com",
+    "port": 993,
+    "secure": true,
+    "user": "p.garibay@infinitykode.com",
+    "password": "contraseña_del_usuario"
+  },
+  "smtp": {
+    "host": "smtp.hostinger.com",
+    "port": 465,
+    "secure": true,
+    "user": "p.garibay@infinitykode.com",
+    "password": "contraseña_del_usuario"
+  }
+}
+```
+
+**El backend debe:**
+1. Leer `req.body.provider` (no `providerLabel`)
+2. Guardarlo en `provider_label` de Supabase
+3. Encriptar `imap.password` y `smtp.password`
+4. Responder con JSON: `{ ok: true, account: {...} }`
 
 ## 📋 Checklist
 
