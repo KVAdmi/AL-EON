@@ -136,31 +136,77 @@ export default function MailInboxPage() {
   }
 
   async function loadMessages() {
-    if (!session?.access_token || !selectedAccount) {
+    if (!selectedAccount) {
+      console.log('⚠️ [MailInboxPage] No hay cuenta seleccionada');
+      setMessages([]);
       setLoading(false);
       return;
     }
     
     try {
       setLoading(true);
-      const data = await getMailMessages(session.access_token, {
-        limit: 50,
-        folder: selectedFolder,
-        account_id: selectedAccount,
+      console.log('🔵 [MailInboxPage] Cargando mensajes...');
+      console.log('🔵 [MailInboxPage] accountId:', selectedAccount);
+      console.log('🔵 [MailInboxPage] folder:', selectedFolder);
+      
+      // Llamar al endpoint real de Core
+      const token = await supabase.auth.getSession().then(s => s.data.session?.access_token);
+      
+      const response = await fetch(`https://api.al-eon.com/api/mail/messages?accountId=${selectedAccount}&folder=${selectedFolder}&limit=50`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
-      setMessages(data);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('🔵 [MailInboxPage] Mensajes recibidos:', data);
+      
+      setMessages(data.messages || data || []);
     } catch (error) {
-      console.error('Error cargando correos:', error);
+      console.error('❌ [MailInboxPage] Error cargando correos:', error);
       setMessages([]);
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleRefresh() {
-    setRefreshing(true);
-    await loadMessages();
-    setRefreshing(false);
+  async function handleSync() {
+    if (!selectedAccount) return;
+    
+    try {
+      setRefreshing(true);
+      console.log('🔄 [MailInboxPage] Sincronizando cuenta:', selectedAccount);
+      
+      const token = await supabase.auth.getSession().then(s => s.data.session?.access_token);
+      
+      const response = await fetch(`https://api.al-eon.com/api/mail/accounts/${selectedAccount}/sync`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ [MailInboxPage] Sincronización completa:', result);
+      
+      // Recargar mensajes después de sync
+      await loadMessages();
+    } catch (error) {
+      console.error('❌ [MailInboxPage] Error en sync:', error);
+      alert('Error al sincronizar: ' + error.message);
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   function formatDate(dateString) {
@@ -425,10 +471,11 @@ export default function MailInboxPage() {
             </button>
 
             <button
-              onClick={handleRefresh}
+              onClick={handleSync}
               disabled={refreshing}
-              className="p-2 rounded-lg hover:bg-[var(--color-bg-hover)] disabled:opacity-50"
+              className="p-2 rounded-2xl hover:bg-[var(--color-bg-hover)] disabled:opacity-50"
               style={{ color: 'var(--color-text-primary)' }}
+              title="Sincronizar con servidor IMAP"
             >
               <RefreshCw size={20} className={refreshing ? 'animate-spin' : ''} />
             </button>
