@@ -74,18 +74,15 @@ export default function MailInboxPage() {
 
   useEffect(() => {
     console.log('🟡 [MailInboxPage] useEffect DISPARADO');
-    console.log('🟡 [MailInboxPage] session?.access_token:', session?.access_token ? 'EXISTS' : 'NULL');
     console.log('🟡 [MailInboxPage] user?.id:', user?.id);
     
-    if (session?.access_token && user?.id) {
-      console.log('🟢 [MailInboxPage] ✅ Condición cumplida, llamando loadAccounts');
+    if (user?.id) {
+      console.log('🟢 [MailInboxPage] ✅ Usuario existe, llamando loadAccounts');
       loadAccounts();
     } else {
-      console.log('🔴 [MailInboxPage] ❌ Condición NO cumplida');
-      console.log('🔴 [MailInboxPage] session?.access_token:', session?.access_token);
-      console.log('🔴 [MailInboxPage] user?.id:', user?.id);
+      console.log('🔴 [MailInboxPage] ❌ NO hay user.id');
     }
-  }, [session, user]);
+  }, [user]);
 
   useEffect(() => {
     if (selectedAccount) {
