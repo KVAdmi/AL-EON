@@ -3,7 +3,7 @@ import { updateEvent, deleteEvent } from '@/services/calendarService';
 import { useToast } from '@/ui/use-toast';
 import { X, Clock, MapPin, Users, Edit3, Trash2, Loader2 } from 'lucide-react';
 
-export default function EventDetail({ event, onClose, onEventUpdated, onEventDeleted }) {
+export default function EventDetail({ event, accessToken, onClose, onEventUpdated, onEventDeleted }) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -49,7 +49,7 @@ export default function EventDetail({ event, onClose, onEventUpdated, onEventDel
 
     try {
       setLoading(true);
-      await updateEvent(event.id, formData);
+      await updateEvent(event.id, formData, accessToken);
       toast({
         title: 'Evento actualizado',
         description: 'Los cambios se guardaron correctamente',
@@ -72,7 +72,7 @@ export default function EventDetail({ event, onClose, onEventUpdated, onEventDel
 
     try {
       setLoading(true);
-      await deleteEvent(event.id);
+      await deleteEvent(event.id, accessToken);
       toast({
         title: 'Evento eliminado',
         description: 'El evento se eliminó permanentemente',

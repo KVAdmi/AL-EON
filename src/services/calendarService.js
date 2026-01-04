@@ -174,15 +174,22 @@ export async function createEvent(eventData, accessToken) {
  * Actualiza un evento existente
  * @param {string} eventId - ID del evento
  * @param {Object} eventData - Datos a actualizar
+ * @param {string} accessToken - Token de autenticación
  * @returns {Promise<Object>} Evento actualizado
  */
-export async function updateEvent(eventId, eventData) {
+export async function updateEvent(eventId, eventData, accessToken) {
   try {
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
     const response = await fetch(`${BACKEND_URL}/api/calendar/events/${eventId}`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       credentials: 'include',
       body: JSON.stringify(eventData),
     });
@@ -202,15 +209,22 @@ export async function updateEvent(eventId, eventData) {
 /**
  * Elimina un evento permanentemente
  * @param {string} eventId - ID del evento
+ * @param {string} accessToken - Token de autenticación
  * @returns {Promise<void>}
  */
-export async function deleteEvent(eventId) {
+export async function deleteEvent(eventId, accessToken) {
   try {
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
     const response = await fetch(`${BACKEND_URL}/api/calendar/events/${eventId}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       credentials: 'include',
     });
 

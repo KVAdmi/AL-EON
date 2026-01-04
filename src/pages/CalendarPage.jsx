@@ -180,6 +180,7 @@ export default function CalendarPage() {
       {selectedEvent && (
         <EventDetail
           event={selectedEvent}
+          accessToken={accessToken}
           onClose={() => setSelectedEvent(null)}
           onEventUpdated={handleEventUpdated}
           onEventDeleted={handleEventDeleted}

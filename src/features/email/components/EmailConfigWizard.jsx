@@ -294,7 +294,7 @@ export default function EmailConfigWizard({ onComplete, onCancel }) {
                   <button
                     key={provider.id}
                     onClick={() => handleProviderSelect(provider)}
-                    className={`p-4 rounded-lg border-2 transition-all text-left ${
+                    className={`p-4 rounded-2xl border-2 transition-all text-left ${
                       selectedProvider?.id === provider.id ? 'ring-2' : ''
                     }`}
                     style={{
@@ -325,7 +325,7 @@ export default function EmailConfigWizard({ onComplete, onCancel }) {
           {/* PASO 2: Configurar IMAP */}
           {step === 2 && (
             <div className="space-y-4">
-              <div className="flex items-start gap-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
+              <div className="flex items-start gap-3 p-3 rounded-2xl" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
                 <Info className="w-5 h-5 mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} />
                 <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
                   {selectedProvider?.help}
@@ -346,7 +346,7 @@ export default function EmailConfigWizard({ onComplete, onCancel }) {
                     value={formData.imap.host}
                     onChange={(e) => handleChange('imap', 'host', e.target.value)}
                     placeholder={selectedProvider?.id === 'other' ? 'imap.tudominio.com' : ''}
-                    className="w-full px-4 py-2.5 rounded-lg border"
+                    className="w-full px-4 py-2.5 rounded-2xl border"
                     style={{
                       backgroundColor: 'var(--color-bg-secondary)',
                       borderColor: 'var(--color-border)',
@@ -417,7 +417,7 @@ export default function EmailConfigWizard({ onComplete, onCancel }) {
                       value={formData.imap.password}
                       onChange={(e) => handleChange('imap', 'password', e.target.value)}
                       placeholder="••••••••"
-                      className="w-full px-4 py-2.5 pr-12 rounded-lg border"
+                      className="w-full px-4 py-2.5 pr-12 rounded-2xl border"
                       style={{
                         backgroundColor: 'var(--color-bg-secondary)',
                         borderColor: 'var(--color-border)',
@@ -463,7 +463,7 @@ export default function EmailConfigWizard({ onComplete, onCancel }) {
               {/* Resultado de prueba */}
               {testResults.imap && (
                 <div
-                  className={`flex items-start gap-3 p-4 rounded-lg ${
+                  className={`flex items-start gap-3 p-4 rounded-2xl ${
                     testResults.imap.success ? 'bg-green-50' : 'bg-red-50'
                   }`}
                 >
@@ -611,7 +611,7 @@ export default function EmailConfigWizard({ onComplete, onCancel }) {
                       value={formData.smtp.password}
                       onChange={(e) => handleChange('smtp', 'password', e.target.value)}
                       placeholder="••••••••"
-                      className="w-full px-4 py-2.5 pr-12 rounded-lg border"
+                      className="w-full px-4 py-2.5 pr-12 rounded-2xl border"
                       style={{
                         backgroundColor: 'var(--color-bg-secondary)',
                         borderColor: 'var(--color-border)',
@@ -657,7 +657,7 @@ export default function EmailConfigWizard({ onComplete, onCancel }) {
               {/* Resultado de prueba */}
               {testResults.smtp && (
                 <div
-                  className={`flex items-start gap-3 p-4 rounded-lg ${
+                  className={`flex items-start gap-3 p-4 rounded-2xl ${
                     testResults.smtp.success ? 'bg-green-50' : 'bg-red-50'
                   }`}
                 >

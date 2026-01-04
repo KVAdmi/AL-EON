@@ -59,15 +59,22 @@ export default function EmailModulePage() {
   const loadAccounts = async () => {
     setLoading(true);
     try {
+      console.log('🔵 [EmailModulePage] Cargando cuentas para user:', user?.id);
       const data = await getEmailAccounts(user.id, accessToken);
+      console.log('🔵 [EmailModulePage] Cuentas recibidas:', data);
+      console.log('🔵 [EmailModulePage] Cantidad de cuentas:', data?.length);
+      
       setAccounts(data);
       
       // Si hay cuentas y no hay una seleccionada, seleccionar la primera
       if (data.length > 0 && !currentAccount) {
+        console.log('🔵 [EmailModulePage] Seleccionando primera cuenta:', data[0]);
         setCurrentAccount(data[0]);
+      } else if (data.length === 0) {
+        console.log('⚠️ [EmailModulePage] NO se encontraron cuentas en Supabase');
       }
     } catch (error) {
-      console.error('Error al cargar cuentas:', error);
+      console.error('❌ [EmailModulePage] Error al cargar cuentas:', error);
       toast.error('Error al cargar cuentas: ' + error.message);
     } finally {
       setLoading(false);
@@ -155,7 +162,7 @@ export default function EmailModulePage() {
           </p>
           <button
             onClick={() => setShowWizard(true)}
-            className="flex items-center gap-2 px-6 py-3 rounded-lg font-semibold mx-auto hover:opacity-90 transition-all"
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl font-semibold mx-auto hover:opacity-90 transition-all"
             style={{
               backgroundColor: 'var(--color-primary)',
               color: 'white',
@@ -182,7 +189,7 @@ export default function EmailModulePage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowSidebar(!showSidebar)}
-            className="lg:hidden p-2 rounded-lg hover:opacity-80"
+            className="lg:hidden p-2 rounded-2xl hover:opacity-80"
             style={{ backgroundColor: 'var(--color-bg-secondary)' }}
           >
             <Menu className="w-5 h-5" style={{ color: 'var(--color-text-primary)' }} />
@@ -197,7 +204,7 @@ export default function EmailModulePage() {
         <div className="flex items-center gap-2">
           <button
             onClick={handleCompose}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-all"
+            className="flex items-center gap-2 px-4 py-2 rounded-2xl font-medium hover:opacity-90 transition-all"
             style={{
               backgroundColor: 'var(--color-primary)',
               color: 'white',
@@ -208,8 +215,20 @@ export default function EmailModulePage() {
           </button>
 
           <button
+            onClick={() => setVoiceMode(!voiceMode)}
+            className={`p-2 rounded-2xl transition-all ${voiceMode ? 'animate-pulse' : ''}`}
+            style={{
+              backgroundColor: voiceMode ? 'var(--color-primary)' : 'var(--color-bg-secondary)',
+              color: voiceMode ? 'white' : 'var(--color-text-primary)',
+            }}
+            title="Modo voz"
+          >
+            <Mic className="w-5 h-5" />
+          </button>
+
+          <button
             onClick={() => setShowWizard(true)}
-            className="p-2 rounded-lg hover:opacity-80"
+            className="p-2 rounded-2xl hover:opacity-80"
             style={{ backgroundColor: 'var(--color-bg-secondary)' }}
             title="Configurar cuenta"
           >
@@ -237,7 +256,7 @@ export default function EmailModulePage() {
               </h2>
               <button
                 onClick={() => setShowSidebar(false)}
-                className="lg:hidden p-1 rounded hover:opacity-80"
+                className="lg:hidden p-1 rounded-2xl hover:opacity-80"
               >
                 <X className="w-4 h-4" style={{ color: 'var(--color-text-secondary)' }} />
               </button>
@@ -245,11 +264,16 @@ export default function EmailModulePage() {
             
             {/* Lista de cuentas */}
             <div className="space-y-1">
+              {accounts.length === 0 && (
+                <p className="text-sm text-center py-4" style={{ color: 'var(--color-text-tertiary)' }}>
+                  No hay cuentas configuradas
+                </p>
+              )}
               {accounts.map((account) => (
                 <button
                   key={account.id}
                   onClick={() => handleAccountSelect(account)}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-all ${
+                  className={`w-full text-left px-3 py-2 rounded-2xl transition-all ${
                     currentAccount?.id === account.id ? 'ring-2' : ''
                   }`}
                   style={{
@@ -260,9 +284,9 @@ export default function EmailModulePage() {
                     color: 'var(--color-text-primary)',
                   }}
                 >
-                  <p className="font-medium truncate text-sm">{account.fromName}</p>
+                  <p className="font-medium truncate text-sm">{account.from_name || account.fromName || 'Sin nombre'}</p>
                   <p className="text-xs truncate" style={{ color: 'var(--color-text-tertiary)' }}>
-                    {account.fromEmail}
+                    {account.from_email || account.fromEmail || 'sin-email@example.com'}
                   </p>
                 </button>
               ))}
@@ -281,7 +305,7 @@ export default function EmailModulePage() {
                   <button
                     key={folder.id}
                     onClick={() => setCurrentFolder(folder.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-2xl transition-all ${
                       currentFolder === folder.id ? 'ring-2' : ''
                     }`}
                     style={{
