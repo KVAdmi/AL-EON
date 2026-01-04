@@ -30,6 +30,7 @@ const TelegramPage = lazy(() => import('@/pages/TelegramPage'));
 const MailInboxPage = lazy(() => import('@/pages/MailInboxPage'));
 const MailDetailPage = lazy(() => import('@/pages/MailDetailPage'));
 const MailPendingPage = lazy(() => import('@/pages/MailPendingPage'));
+const EmailModulePage = lazy(() => import('@/pages/EmailModulePage'));
 
 // Loading component
 function PageLoader() {
@@ -308,6 +309,14 @@ function App() {
           element={
             <ProtectedRoute>
               <MailPendingPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/correo" 
+          element={
+            <ProtectedRoute>
+              <EmailModulePage />
             </ProtectedRoute>
           } 
         />

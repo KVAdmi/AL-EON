@@ -93,9 +93,56 @@ function decrypt(encrypted) {
 module.exports = { encrypt, decrypt };
 ```
 
-### 4. Usar en el endpoint `/api/email/accounts`
+### 4. Implementar endpoints `/api/email/accounts`
 
-```javascript
+**A) GET - Leer cuentas del usuario**
+
+```typescript
+// GET /api/email/accounts?ownerUserId=xxx
+router.get('/accounts', async (req, res) => {
+  try {
+    const { ownerUserId } = req.query;
+    
+    if (!ownerUserId) {
+      return res.status(400).json({ 
+        ok: false, 
+        error: 'ownerUserId requerido' 
+      });
+    }
+    
+    const { data, error } = await supabase
+      .from('email_accounts')
+      .select('*')
+      .eq('owner_user_id', ownerUserId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('[Email] Error obteniendo cuentas:', error);
+      return res.status(500).json({ 
+        ok: false, 
+        error: error.message 
+      });
+    }
+    
+    console.log(`[Email] ✅ ${data.length} cuentas encontradas para user: ${ownerUserId}`);
+    
+    // Retornar array directo (frontend espera esto)
+    res.json(data || []);
+    
+  } catch (err) {
+    console.error('[Email] Error en GET /api/email/accounts:', err);
+    res.status(500).json({ 
+      ok: false, 
+      error: err.message 
+    });
+  }
+});
+```
+
+**B) POST - Crear nueva cuenta**
+
+```typescript
 const { encrypt, decrypt } = require('../utils/encryption');
 
 // POST /api/email/accounts

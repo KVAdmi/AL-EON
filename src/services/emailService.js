@@ -4,6 +4,8 @@
  * Backend: https://api.al-eon.com
  */
 
+import { supabase } from '../lib/supabase';
+
 const BACKEND_URL = 'https://api.al-eon.com';
 
 /**
@@ -22,61 +24,24 @@ export async function getEmailAccounts(userId, accessToken) {
   try {
     console.log('[EmailService] Obteniendo cuentas para userId:', userId);
     
-    const headers = {
-      'Content-Type': 'application/json',
-    };
+    // 🔥 TEMPORAL: Leer directo de Supabase mientras backend implementa endpoint
+    const { data: accounts, error } = await supabase
+      .from('email_accounts')
+      .select('*')
+      .eq('owner_user_id', userId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
     
-    if (accessToken) {
-      headers['Authorization'] = `Bearer ${accessToken}`;
-    }
-    
-    // Backend espera ownerUserId, no userId
-    const response = await fetch(`${BACKEND_URL}/api/email/accounts?ownerUserId=${userId}`, {
-      method: 'GET',
-      headers,
-      credentials: 'include',
-    });
-
-    console.log('[EmailService] Response status:', response.status);
-
-    // Si no es exitoso, intentar parsear como JSON
-    if (!response.ok) {
-      // Si el backend devuelve HTML (404, etc), devolver array vacío
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('text/html')) {
-        console.warn('[EmailService] Backend devolvió HTML, probablemente endpoint no existe');
-        return [];
-      }
-      
-      try {
-        const error = await response.json();
-        console.error('[EmailService] Error response:', error);
-        throw new Error(error.message || 'Error al obtener cuentas de email');
-      } catch (e) {
-        console.error('[EmailService] No se pudo parsear error:', e);
-        return [];
-      }
-    }
-
-    const data = await response.json();
-    console.log('[EmailService] Cuentas obtenidas:', data);
-    
-    // Backend puede devolver array directo, {ok, accounts}, o {data}
-    if (Array.isArray(data)) {
-      return data;
-    } else if (data.accounts && Array.isArray(data.accounts)) {
-      return data.accounts;
-    } else if (data.data && Array.isArray(data.data)) {
-      return data.data;
-    } else if (data.ok && Array.isArray(data.data)) {
-      return data.data;
-    } else {
-      console.warn('[EmailService] Formato de respuesta inesperado, devolviendo array vacío:', data);
+    if (error) {
+      console.error('[EmailService] Error de Supabase:', error);
       return [];
     }
+    
+    console.log('[EmailService] ✅ Cuentas obtenidas de Supabase:', accounts);
+    return accounts || [];
+    
   } catch (error) {
     console.error('[EmailService] Error en getEmailAccounts:', error);
-    // No lanzar error, devolver array vacío para no romper la UI
     return [];
   }
 }
