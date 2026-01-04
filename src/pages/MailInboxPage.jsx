@@ -81,12 +81,20 @@ export default function MailInboxPage() {
 
   async function loadAccounts() {
     try {
-      console.log('🔵 [MailInboxPage] Cargando cuentas para user:', user?.id);
+      console.log('🔵 [MailInboxPage] ========== INICIO loadAccounts ==========');
+      console.log('🔵 [MailInboxPage] USER COMPLETO:', JSON.stringify(user, null, 2));
+      console.log('🔵 [MailInboxPage] user.id:', user?.id);
+      console.log('🔵 [MailInboxPage] Consultando email_accounts con owner_user_id:', user.id);
+      
       const { data: mailAccounts, error } = await supabase
         .from('email_accounts')
         .select('*')
         .eq('owner_user_id', user.id)
         .eq('is_active', true);
+      
+      console.log('🔵 [MailInboxPage] Error de Supabase:', error);
+      console.log('🔵 [MailInboxPage] Cuentas recibidas:', mailAccounts);
+      console.log('🔵 [MailInboxPage] Cantidad:', mailAccounts?.length);
       
       if (error) throw error;
 
