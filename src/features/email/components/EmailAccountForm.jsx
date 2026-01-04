@@ -16,24 +16,29 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
   // Intentar recuperar draft de localStorage si NO estamos editando
   const getInitialFormData = () => {
     if (account) {
-      // Si estamos editando, usar datos de la cuenta
+      // Si estamos editando, mapear datos de Supabase (snake_case) a formato del form (camelCase)
+      console.log('🔵 [EmailAccountForm] Cargando cuenta para editar:', account);
       return {
-        fromName: account?.fromName || '',
-        fromEmail: account?.fromEmail || '',
+        fromName: account.from_name || account.fromName || '',
+        fromEmail: account.from_email || account.fromEmail || '',
+        signature: account.signature || '',
+        signatureImage: null,
+        enableFlags: account.enable_flags !== undefined ? account.enable_flags : true,
+        enableSpamFilter: account.enable_spam_filter !== undefined ? account.enable_spam_filter : true,
         smtp: {
-          host: account?.smtp?.host || '',
-          port: account?.smtp?.port || 587,
-          secure: account?.smtp?.secure || false,
-          user: account?.smtp?.user || '',
-          password: account?.smtp?.password || '',
+          host: account.smtp_host || account.smtp?.host || '',
+          port: account.smtp_port || account.smtp?.port || 587,
+          secure: account.smtp_secure !== undefined ? account.smtp_secure : (account.smtp?.secure || false),
+          user: account.smtp_user || account.smtp?.user || '',
+          password: '', // No cargar password por seguridad, usuario debe reescribirla
         },
         imap: {
-          enabled: account?.imap?.enabled || false,
-          host: account?.imap?.host || '',
-          port: account?.imap?.port || 993,
-          secure: account?.imap?.secure || true,
-          user: account?.imap?.user || '',
-          password: account?.imap?.password || '',
+          enabled: account.imap_host ? true : (account.imap?.enabled || false),
+          host: account.imap_host || account.imap?.host || '',
+          port: account.imap_port || account.imap?.port || 993,
+          secure: account.imap_secure !== undefined ? account.imap_secure : (account.imap?.secure || true),
+          user: account.imap_user || account.imap?.user || '',
+          password: '', // No cargar password por seguridad, usuario debe reescribirla
         },
       };
     }
@@ -174,45 +179,67 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
       return;
     }
 
+    // Si estamos EDITANDO y las contraseñas están vacías, advertir
+    if (account?.id) {
+      if (!formData.smtp.password && !formData.imap.password) {
+        toast({
+          variant: 'destructive',
+          title: 'Contraseñas requeridas',
+          description: 'Debes reingresar las contraseñas SMTP e IMAP para actualizar la cuenta',
+        });
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       
       const payload = {
-        ownerUserId: user.id,  // ✅ Backend requiere "ownerUserId" no "userId"
+        ownerUserId: user.id,
         fromName: formData.fromName.trim(),
         fromEmail: formData.fromEmail,
         signature: formData.signature,
         signatureImage: formData.signatureImage,
         enableFlags: formData.enableFlags,
         enableSpamFilter: formData.enableSpamFilter,
-        awsRegion: formData.awsRegion,
-        awsAccessKeyId: formData.awsAccessKeyId,
-        awsSecretAccessKey: formData.awsSecretAccessKey,
         smtpHost: formData.smtp.host,
         smtpPort: parseInt(formData.smtp.port),
         smtpSecure: formData.smtp.secure,
         smtpUser: formData.smtp.user,
-        smtpPass: formData.smtp.password,
         imapEnabled: formData.imap.enabled,
         imapHost: formData.imap.host,
         imapPort: parseInt(formData.imap.port),
         imapSecure: formData.imap.secure,
         imapUser: formData.imap.user,
-        imapPass: formData.imap.password,
-        ...(account?.id && { accountId: account.id }),
       };
 
+      // Solo incluir passwords si no están vacías
+      if (formData.smtp.password) {
+        payload.smtpPass = formData.smtp.password;
+      }
+      if (formData.imap.password) {
+        payload.imapPass = formData.imap.password;
+      }
+
+      console.log('🔵 [EmailAccountForm] Guardando cuenta...', {
+        isUpdate: !!account?.id,
+        accountId: account?.id,
+        payload: { ...payload, smtpPass: '***', imapPass: '***' }
+      });
+
       if (account?.id) {
+        // ACTUALIZAR cuenta existente
         await updateEmailAccount(account.id, payload);
         toast({
           title: 'Cuenta actualizada',
-          description: 'La cuenta de email se actualizó correctamente',
+          description: '✓ Los cambios se guardaron correctamente',
         });
       } else {
+        // CREAR nueva cuenta
         await createEmailAccount(payload);
         toast({
           title: 'Cuenta creada',
-          description: 'La cuenta de email se creó correctamente',
+          description: '✓ La cuenta de email se creó correctamente',
         });
         // Limpiar draft después de crear exitosamente
         try {
@@ -224,9 +251,10 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
 
       onSave();
     } catch (error) {
+      console.error('❌ [EmailAccountForm] Error guardando:', error);
       toast({
         variant: 'destructive',
-        title: 'Error',
+        title: 'Error al guardar',
         description: error.message || 'No se pudo guardar la cuenta',
       });
     } finally {
@@ -281,6 +309,24 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
         >
           {account ? 'Editar cuenta' : 'Nueva cuenta de correo'}
         </h3>
+        
+        {/* Alerta cuando estás editando */}
+        {account && (
+          <div 
+            className="p-4 rounded-lg border-l-4 mb-4"
+            style={{
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              borderLeftColor: '#3b82f6',
+            }}
+          >
+            <p className="text-sm font-medium mb-1" style={{ color: '#3b82f6' }}>
+              🔐 Modo Edición
+            </p>
+            <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+              Los datos se cargarán automáticamente. Por seguridad, debes <strong>reingresar las contraseñas</strong> SMTP e IMAP para actualizar.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Información general */}
