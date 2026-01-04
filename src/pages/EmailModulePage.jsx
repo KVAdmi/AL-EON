@@ -14,20 +14,22 @@ import {
   Star,
   Menu,
   X,
-  Mic
+  Mic,
+  ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/ui/use-toast';
+import { useNavigate } from 'react-router-dom';
 import useEmailStore from '@/stores/emailStore';
 import { getEmailAccounts } from '@/services/emailService';
 import EmailConfigWizard from '@/features/email/components/EmailConfigWizard';
 import EmailInbox from '@/features/email/components/EmailInbox';
-import EmailMessageDetail from '@/features/email/components/EmailMessageDetail';
 import EmailComposer from '@/features/email/components/EmailComposer';
 
 export default function EmailModulePage() {
   const { user, accessToken } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const {
     currentAccount,
     accounts,
@@ -184,9 +186,20 @@ export default function EmailModulePage() {
       {/* Header */}
       <div 
         className="h-16 flex items-center justify-between px-4 border-b"
-        style={{ borderColor: 'var(--color-border)' }}
       >
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 rounded-2xl hover:opacity-80 transition-all"
+            style={{ 
+              backgroundColor: 'var(--color-bg-secondary)',
+              color: 'var(--color-text-primary)'
+            }}
+            title="Volver"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+
           <button
             onClick={() => setShowSidebar(!showSidebar)}
             className="lg:hidden p-2 rounded-2xl hover:opacity-80"
@@ -203,6 +216,19 @@ export default function EmailModulePage() {
 
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setVoiceMode(!voiceMode)}
+            className={`p-2 rounded-2xl transition-all ${voiceMode ? 'animate-pulse ring-2' : ''}`}
+            style={{
+              backgroundColor: voiceMode ? 'var(--color-primary)' : 'var(--color-bg-secondary)',
+              color: voiceMode ? 'white' : 'var(--color-text-primary)',
+              ringColor: voiceMode ? 'var(--color-accent)' : 'transparent',
+            }}
+            title={voiceMode ? "Modo voz ACTIVO - Click para desactivar" : "Activar modo voz manos libres"}
+          >
+            <Mic className="w-5 h-5" />
+          </button>
+
+          <button
             onClick={handleCompose}
             className="flex items-center gap-2 px-4 py-2 rounded-2xl font-medium hover:opacity-90 transition-all"
             style={{
@@ -212,18 +238,6 @@ export default function EmailModulePage() {
           >
             <Plus className="w-5 h-5" />
             <span className="hidden sm:inline">Redactar</span>
-          </button>
-
-          <button
-            onClick={() => setVoiceMode(!voiceMode)}
-            className={`p-2 rounded-2xl transition-all ${voiceMode ? 'animate-pulse' : ''}`}
-            style={{
-              backgroundColor: voiceMode ? 'var(--color-primary)' : 'var(--color-bg-secondary)',
-              color: voiceMode ? 'white' : 'var(--color-text-primary)',
-            }}
-            title="Modo voz"
-          >
-            <Mic className="w-5 h-5" />
           </button>
 
           <button
