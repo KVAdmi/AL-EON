@@ -25,6 +25,7 @@ import { getEmailAccounts } from '@/services/emailService';
 import EmailConfigWizard from '@/features/email/components/EmailConfigWizard';
 import EmailInbox from '@/features/email/components/EmailInbox';
 import EmailComposer from '@/features/email/components/EmailComposer';
+import EmailMessageDetail from '@/features/email/components/EmailMessageDetail';
 
 export default function EmailModulePage() {
   const { user, accessToken } = useAuth();

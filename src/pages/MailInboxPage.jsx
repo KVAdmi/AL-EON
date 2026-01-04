@@ -205,7 +205,9 @@ export default function MailInboxPage() {
         
         // Mensaje más específico si es problema de credenciales
         if (errorMessage.includes('descifrar') || errorMessage.includes('credencial') || errorMessage.includes('decrypt')) {
-          throw new Error('Las credenciales de esta cuenta parecen estar corruptas. Por favor, vuelve a configurar la cuenta en Configuración > Correo');
+          throw new Error(
+            'CREDENCIALES CORRUPTAS: Ve a Configuración > Correo > Click en el ícono de BASURA para ELIMINAR esta cuenta. Luego créala de nuevo desde cero. Las contraseñas actuales están corruptas y no se pueden reparar.'
+          );
         }
         
         throw new Error(errorMessage);
