@@ -67,9 +67,23 @@ export default function MailInboxPage() {
     { id: 'low_priority', name: 'Baja prioridad', color: '#6B7280', icon: '⬇️', count: 0 },
   ];
 
+  // 🔥 DEBUG: Ver qué valores tiene auth
+  console.log('🟢 [MailInboxPage] RENDER - user:', user);
+  console.log('🟢 [MailInboxPage] RENDER - session:', session);
+  console.log('🟢 [MailInboxPage] RENDER - session.access_token:', session?.access_token ? 'EXISTS' : 'NULL');
+
   useEffect(() => {
+    console.log('🟡 [MailInboxPage] useEffect DISPARADO');
+    console.log('🟡 [MailInboxPage] session?.access_token:', session?.access_token ? 'EXISTS' : 'NULL');
+    console.log('🟡 [MailInboxPage] user?.id:', user?.id);
+    
     if (session?.access_token && user?.id) {
+      console.log('🟢 [MailInboxPage] ✅ Condición cumplida, llamando loadAccounts');
       loadAccounts();
+    } else {
+      console.log('🔴 [MailInboxPage] ❌ Condición NO cumplida');
+      console.log('🔴 [MailInboxPage] session?.access_token:', session?.access_token);
+      console.log('🔴 [MailInboxPage] user?.id:', user?.id);
     }
   }, [session, user]);
 
