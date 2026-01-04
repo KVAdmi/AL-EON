@@ -13,7 +13,8 @@ import {
   Trash2,
   Star,
   Menu,
-  X
+  X,
+  Mic
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/ui/use-toast';
@@ -46,6 +47,7 @@ export default function EmailModulePage() {
   const [composerMode, setComposerMode] = useState('new');
   const [replyToMessage, setReplyToMessage] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [voiceMode, setVoiceMode] = useState(false);
 
   // Cargar cuentas al montar
   useEffect(() => {
