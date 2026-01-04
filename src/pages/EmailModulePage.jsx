@@ -15,14 +15,14 @@ import {
   Menu,
   X
 } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useToast } from '../../contexts/ToastContext';
-import useEmailStore from '../../stores/emailStore';
-import { getEmailAccounts } from '../../services/emailService';
-import EmailConfigWizard from '../../features/email/components/EmailConfigWizard';
-import EmailInbox from '../../features/email/components/EmailInbox';
-import EmailMessageDetail from '../../features/email/components/EmailMessageDetail';
-import EmailComposer from '../../features/email/components/EmailComposer';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/ui/use-toast';
+import useEmailStore from '@/stores/emailStore';
+import { getEmailAccounts } from '@/services/emailService';
+import EmailConfigWizard from '@/features/email/components/EmailConfigWizard';
+import EmailInbox from '@/features/email/components/EmailInbox';
+import EmailMessageDetail from '@/features/email/components/EmailMessageDetail';
+import EmailComposer from '@/features/email/components/EmailComposer';
 
 export default function EmailModulePage() {
   const { user, accessToken } = useAuth();

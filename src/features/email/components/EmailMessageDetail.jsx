@@ -24,7 +24,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import useEmailStore from '../../../stores/emailStore';
 import { toggleStar, moveToFolder } from '../../../services/emailService';
-import { useToast } from '../../../contexts/ToastContext';
+import { useToast } from '@/ui/use-toast';
 
 export default function EmailMessageDetail({ message, onReply, onReplyAll, onForward, onCreateTask, onClose }) {
   const { toast } = useToast();

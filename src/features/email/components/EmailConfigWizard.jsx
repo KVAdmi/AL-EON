@@ -20,7 +20,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { testEmailConnection, syncEmailAccount } from '../../../services/emailService';
-import { useToast } from '../../../contexts/ToastContext';
+import { useToast } from '@/ui/use-toast';
 import { useAuth } from '../../../contexts/AuthContext';
 
 const PROVIDERS = [

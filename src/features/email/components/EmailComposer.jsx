@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import useEmailStore from '../../../stores/emailStore';
 import { sendEmail, saveDraft, deleteDraft } from '../../../services/emailService';
-import { useToast } from '../../../contexts/ToastContext';
+import { useToast } from '@/ui/use-toast';
 
 export default function EmailComposer({ 
   mode = 'new', // 'new', 'reply', 'replyAll', 'forward'
