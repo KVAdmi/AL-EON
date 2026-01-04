@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createEmailAccount, updateEmailAccount, testEmailConnection } from '@/services/emailService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/ui/use-toast';
-import { CheckCircle2, XCircle, Loader2, Upload, X } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Upload, X, Eye, EyeOff } from 'lucide-react';
 
 const STORAGE_KEY = 'ale_email_form_draft';
 
@@ -76,6 +76,8 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
 
   const [formData, setFormData] = useState(getInitialFormData);
   const [signatureImagePreview, setSignatureImagePreview] = useState(account?.signatureImageUrl || null);
+  const [showSmtpPassword, setShowSmtpPassword] = useState(false);
+  const [showImapPassword, setShowImapPassword] = useState(false);
 
   // Guardar draft automáticamente cuando cambian los datos (solo si NO estamos editando)
   useEffect(() => {
@@ -571,8 +573,6 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
               placeholder="usuario@email.com"
               required
             />
-          </div>
-
           <div>
             <label 
               className="block text-sm font-medium mb-1.5"
@@ -580,19 +580,32 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
             >
               Contraseña SMTP
             </label>
-            <input
-              type="password"
-              value={formData.smtp.password}
-              onChange={(e) => handleChange('smtp', 'password', e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border"
-              style={{
-                backgroundColor: 'var(--color-bg-secondary)',
-                borderColor: 'var(--color-border)',
-                color: 'var(--color-text-primary)',
-              }}
-              placeholder="••••••••"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showSmtpPassword ? "text" : "password"}
+                value={formData.smtp.password}
+                onChange={(e) => handleChange('smtp', 'password', e.target.value)}
+                className="w-full px-4 py-2.5 pr-12 rounded-lg border"
+                style={{
+                  backgroundColor: 'var(--color-bg-secondary)',
+                  borderColor: 'var(--color-border)',
+                  color: 'var(--color-text-primary)',
+                }}
+                placeholder="••••••••"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowSmtpPassword(!showSmtpPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-[var(--color-bg-hover)]"
+                style={{ color: 'var(--color-text-secondary)' }}
+                title={showSmtpPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showSmtpPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>quired
+            /
           </div>
         </div>
       </div>
@@ -700,18 +713,29 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
               >
                 Contraseña IMAP
               </label>
-              <input
-                type="password"
-                value={formData.imap.password}
-                onChange={(e) => handleChange('imap', 'password', e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border"
-                style={{
-                  backgroundColor: 'var(--color-bg-secondary)',
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-text-primary)',
-                }}
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <input
+                  type={showImapPassword ? "text" : "password"}
+                  value={formData.imap.password}
+                  onChange={(e) => handleChange('imap', 'password', e.target.value)}
+                  className="w-full px-4 py-2.5 pr-12 rounded-lg border"
+                  style={{
+                    backgroundColor: 'var(--color-bg-secondary)',
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-text-primary)',
+                  }}
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowImapPassword(!showImapPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-[var(--color-bg-hover)]"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                  title={showImapPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showImapPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
           </div>
         )}

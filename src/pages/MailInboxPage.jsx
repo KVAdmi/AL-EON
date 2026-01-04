@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { getMailMessages } from '@/services/mailService';
 import { supabase } from '@/lib/supabase';
+import { useToast } from '@/ui/use-toast';
 import { 
   Mail, 
   RefreshCw, 
@@ -30,7 +31,6 @@ import {
   ArrowLeft,
   Mic
 } from 'lucide-react';
-import { useToast } from '@/ui/use-toast';
 
 export default function MailInboxPage() {
   const { user, session } = useAuth();
@@ -176,34 +176,52 @@ export default function MailInboxPage() {
   }
 
   async function handleSync() {
-    if (!selectedAccount) return;
+    if (!selectedAccount) {
+      alert('Por favor selecciona una cuenta primero');
+      return;
+    }
     
     try {
       setRefreshing(true);
       console.log('🔄 [MailInboxPage] Sincronizando cuenta:', selectedAccount);
       
-      const token = await supabase.auth.getSession().then(s => s.data.session?.access_token);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        throw new Error('No hay sesión activa');
+      }
       
       const response = await fetch(`https://api.al-eon.com/api/mail/accounts/${selectedAccount}/sync`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json'
         }
       });
       
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
       
       const result = await response.json();
       console.log('✅ [MailInboxPage] Sincronización completa:', result);
       
+      // Mostrar resultado
+      toast({
+        title: 'Sincronización exitosa',
+        description: `Se sincronizaron ${result.count || 0} mensajes nuevos`,
+      });
+      
       // Recargar mensajes después de sync
       await loadMessages();
     } catch (error) {
       console.error('❌ [MailInboxPage] Error en sync:', error);
-      alert('Error al sincronizar: ' + error.message);
+      toast({
+        variant: 'destructive',
+        title: 'Error al sincronizar',
+        description: error.message || 'No se pudo conectar con el servidor IMAP',
+      });
     } finally {
       setRefreshing(false);
     }
@@ -269,9 +287,9 @@ export default function MailInboxPage() {
         {/* Botón Nuevo Correo */}
         <div className="p-4">
           <button
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all hover:opacity-90"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-medium transition-all hover:opacity-90"
             style={{ backgroundColor: 'var(--color-accent)', color: 'white' }}
-            onClick={() => navigate('/mail/compose')}
+            onClick={() => navigate('/correo')}
           >
             <Edit size={18} />
             <span>Nuevo correo</span>
