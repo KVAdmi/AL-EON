@@ -169,21 +169,49 @@ export function AuthProvider({ children }) {
 
       if (error) throw error;
       
-      // Verificar que se creó el perfil (wait 2 segundos para que el trigger ejecute)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', data.user?.id)
-        .single();
-      
-      if (profileError || !profile) {
-        console.error('[AUTH] ❌ Error: Perfil no creado automáticamente', profileError);
-        throw new Error('Error creando perfil de usuario. Por favor contacta a soporte.');
+      if (!data.user) {
+        throw new Error('No se recibió información del usuario');
       }
       
-      console.log('[AUTH] ✅ Usuario registrado correctamente con perfil');
+      console.log('[AUTH] ✅ Usuario auth creado:', data.user.id);
+      
+      // Esperar 1 segundo para que el trigger ejecute (si existe)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Verificar si el perfil existe
+      const { data: existingProfile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', data.user.id)
+        .single();
+      
+      if (!existingProfile) {
+        console.log('[AUTH] ⚠️ Perfil no existe, creando manualmente...');
+        
+        // Crear perfil manualmente
+        const { data: newProfile, error: createError } = await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: data.user.id,
+            email: email,
+            display_name: email.split('@')[0], // Usar parte del email como nombre
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+        
+        if (createError) {
+          console.error('[AUTH] ❌ Error creando perfil manualmente:', createError);
+          throw new Error('Database error saving new user');
+        }
+        
+        console.log('[AUTH] ✅ Perfil creado manualmente');
+      } else {
+        console.log('[AUTH] ✅ Perfil ya existe (trigger funcionó)');
+      }
+      
+      console.log('[AUTH] ✅ Signup completo');
       return data;
     } catch (err) {
       console.error('[AUTH] ❌ signup error:', err);
