@@ -26,7 +26,9 @@ import {
   Edit,
   Loader2,
   Menu,
-  X
+  X,
+  ArrowLeft,
+  Mic
 } from 'lucide-react';
 import { useToast } from '@/ui/use-toast';
 
@@ -44,6 +46,7 @@ export default function MailInboxPage() {
   const [showLabelsExpanded, setShowLabelsExpanded] = useState(true);
   const [showSidebar, setShowSidebar] = useState(false);
   const [accounts, setAccounts] = useState([]);
+  const [voiceMode, setVoiceMode] = useState(false);
 
   // Carpetas del correo
   const folders = [
@@ -78,30 +81,35 @@ export default function MailInboxPage() {
 
   async function loadAccounts() {
     try {
+      console.log('🔵 [MailInboxPage] Cargando cuentas para user:', user?.id);
       const { data: mailAccounts, error } = await supabase
         .from('email_accounts')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('owner_user_id', user.id)
+        .eq('is_active', true);
       
       if (error) throw error;
+
+      console.log('🔵 [MailInboxPage] Cuentas recibidas:', mailAccounts);
 
       if (mailAccounts && mailAccounts.length > 0) {
         setAccounts(mailAccounts.map(acc => ({
           id: acc.id,
-          email: acc.email,
-          name: acc.email.split('@')[0],
-          provider: acc.provider || 'imap',
+          email: acc.from_email,
+          name: acc.from_name || acc.from_email.split('@')[0],
+          provider: acc.provider_label || 'smtp',
           isActive: true
         })));
         if (!selectedAccount) {
           setSelectedAccount(mailAccounts[0].id);
         }
       } else {
+        console.log('⚠️ [MailInboxPage] NO se encontraron cuentas');
         setAccounts([]);
         setSelectedAccount(null);
       }
     } catch (error) {
-      console.error('Error cargando cuentas:', error);
+      console.error('❌ [MailInboxPage] Error cargando cuentas:', error);
       setAccounts([]);
     } finally {
       setLoading(false);
@@ -357,6 +365,18 @@ export default function MailInboxPage() {
         >
           <div className="flex items-center gap-3">
             <button
+              onClick={() => navigate(-1)}
+              className="p-2 rounded-2xl hover:opacity-80 transition-all"
+              style={{ 
+                backgroundColor: 'var(--color-bg-secondary)',
+                color: 'var(--color-text-primary)'
+              }}
+              title="Volver"
+            >
+              <ArrowLeft size={20} />
+            </button>
+
+            <button
               onClick={() => setShowSidebar(!showSidebar)}
               className="lg:hidden p-2 rounded-lg hover:bg-[var(--color-bg-hover)]"
               style={{ color: 'var(--color-text-primary)' }}
@@ -371,14 +391,29 @@ export default function MailInboxPage() {
             </h1>
           </div>
           
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="p-2 rounded-lg hover:bg-[var(--color-bg-hover)] disabled:opacity-50"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            <RefreshCw size={20} className={refreshing ? 'animate-spin' : ''} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setVoiceMode(!voiceMode)}
+              className={`p-2 rounded-2xl transition-all ${voiceMode ? 'animate-pulse ring-2' : ''}`}
+              style={{
+                backgroundColor: voiceMode ? 'var(--color-accent)' : 'var(--color-bg-secondary)',
+                color: voiceMode ? 'white' : 'var(--color-text-primary)',
+                ringColor: voiceMode ? 'var(--color-accent)' : 'transparent',
+              }}
+              title={voiceMode ? "Modo voz ACTIVO - Click para desactivar" : "Activar modo voz manos libres"}
+            >
+              <Mic size={20} />
+            </button>
+
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="p-2 rounded-lg hover:bg-[var(--color-bg-hover)] disabled:opacity-50"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              <RefreshCw size={20} className={refreshing ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </div>
 
         {/* Messages List */}
