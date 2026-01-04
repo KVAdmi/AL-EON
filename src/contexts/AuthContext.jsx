@@ -160,14 +160,19 @@ export function AuthProvider({ children }) {
 
   const signup = async (email, password) => {
     try {
-      console.log('[AUTH] signup attempt for:', email);
+      console.log('[AUTH] 🔵 signup attempt for:', email);
+      setLoading(true);
       
+      // 1. Crear usuario en Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[AUTH] ❌ Error en signUp:', error);
+        throw error;
+      }
       
       if (!data.user) {
         throw new Error('No se recibió información del usuario');
@@ -175,49 +180,39 @@ export function AuthProvider({ children }) {
       
       console.log('[AUTH] ✅ Usuario auth creado:', data.user.id);
       
-      // Esperar 1 segundo para que el trigger ejecute (si existe)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 2. Crear perfil DIRECTAMENTE (sin depender de trigger)
+      console.log('[AUTH] 🔵 Creando perfil en user_profiles...');
       
-      // Verificar si el perfil existe
-      const { data: existingProfile } = await supabase
+      const { error: profileError } = await supabase
         .from('user_profiles')
-        .select('*')
-        .eq('user_id', data.user.id)
-        .single();
+        .insert({
+          user_id: data.user.id,
+          email: email,
+          display_name: email.split('@')[0],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
       
-      if (!existingProfile) {
-        console.log('[AUTH] ⚠️ Perfil no existe, creando manualmente...');
-        
-        // Crear perfil manualmente
-        const { data: newProfile, error: createError } = await supabase
-          .from('user_profiles')
-          .insert({
-            user_id: data.user.id,
-            email: email,
-            display_name: email.split('@')[0], // Usar parte del email como nombre
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .select()
-          .single();
-        
-        if (createError) {
-          console.error('[AUTH] ❌ Error creando perfil manualmente:', createError);
+      if (profileError) {
+        console.error('[AUTH] ❌ Error creando perfil:', profileError);
+        // Si el error es porque ya existe, continuar (el trigger lo creó)
+        if (!profileError.message.includes('duplicate') && !profileError.message.includes('already exists')) {
           throw new Error('Database error saving new user');
         }
-        
-        console.log('[AUTH] ✅ Perfil creado manualmente');
+        console.log('[AUTH] ℹ️ Perfil ya existía (trigger lo creó)');
       } else {
-        console.log('[AUTH] ✅ Perfil ya existe (trigger funcionó)');
+        console.log('[AUTH] ✅ Perfil creado exitosamente');
       }
       
       console.log('[AUTH] ✅ Signup completo');
+      setUser(data.user);
+      setAccessToken(data.session?.access_token);
       return data;
     } catch (err) {
       console.error('[AUTH] ❌ signup error:', err);
       throw err;
     } finally {
-      setLoading(false); // 🔥 GARANTIZADO: Apagar loading después de signup
+      setLoading(false);
     }
   };
   
