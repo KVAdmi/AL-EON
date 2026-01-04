@@ -201,7 +201,14 @@ export default function MailInboxPage() {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        const errorMessage = errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`;
+        
+        // Mensaje más específico si es problema de credenciales
+        if (errorMessage.includes('descifrar') || errorMessage.includes('credencial') || errorMessage.includes('decrypt')) {
+          throw new Error('Las credenciales de esta cuenta parecen estar corruptas. Por favor, vuelve a configurar la cuenta en Configuración > Correo');
+        }
+        
+        throw new Error(errorMessage);
       }
       
       const result = await response.json();

@@ -77,21 +77,24 @@ export default function EmailModulePage() {
       }
     } catch (error) {
       console.error('❌ [EmailModulePage] Error al cargar cuentas:', error);
-      toast.error('Error al cargar cuentas: ' + error.message);
+      toast({
+        variant: 'destructive',
+        title: 'Error al cargar cuentas',
+        description: error.message || 'No se pudieron cargar las cuentas de correo',
+      });
     } finally {
+      console.log('🔵 [EmailModulePage] Finalizando loadAccounts, setLoading(false)');
       setLoading(false);
     }
-  };
-
-  const handleAccountSelect = (account) => {
-    setCurrentAccount(account);
-    setSelectedMessage(null);
   };
 
   const handleWizardComplete = (newAccount) => {
     setShowWizard(false);
     loadAccounts();
-    toast.success('✓ Cuenta configurada exitosamente');
+    toast({
+      title: 'Cuenta configurada',
+      description: '✓ Tu cuenta de correo está lista para usar',
+    });
   };
 
   const handleCompose = () => {
@@ -119,7 +122,10 @@ export default function EmailModulePage() {
   };
 
   const handleCreateTask = (message) => {
-    toast.info('Función de crear tarea próximamente');
+    toast({
+      title: 'Próximamente',
+      description: 'Función de crear tarea estará disponible pronto',
+    });
     // TODO: Integrar con módulo de tareas
   };
 
@@ -392,7 +398,10 @@ export default function EmailModulePage() {
           onClose={closeCompose}
           onSent={() => {
             closeCompose();
-            toast.success('✓ Correo enviado');
+            toast({
+              title: 'Correo enviado',
+              description: '✓ Tu mensaje ha sido enviado exitosamente',
+            });
           }}
         />
       )}
