@@ -160,28 +160,48 @@ export function AuthProvider({ children }) {
 
   const signup = async (email, password) => {
     try {
-      console.log('[AUTH] 🔵 signup attempt for:', email);
+      console.log('[AUTH] 🔵 Iniciando registro para:', email);
       setLoading(true);
       
       // 1. Crear usuario en Supabase Auth
+      console.log('[AUTH] 🔵 Paso 1: Creando usuario en Supabase Auth...');
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
 
       if (error) {
-        console.error('[AUTH] ❌ Error en signUp:', error);
-        throw error;
+        console.error('[AUTH] ❌ ERROR EN SUPABASE AUTH:', error);
+        console.error('[AUTH] ❌ Código:', error.status);
+        console.error('[AUTH] ❌ Mensaje:', error.message);
+        
+        // Mensajes de error más claros
+        if (error.message.includes('Email')) {
+          throw new Error('⚠️ Las confirmaciones por email están habilitadas. Contacta al administrador.');
+        }
+        if (error.message.includes('rate limit')) {
+          throw new Error('⚠️ Demasiados intentos. Espera 1 minuto e intenta de nuevo.');
+        }
+        if (error.message.includes('already')) {
+          throw new Error('⚠️ Este email ya está registrado. Intenta iniciar sesión.');
+        }
+        if (error.status === 0 || error.message.includes('fetch')) {
+          throw new Error('⚠️ Error de conexión. Verifica tu internet o contacta al administrador (CORS).');
+        }
+        
+        throw new Error(`⚠️ Error de autenticación: ${error.message}`);
       }
       
       if (!data.user) {
-        throw new Error('No se recibió información del usuario');
+        console.error('[AUTH] ❌ No se recibió información del usuario');
+        throw new Error('⚠️ No se pudo crear el usuario. Intenta de nuevo.');
       }
       
-      console.log('[AUTH] ✅ Usuario auth creado:', data.user.id);
+      console.log('[AUTH] ✅ Usuario auth creado exitosamente:', data.user.id);
+      console.log('[AUTH] ✅ Email:', data.user.email);
       
       // 2. Crear perfil DIRECTAMENTE (sin depender de trigger)
-      console.log('[AUTH] 🔵 Creando perfil en user_profiles...');
+      console.log('[AUTH] 🔵 Paso 2: Creando perfil en user_profiles...');
       
       const { error: profileError } = await supabase
         .from('user_profiles')
@@ -194,22 +214,33 @@ export function AuthProvider({ children }) {
         });
       
       if (profileError) {
-        console.error('[AUTH] ❌ Error creando perfil:', profileError);
+        console.error('[AUTH] ❌ ERROR CREANDO PERFIL:', profileError);
+        console.error('[AUTH] ❌ Código:', profileError.code);
+        console.error('[AUTH] ❌ Mensaje:', profileError.message);
+        
         // Si el error es porque ya existe, continuar (el trigger lo creó)
-        if (!profileError.message.includes('duplicate') && !profileError.message.includes('already exists')) {
-          throw new Error('Database error saving new user');
+        if (profileError.message.includes('duplicate') || profileError.message.includes('already exists')) {
+          console.log('[AUTH] ℹ️ Perfil ya existía (el trigger lo creó primero)');
+        } else if (profileError.message.includes('policy') || profileError.code === '42501') {
+          throw new Error('⚠️ Error de permisos en la base de datos. Contacta al administrador (RLS Policy).');
+        } else {
+          throw new Error(`⚠️ Error guardando perfil: ${profileError.message}`);
         }
-        console.log('[AUTH] ℹ️ Perfil ya existía (trigger lo creó)');
       } else {
-        console.log('[AUTH] ✅ Perfil creado exitosamente');
+        console.log('[AUTH] ✅ Perfil creado exitosamente en user_profiles');
       }
       
-      console.log('[AUTH] ✅ Signup completo');
+      console.log('[AUTH] ✅✅✅ REGISTRO COMPLETADO EXITOSAMENTE');
+      console.log('[AUTH] ✅ Usuario:', data.user.email);
+      console.log('[AUTH] ✅ ID:', data.user.id);
+      
       setUser(data.user);
       setAccessToken(data.session?.access_token);
       return data;
     } catch (err) {
-      console.error('[AUTH] ❌ signup error:', err);
+      console.error('[AUTH] ❌❌❌ ERROR FINAL EN SIGNUP:', err);
+      console.error('[AUTH] ❌ Tipo:', err.constructor.name);
+      console.error('[AUTH] ❌ Mensaje:', err.message);
       throw err;
     } finally {
       setLoading(false);

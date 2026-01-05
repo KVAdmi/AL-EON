@@ -442,6 +442,16 @@ export async function testEmailConnection(accountId) {
       credentials: 'include',
     });
 
+    // Verificar si la respuesta es JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.error('[EmailService] ⚠️ Endpoint no implementado - respuesta HTML');
+      return {
+        success: false,
+        message: '⚠️ El backend aún no tiene implementado el test de conexión IMAP. Guarda la cuenta y verifica manualmente.',
+      };
+    }
+
     const result = await response.json();
 
     if (!response.ok) {
@@ -457,6 +467,15 @@ export async function testEmailConnection(accountId) {
     };
   } catch (error) {
     console.error('[EmailService] Error en testEmailConnection:', error);
+    
+    // Si el error es de parsing JSON, significa que el endpoint no existe
+    if (error.message.includes('JSON') || error.message.includes('Unexpected token')) {
+      return {
+        success: false,
+        message: '⚠️ El backend aún no tiene implementado este endpoint. Puedes guardar la cuenta de todas formas.',
+      };
+    }
+    
     return {
       success: false,
       message: error.message || 'Error de red al probar conexión',
@@ -478,20 +497,47 @@ export async function testEmailConnection(accountId) {
  */
 export async function sendEmail(mailData) {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/mail/send`, {
+    console.log('[EmailService] 📤 Enviando email...', mailData);
+    
+    // Obtener sesión y userId
+    const { data: { session, user } } = await supabase.auth.getSession();
+    const accessToken = session?.access_token;
+    const userId = user?.id;
+    
+    if (!accessToken || !userId) {
+      console.error('[EmailService] ❌ No hay autenticación');
+      throw new Error('No estás autenticado. Por favor inicia sesión.');
+    }
+    
+    console.log('[EmailService] ✅ Usuario autenticado:', userId);
+    
+    // Agregar ownerUserId al payload
+    const payload = {
+      ...mailData,
+      ownerUserId: userId,
+    };
+    
+    console.log('[EmailService] 📦 Payload completo:', payload);
+    
+    const response = await fetch(`${BACKEND_URL}/api/email/send`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
       },
       credentials: 'include',
-      body: JSON.stringify(mailData),
+      body: JSON.stringify(payload),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
+      console.error('[EmailService] ❌ Error del servidor:', response.status, data);
       throw new Error(data.message || 'Error al enviar email');
     }
+    
+    console.log('[EmailService] ✅ Email enviado:', data);
+    return data;
 
     // RETORNAR RESPUESTA DEL CORE TAL CUAL
     return data;

@@ -46,21 +46,49 @@ function SignupPage() {
     }
 
     setLoading(true);
+    console.log('📝 Intentando registrar usuario:', email);
 
     try {
+      console.log('📝 Llamando a función signup...');
       await signup(email, password);
+      
+      console.log('✅ Signup exitoso, mostrando mensaje...');
       toast({
-        title: "¡Registro exitoso!",
-        description: "Revisa tu correo para confirmar tu cuenta",
+        title: "¡Registro exitoso! 🎉",
+        description: "Tu cuenta ha sido creada. Puedes iniciar sesión ahora.",
+        duration: 5000,
       });
-      navigate('/login');
+      
+      // Esperar 2 segundos antes de redirigir
+      setTimeout(() => {
+        console.log('🔄 Redirigiendo a login...');
+        navigate('/login');
+      }, 2000);
+      
     } catch (error) {
-      console.error('Error en registro:', error);
+      console.error('❌ ERROR EN REGISTRO:', error);
+      console.error('❌ Tipo de error:', error.constructor.name);
+      console.error('❌ Mensaje:', error.message);
+      
+      // Mensaje de error más claro para el usuario
+      let errorMessage = error.message || "Error desconocido";
+      let errorTitle = "Error al registrarse";
+      
+      // Si el mensaje ya tiene emoji de warning, usarlo tal cual
+      if (errorMessage.includes('⚠️')) {
+        errorMessage = errorMessage;
+      } else {
+        errorMessage = `⚠️ ${errorMessage}`;
+      }
+      
       toast({
-        title: "Error al registrarse",
-        description: error.message || "Intenta con otro correo",
-        variant: "destructive"
+        title: errorTitle,
+        description: errorMessage,
+        variant: "destructive",
+        duration: 8000, // Mostrar por más tiempo para que lo puedan leer
       });
+      
+      console.log('💡 SOLUCIÓN: Revisa la consola del navegador para más detalles (F12)');
     } finally {
       setLoading(false);
     }
