@@ -97,7 +97,7 @@ export default function EmailInbox({ accountId }) {
             className="text-sm"
             style={{ color: 'var(--color-text-secondary)' }}
           >
-            Puedes enviar correos desde el botón Redactar. La sincronización de mensajes entrantes estará disponible próximamente.
+            Los mensajes que envíes aparecerán aquí.
           </p>
         </div>
       </div>

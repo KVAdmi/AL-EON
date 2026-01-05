@@ -608,6 +608,36 @@ export async function sendEmail(mailData, accessToken = null) {
     }
     
     console.log('[EmailService] ✅ Email enviado:', data);
+    
+    // ✅ Guardar mensaje en BD después de envío exitoso
+    try {
+      const { data: messageData, error: dbError } = await supabase
+        .from('email_messages')
+        .insert({
+          account_id: payload.accountId,
+          from_address: mailData.fromEmail || 'me',
+          to_addresses: payload.to,
+          cc_addresses: payload.cc || [],
+          bcc_addresses: payload.bcc || [],
+          subject: payload.subject,
+          body_text: typeof payload.body === 'string' ? payload.body : '',
+          body_html: typeof payload.body === 'string' ? payload.body : '',
+          sent_at: new Date().toISOString(),
+          is_read: true, // Mensajes enviados se marcan como leídos
+          folder: 'Sent',
+        });
+      
+      if (dbError) {
+        console.error('[EmailService] ⚠️ Error guardando mensaje en BD:', dbError);
+        // No fallar el envío por esto
+      } else {
+        console.log('[EmailService] ✅ Mensaje guardado en BD:', messageData);
+      }
+    } catch (dbSaveError) {
+      console.error('[EmailService] ⚠️ Error al intentar guardar en BD:', dbSaveError);
+      // No fallar el envío por esto
+    }
+    
     return data;
   } catch (error) {
     console.error('[EmailService] Error en sendEmail:', error);

@@ -6,6 +6,8 @@ import TypingIndicator from '@/features/chat/components/TypingIndicator';
 import { SaveMemoryModal } from './SaveMemoryModal';
 import { saveMemory } from '@/services/memoryService';
 import { useToast } from '@/ui/use-toast';
+import { SourcesList, NoSourcesBadge } from './SourcesList';
+import { AttachmentsList } from './AttachmentStatus';
 
 // ✅ P1: Componente para mostrar tiempo de procesamiento
 function ProcessingTimer({ startTime }) {
@@ -338,18 +340,22 @@ function Message({ message, currentUser, assistantName = 'Luma' }) {
           )}
           
           {message.attachments && message.attachments.length > 0 && (
-            <div className="mb-2 md:mb-3 flex flex-wrap gap-1.5 md:gap-2">
-              {message.attachments.map((attachment, idx) => (
-                <AttachmentChip key={idx} attachment={attachment} />
-              ))}
-            </div>
+            <AttachmentsList attachments={message.attachments} />
           )}
           
           <div className="text-sm md:text-base">
             <MarkdownRenderer content={message.content} />
           </div>
 
-          {/* TODO: Agregar soporte para imágenes, fuentes web, citas y acciones */}
+          {/* ✅ Mostrar fuentes si existen */}
+          {!isUser && message.sources && message.sources.length > 0 && (
+            <SourcesList sources={message.sources} />
+          )}
+          
+          {/* ✅ Badge "sin evidencia" si backend respondió sin fuentes */}
+          {!isUser && !isError && message.noSources === true && (
+            <NoSourcesBadge />
+          )}
         </div>
         
         {/* Botones de memoria (aparecen on hover) - Solo para mensajes de AL-E */}
@@ -421,86 +427,6 @@ function Message({ message, currentUser, assistantName = 'Luma' }) {
       )}
     </div>
     </>
-  );
-}
-
-function AttachmentChip({ attachment }) {
-  const [signedUrl, setSignedUrl] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  const formatFileSize = (bytes) => {
-    if (!bytes) return '';
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
-  const getFileIcon = (type) => {
-    if (!type) return '📄';
-    if (type.includes('pdf')) return '📕';
-    if (type.includes('image')) return '🖼️';
-    if (type.includes('video')) return '🎬';
-    if (type.includes('audio')) return '🎵';
-    if (type.includes('word') || type.includes('doc')) return '📘';
-    if (type.includes('sheet') || type.includes('xls') || type.includes('csv')) return '📊';
-    if (type.includes('presentation') || type.includes('ppt')) return '📽️';
-    if (type.includes('zip') || type.includes('rar') || type.includes('7z')) return '📦';
-    if (type.includes('text')) return '📝';
-    return '📄';
-  };
-
-  const handleOpen = async () => {
-    setLoading(true);
-    try {
-      let urlToOpen = attachment.url;
-
-      // Si no hay URL o necesitamos signed URL
-      if (!urlToOpen && attachment.bucket && attachment.path) {
-        const { supabase } = await import('@/lib/supabase');
-        const { data, error } = await supabase.storage
-          .from(attachment.bucket)
-          .createSignedUrl(attachment.path, 3600); // 1 hour
-
-        if (error) throw error;
-        urlToOpen = data.signedUrl;
-        setSignedUrl(urlToOpen); // Cache it
-      }
-
-      if (urlToOpen) {
-        window.open(urlToOpen, '_blank');
-      }
-    } catch (error) {
-      console.error('Error opening attachment:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div 
-      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs md:text-sm border transition-all hover:opacity-80"
-      style={{ 
-        backgroundColor: 'var(--color-bg-tertiary)',
-        borderColor: 'var(--color-border)',
-        color: 'var(--color-text-secondary)'
-      }}
-    >
-      <span className="text-base">{getFileIcon(attachment.type)}</span>
-      <span className="truncate max-w-[120px] md:max-w-[200px] font-medium" style={{ color: 'var(--color-text-primary)' }}>
-        {attachment.name || 'Archivo'}
-      </span>
-      {attachment.size && (
-        <span className="text-xs opacity-70">· {formatFileSize(attachment.size)}</span>
-      )}
-      <button
-        onClick={handleOpen}
-        disabled={loading}
-        className="ml-1 text-xs font-medium underline hover:no-underline"
-        style={{ color: 'var(--color-accent)' }}
-      >
-        {loading ? '...' : 'Abrir'}
-      </button>
-    </div>
   );
 }
 
