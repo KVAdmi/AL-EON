@@ -32,7 +32,7 @@ export default function EmailComposer({
   onSent
 }) {
   const { toast } = useToast();
-  const { currentAccount, composeDraft, updateComposeDraft, closeCompose } = useEmailStore();
+  const { currentAccount, composeDraft, updateComposeDraft, closeCompose, triggerRefresh } = useEmailStore();
   const [sending, setSending] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [showCc, setShowCc] = useState(false);
@@ -102,12 +102,20 @@ export default function EmailComposer({
 
   const handleSend = async () => {
     if (!currentAccount) {
-      toast.error('No hay cuenta seleccionada');
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No hay cuenta seleccionada",
+      });
       return;
     }
 
     if (!formData.to || formData.to.length === 0) {
-      toast.error('Agrega al menos un destinatario');
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Agrega al menos un destinatario",
+      });
       return;
     }
 
@@ -125,14 +133,21 @@ export default function EmailComposer({
         cc: formData.cc,
         bcc: formData.bcc,
         subject: formData.subject,
-        body_html: formData.body_html,
-        body_text: formData.body_text || stripHtml(formData.body_html),
+        body: formData.body_html || formData.body_text, // ✅ Backend espera "body"
         attachments: attachments,
       };
 
       const result = await sendEmail(emailData);
 
-      toast.success('✓ Correo enviado exitosamente');
+      toast({
+        title: "✓ Correo enviado",
+        description: "El correo se envió exitosamente",
+      });
+      
+      // ✅ Refrescar lista de mensajes
+      if (triggerRefresh) {
+        setTimeout(() => triggerRefresh(), 500); // Pequeño delay para que el backend procese
+      }
       
       if (onSent) {
         onSent(result);
@@ -140,7 +155,12 @@ export default function EmailComposer({
 
       handleClose();
     } catch (error) {
-      toast.error('Error al enviar: ' + error.message);
+      console.error('[EmailComposer] Error al enviar:', error);
+      toast({
+        variant: "destructive",
+        title: "Error al enviar",
+        description: error.message || "Revisa destinatario, asunto y contenido",
+      });
     } finally {
       setSending(false);
     }
@@ -153,9 +173,16 @@ export default function EmailComposer({
 
     try {
       await saveDraft(currentAccount.id, formData);
-      toast.success('✓ Borrador guardado');
+      toast({
+        title: "✓ Borrador guardado",
+        description: "El borrador se guardó correctamente",
+      });
     } catch (error) {
-      toast.error('Error al guardar borrador');
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo guardar el borrador",
+      });
     } finally {
       setSavingDraft(false);
     }
@@ -174,7 +201,10 @@ export default function EmailComposer({
     }));
 
     setAttachments([...attachments, ...newAttachments]);
-    toast.success(`${files.length} archivo(s) adjuntado(s)`);
+    toast({
+      title: "✓ Archivos adjuntos",
+      description: `${files.length} archivo(s) adjuntado(s)`,
+    });
   };
 
   const removeAttachment = (index) => {

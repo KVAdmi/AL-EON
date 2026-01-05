@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { sendEmail } from '@/services/emailService';
 import { useToast } from '@/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { X, Send, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 
 const STORAGE_KEY = 'ale_email_compose_draft';
 
 export default function ComposeModal({ accounts, defaultAccountId, onClose }) {
   const { toast } = useToast();
+  const { accessToken } = useAuth(); // 🔥 Obtener token del contexto
   const [sending, setSending] = useState(false);
   const [sendStatus, setSendStatus] = useState(null); // null | 'sending' | 'sent' | 'failed'
   const [messageId, setMessageId] = useState(null);
@@ -71,6 +73,16 @@ export default function ComposeModal({ accounts, defaultAccountId, onClose }) {
       setSending(true);
       setSendStatus('sending');
 
+      // 🔥 Verificar que hay token
+      if (!accessToken) {
+        toast({
+          variant: 'destructive',
+          title: 'Error de autenticación',
+          description: 'No estás autenticado. Por favor recarga la página.',
+        });
+        return;
+      }
+
       const payload = {
         accountId: formData.accountId,
         to: formData.to,
@@ -80,8 +92,8 @@ export default function ComposeModal({ accounts, defaultAccountId, onClose }) {
         ...(formData.bcc && { bcc: formData.bcc.split(',').map(e => e.trim()) }),
       };
 
-      // ESPERAR RESPUESTA DEL CORE
-      const response = await sendEmail(payload);
+      // 🔥 PASAR EL TOKEN COMO SEGUNDO PARÁMETRO
+      const response = await sendEmail(payload, accessToken);
       
       // CONFIRMAR ENVÍO SOLO SI HAY messageId
       if (response.messageId) {

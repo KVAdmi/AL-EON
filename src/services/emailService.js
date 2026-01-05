@@ -493,37 +493,108 @@ export async function testEmailConnection(accountId) {
  * @param {Array} [mailData.cc] - CC (opcional)
  * @param {Array} [mailData.bcc] - BCC (opcional)
  * @param {Array} [mailData.attachments] - Adjuntos (opcional)
+ * @param {string} [accessToken] - Token de autenticación (opcional, se obtiene de sesión si no se pasa)
  * @returns {Promise<Object>} Resultado con { success, messageId?, message? }
  */
-export async function sendEmail(mailData) {
+export async function sendEmail(mailData, accessToken = null) {
   try {
     console.log('[EmailService] 📤 Enviando email...', mailData);
     
-    // Obtener sesión y userId
-    const { data: { session, user } } = await supabase.auth.getSession();
-    const accessToken = session?.access_token;
-    const userId = user?.id;
+    let token = accessToken;
+    let userId = null;
     
-    if (!accessToken || !userId) {
-      console.error('[EmailService] ❌ No hay autenticación');
-      throw new Error('No estás autenticado. Por favor inicia sesión.');
+    // Si no se pasó token, intentar obtenerlo de la sesión
+    if (!token) {
+      console.log('[EmailService] 🔍 No se pasó token, obteniendo de sesión...');
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('[EmailService] ❌ Error obteniendo sesión:', sessionError);
+        throw new Error('Error de autenticación. Intenta cerrar sesión y volver a iniciar.');
+      }
+      
+      const session = sessionData?.session;
+      token = session?.access_token;
+      userId = session?.user?.id;
+      
+      console.log('[EmailService] 🔍 Session existe:', !!session);
+      console.log('[EmailService] 🔍 Token obtenido:', token ? token.substring(0, 20) + '...' : 'NO');
+      console.log('[EmailService] 🔍 User ID:', userId);
+    } else {
+      console.log('[EmailService] ✅ Token recibido como parámetro');
+      // Si se pasó token, extraer userId del token (decodificar JWT)
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        userId = payload.sub;
+        console.log('[EmailService] 🔍 User ID del token:', userId);
+      } catch (e) {
+        console.error('[EmailService] ⚠️ No se pudo extraer userId del token');
+      }
     }
     
-    console.log('[EmailService] ✅ Usuario autenticado:', userId);
+    if (!token) {
+      console.error('[EmailService] ❌ NO HAY TOKEN DE AUTENTICACIÓN');
+      throw new Error('No estás autenticado. Por favor cierra sesión y vuelve a iniciar.');
+    }
     
-    // Agregar ownerUserId al payload
+    console.log('[EmailService] ✅ Token disponible, preparando envío...');
+    
+    // ✅ VALIDACIÓN FUERTE (antes de pegarle al backend)
+    const toRaw = Array.isArray(mailData.to) ? mailData.to : String(mailData.to || '');
+    const toList = Array.isArray(toRaw)
+      ? toRaw.map(e => String(e || '').trim()).filter(Boolean)
+      : toRaw.split(',').map(e => e.trim()).filter(Boolean);
+
+    const subject = String(mailData.subject || '').trim();
+    const body = String(mailData.body || '').trim(); // texto o html
+
+    if (!mailData.accountId) {
+      throw new Error('Selecciona una cuenta de correo antes de enviar.');
+    }
+    if (!toList.length) {
+      throw new Error('Falta el destinatario (to).');
+    }
+    if (!subject) {
+      throw new Error('Falta el asunto (subject).');
+    }
+    if (!body) {
+      throw new Error('Falta el contenido del correo (body/html).');
+    }
+    
+    // Transformar el payload al formato que espera el backend
     const payload = {
-      ...mailData,
-      ownerUserId: userId,
+      accountId: mailData.accountId,
+      to: toList,             // ✅ array limpio
+      subject,
+      body,                   // ✅ siempre string no vacío
     };
     
-    console.log('[EmailService] 📦 Payload completo:', payload);
+    // Agregar campos opcionales
+    if (mailData.cc) {
+      const ccList = Array.isArray(mailData.cc)
+        ? mailData.cc.map(e => String(e || '').trim()).filter(Boolean)
+        : String(mailData.cc).split(',').map(e => e.trim()).filter(Boolean);
+      if (ccList.length) payload.cc = ccList;
+    }
+
+    if (mailData.bcc) {
+      const bccList = Array.isArray(mailData.bcc)
+        ? mailData.bcc.map(e => String(e || '').trim()).filter(Boolean)
+        : String(mailData.bcc).split(',').map(e => e.trim()).filter(Boolean);
+      if (bccList.length) payload.bcc = bccList;
+    }
     
-    const response = await fetch(`${BACKEND_URL}/api/email/send`, {
+    if (mailData.attachments) {
+      payload.attachments = mailData.attachments;
+    }
+    
+    console.log('[EmailService] 📦 Payload transformado:', payload);
+    
+    const response = await fetch(`${BACKEND_URL}/api/mail/send`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
+        'Authorization': `Bearer ${token}`,
       },
       credentials: 'include',
       body: JSON.stringify(payload),
@@ -537,9 +608,6 @@ export async function sendEmail(mailData) {
     }
     
     console.log('[EmailService] ✅ Email enviado:', data);
-    return data;
-
-    // RETORNAR RESPUESTA DEL CORE TAL CUAL
     return data;
   } catch (error) {
     console.error('[EmailService] Error en sendEmail:', error);

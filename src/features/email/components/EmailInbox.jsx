@@ -3,9 +3,11 @@ import { getInbox } from '@/services/emailService';
 import { useToast } from '@/ui/use-toast';
 import { RefreshCw, Mail, MailOpen } from 'lucide-react';
 import EmailMessage from './EmailMessage';
+import useEmailStore from '../../../stores/emailStore';
 
 export default function EmailInbox({ accountId }) {
   const { toast } = useToast();
+  const { setRefreshMessages } = useEmailStore();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMessage, setSelectedMessage] = useState(null);
@@ -13,6 +15,8 @@ export default function EmailInbox({ accountId }) {
 
   useEffect(() => {
     loadMessages();
+    // Registrar función de refresh en el store
+    setRefreshMessages(loadMessages);
   }, [accountId]);
 
   async function loadMessages() {
@@ -82,18 +86,18 @@ export default function EmailInbox({ accountId }) {
         className="flex-1 flex items-center justify-center p-6"
       >
         <div className="text-center max-w-md">
-          <Mail size={64} className="mx-auto mb-4" style={{ color: 'var(--color-text-tertiary)' }} />
+          <Mail size={48} className="mx-auto mb-4" style={{ color: 'var(--color-text-tertiary)' }} />
           <h3 
             className="text-lg font-semibold mb-2"
             style={{ color: 'var(--color-text-primary)' }}
           >
-            Inbox en preparación
+            No hay mensajes en esta carpeta
           </h3>
           <p 
             className="text-sm"
             style={{ color: 'var(--color-text-secondary)' }}
           >
-            La recepción de emails (IMAP) estará disponible próximamente. Por ahora puedes enviar emails desde Redactar.
+            Puedes enviar correos desde el botón Redactar. La sincronización de mensajes entrantes estará disponible próximamente.
           </p>
         </div>
       </div>

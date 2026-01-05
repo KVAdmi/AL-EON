@@ -80,6 +80,16 @@ const useEmailStore = create(
         ),
       })),
       
+      // Trigger para refrescar mensajes (callback externo)
+      refreshMessages: null,
+      setRefreshMessages: (callback) => set({ refreshMessages: callback }),
+      triggerRefresh: () => {
+        const state = get();
+        if (state.refreshMessages) {
+          state.refreshMessages();
+        }
+      },
+      
       // Actions - Carpetas/Filtros
       setCurrentFolder: (folder) => set({ currentFolder: folder }),
       setSearchQuery: (query) => set({ searchQuery: query }),
