@@ -353,8 +353,10 @@ export default function EmailModulePage() {
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden">
           {/* Inbox List */}
-          <div className={`${selectedMessage ? 'hidden lg:flex' : 'flex'} w-full lg:w-96 border-r flex-col`}>
+          <div className={`${selectedMessage ? 'hidden lg:flex' : 'flex'} w-full lg:w-96 border-r flex-col`} style={{ borderColor: 'var(--color-border)' }}>
             <EmailInbox 
+              accountId={currentAccount?.id}
+              folder={currentFolder}
               onSelectMessage={(message) => {
                 setSelectedMessage(message);
               }}
@@ -363,14 +365,23 @@ export default function EmailModulePage() {
 
           {/* Message Detail */}
           <div className={`${selectedMessage ? 'flex' : 'hidden lg:flex'} flex-1 flex-col`}>
-            <EmailMessageDetail
-              message={selectedMessage}
-              onReply={handleReply}
-              onReplyAll={handleReplyAll}
-              onForward={handleForward}
-              onCreateTask={handleCreateTask}
-              onClose={() => setSelectedMessage(null)}
-            />
+            {selectedMessage ? (
+              <EmailMessageDetail
+                message={selectedMessage}
+                onReply={handleReply}
+                onReplyAll={handleReplyAll}
+                onForward={handleForward}
+                onCreateTask={handleCreateTask}
+                onClose={() => setSelectedMessage(null)}
+              />
+            ) : (
+              <div 
+                className="h-full flex items-center justify-center"
+                style={{ color: 'var(--color-text-tertiary)' }}
+              >
+                Selecciona un mensaje para verlo
+              </div>
+            )}
           </div>
         </div>
       </div>

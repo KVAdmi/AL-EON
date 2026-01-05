@@ -5,41 +5,91 @@ import { RefreshCw, Mail, MailOpen } from 'lucide-react';
 import EmailMessage from './EmailMessage';
 import useEmailStore from '../../../stores/emailStore';
 
-export default function EmailInbox({ accountId }) {
+export default function EmailInbox({ accountId, folder, onSelectMessage }) {
   const { toast } = useToast();
   const { setRefreshMessages } = useEmailStore();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedMessage, setSelectedMessage] = useState(null);
+  const [selectedMessageId, setSelectedMessageId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadMessages();
     // Registrar función de refresh en el store
     setRefreshMessages(loadMessages);
-  }, [accountId]);
+  }, [accountId, folder]);
 
   async function loadMessages() {
     if (!accountId) return;
 
     try {
       setLoading(true);
-      const data = await getInbox(accountId);
-      setMessages(data?.messages || []);
+      
+      // Intentar cargar desde backend
+      try {
+        const data = await getInbox(accountId, { folder });
+        setMessages(data?.messages || []);
+        return;
+      } catch (backendError) {
+        console.log('[EmailInbox] Backend no disponible, leyendo de Supabase:', backendError.message);
+      }
+      
+      // Fallback: Leer directo de Supabase
+      const { supabase } = await import('../../../lib/supabase');
+      
+      let query = supabase
+        .from('email_messages')
+        .select('*')
+        .eq('account_id', accountId)
+        .order('sent_at', { ascending: false });
+      
+      // Filtrar por carpeta si se especifica
+      if (folder) {
+        // Mapear nombres de carpetas de UI a DB
+        const folderMap = {
+          'inbox': 'Inbox',
+          'sent': 'Sent',
+          'starred': 'Starred',
+          'archive': 'Archive',
+          'trash': 'Trash'
+        };
+        const dbFolder = folderMap[folder] || folder;
+        query = query.eq('folder', dbFolder);
+      }
+      
+      const { data: dbMessages, error } = await query;
+      
+      if (error) {
+        console.error('[EmailInbox] Error de Supabase:', error);
+        setMessages([]);
+        return;
+      }
+      
+      // Transformar formato de Supabase a formato esperado por UI
+      const transformedMessages = (dbMessages || []).map(msg => ({
+        id: msg.id,
+        from: msg.from_address,
+        subject: msg.subject,
+        preview: msg.body_text?.substring(0, 100) || '',
+        date: msg.sent_at || msg.created_at,
+        sent_at: msg.sent_at,
+        received_at: msg.received_at,
+        created_at: msg.created_at,
+        read: msg.is_read || false,
+        starred: msg.is_starred || false,
+        folder: msg.folder,
+      }));
+      
+      setMessages(transformedMessages);
+      
     } catch (error) {
       console.error('Error cargando mensajes:', error);
       
-      // Si el backend no está listo, mostrar mensaje amigable
-      if (error.message.includes('Backend no disponible') || error.message.includes('404')) {
-        // No mostrar error, solo mantener empty state
-        setMessages([]);
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: error.message || 'No se pudieron cargar los mensajes',
-        });
-      }
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'No se pudieron cargar los mensajes',
+      });
     } finally {
       setLoading(false);
     }
@@ -52,19 +102,32 @@ export default function EmailInbox({ accountId }) {
   }
 
   function formatDate(dateString) {
-    const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    if (!dateString) return 'Sin fecha';
+    
+    try {
+      const date = new Date(dateString);
+      
+      // Validar fecha válida
+      if (isNaN(date.getTime())) {
+        return 'Fecha inválida';
+      }
+      
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
 
-    if (date.toDateString() === today.toDateString()) {
-      return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return 'Ayer';
-    } else if (date.getFullYear() === today.getFullYear()) {
-      return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-    } else {
-      return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+      if (date.toDateString() === today.toDateString()) {
+        return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      } else if (date.toDateString() === yesterday.toDateString()) {
+        return 'Ayer';
+      } else if (date.getFullYear() === today.getFullYear()) {
+        return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+      } else {
+        return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+      }
+    } catch (error) {
+      console.error('Error formatting date:', dateString, error);
+      return 'Sin fecha';
     }
   }
 
@@ -105,10 +168,10 @@ export default function EmailInbox({ accountId }) {
   }
 
   return (
-    <div className="flex-1 flex">
+    <div className="flex-1 flex flex-col">
       {/* Lista de mensajes */}
       <div 
-        className="w-96 border-r flex flex-col"
+        className="flex-1 flex flex-col"
         style={{ borderColor: 'var(--color-border)' }}
       >
         {/* Header */}
@@ -120,7 +183,12 @@ export default function EmailInbox({ accountId }) {
             className="font-semibold"
             style={{ color: 'var(--color-text-primary)' }}
           >
-            Bandeja de entrada
+            {folder === 'inbox' && 'Bandeja de entrada'}
+            {folder === 'sent' && 'Enviados'}
+            {folder === 'starred' && 'Destacados'}
+            {folder === 'archive' && 'Archivados'}
+            {folder === 'trash' && 'Papelera'}
+            {!folder && 'Todos los mensajes'}
           </h3>
           <button
             onClick={handleRefresh}
@@ -137,12 +205,17 @@ export default function EmailInbox({ accountId }) {
           {messages.map((message) => (
             <button
               key={message.id}
-              onClick={() => setSelectedMessage(message)}
+              onClick={() => {
+                setSelectedMessageId(message.id);
+                if (onSelectMessage) {
+                  onSelectMessage(message);
+                }
+              }}
               className={`w-full px-4 py-3 border-b text-left transition-all hover:opacity-80 ${
-                selectedMessage?.id === message.id ? 'font-medium' : ''
+                selectedMessageId === message.id ? 'font-medium' : ''
               }`}
               style={{
-                backgroundColor: selectedMessage?.id === message.id 
+                backgroundColor: selectedMessageId === message.id 
                   ? 'var(--color-bg-secondary)' 
                   : 'transparent',
                 borderColor: 'var(--color-border)',
@@ -168,7 +241,7 @@ export default function EmailInbox({ accountId }) {
                       className="text-xs ml-2 flex-shrink-0"
                       style={{ color: 'var(--color-text-tertiary)' }}
                     >
-                      {formatDate(message.date)}
+                      {formatDate(message.date || message.sent_at || message.received_at || message.created_at)}
                     </span>
                   </div>
                   <p 
@@ -195,19 +268,7 @@ export default function EmailInbox({ accountId }) {
         </div>
       </div>
 
-      {/* Message viewer */}
-      <div className="flex-1">
-        {selectedMessage ? (
-          <EmailMessage message={selectedMessage} accountId={accountId} />
-        ) : (
-          <div 
-            className="h-full flex items-center justify-center"
-            style={{ color: 'var(--color-text-tertiary)' }}
-          >
-            Selecciona un mensaje para verlo
-          </div>
-        )}
-      </div>
+      {/* Message viewer removed - parent will handle this */}
     </div>
   );
 }
