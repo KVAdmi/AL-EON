@@ -69,15 +69,27 @@ export default function EmailInbox({ accountId, folder, onSelectMessage }) {
       const transformedMessages = (dbMessages || []).map(msg => ({
         id: msg.id,
         from: msg.from_address,
+        from_name: msg.from_name,
+        from_address: msg.from_address,
+        to_addresses: msg.to_addresses,
+        cc_addresses: msg.cc_addresses,
         subject: msg.subject,
         preview: msg.body_text?.substring(0, 100) || '',
+        body_text: msg.body_text,
+        body_html: msg.body_html,
         date: msg.sent_at || msg.created_at,
         sent_at: msg.sent_at,
         received_at: msg.received_at,
         created_at: msg.created_at,
         read: msg.is_read || false,
+        is_read: msg.is_read || false,
         starred: msg.is_starred || false,
+        is_starred: msg.is_starred || false,
         folder: msg.folder,
+        account_id: msg.account_id,
+        has_attachments: msg.has_attachments || false,
+        attachments: msg.attachments || [],
+        attachment_count: msg.attachments?.length || 0,
       }));
       
       setMessages(transformedMessages);
