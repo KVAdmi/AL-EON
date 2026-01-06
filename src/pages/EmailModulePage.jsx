@@ -98,6 +98,13 @@ export default function EmailModulePage() {
     });
   };
 
+  const handleAccountSelect = (account) => {
+    console.log('🔵 [EmailModulePage] Cuenta seleccionada:', account);
+    setCurrentAccount(account);
+    setCurrentFolder('inbox');
+    setSelectedMessage(null);
+  };
+
   const handleCompose = () => {
     setComposerMode('new');
     setReplyToMessage(null);
