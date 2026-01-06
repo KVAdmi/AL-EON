@@ -135,35 +135,52 @@ export function useConversations() {
 
   const deleteConversation = async (id) => {
     try {
-      // Delete from backend if this conversation has a sessionId
       const conversation = conversations.find(conv => conv.id === id);
-      if (conversation?.sessionId) {
-        await deleteSession(conversation.sessionId);
-        console.log('✅ Sesión eliminada del backend:', conversation.sessionId);
+      
+      // ☁️ PRIMERO: Delete from Supabase (crítico)
+      console.log('🗑️ Eliminando conversación de Supabase:', id);
+      const supabaseDeleted = await deleteConversationFromSupabase(id);
+      
+      if (!supabaseDeleted) {
+        console.error('❌ No se pudo eliminar la conversación de Supabase');
+        throw new Error('No se pudo eliminar la conversación del servidor');
       }
       
-      // ☁️ Delete from Supabase
-      await deleteConversationFromSupabase(id);
-      
-    } catch (error) {
-      console.error('⚠️ Error eliminando sesión:', error);
-      // Continue with local deletion even if backend fails
-    }
-
-    setConversations(prev => {
-      const filtered = prev.filter(conv => conv.id !== id);
-      
-      // If we're deleting the current conversation, switch to another one
-      if (id === currentConversationId) {
-        if (filtered.length > 0) {
-          setCurrentConversationId(filtered[0].id);
-        } else {
-          setCurrentConversationId(null);
+      // SEGUNDO: Delete from backend session if exists
+      if (conversation?.sessionId) {
+        try {
+          await deleteSession(conversation.sessionId);
+          console.log('✅ Sesión eliminada del backend:', conversation.sessionId);
+        } catch (sessionError) {
+          console.warn('⚠️ Error eliminando sesión del backend (no crítico):', sessionError);
+          // No bloquear si falla esto
         }
       }
       
-      return filtered;
-    });
+      // TERCERO: Update local state SOLO si todo salió bien
+      setConversations(prev => {
+        const filtered = prev.filter(conv => conv.id !== id);
+        
+        // If we're deleting the current conversation, switch to another one
+        if (id === currentConversationId) {
+          if (filtered.length > 0) {
+            setCurrentConversationId(filtered[0].id);
+          } else {
+            setCurrentConversationId(null);
+          }
+        }
+        
+        return filtered;
+      });
+      
+      console.log('✅ Conversación eliminada completamente:', id);
+      return true;
+      
+    } catch (error) {
+      console.error('❌ Error eliminando conversación:', error);
+      // NO eliminar del estado local si falló
+      throw error; // Re-throw para que el componente pueda mostrar error
+    }
   };
 
   const addMessage = (conversationId, message) => {

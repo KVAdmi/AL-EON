@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { getUserBots } from '@/services/telegramService';
+import { getUserBots, updateBotSettings } from '@/services/telegramService';
 import ConnectBotForm from '@/features/telegram/components/ConnectBotForm';
 import { useToast } from '@/ui/use-toast';
 import { Link } from 'react-router-dom';
-import { Send, CheckCircle2, XCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Send, CheckCircle2, XCircle, AlertCircle, ArrowLeft, AlertTriangle } from 'lucide-react';
 
 export default function TelegramSettingsPage() {
   const { user } = useAuth();
@@ -41,6 +41,30 @@ export default function TelegramSettingsPage() {
   function handleBotConnected() {
     loadBots();
     setShowConnectForm(false);
+  }
+
+  async function handleToggleAutoSend(botId, currentValue) {
+    try {
+      await updateBotSettings(botId, {
+        auto_send_enabled: !currentValue
+      });
+      
+      toast({
+        title: !currentValue ? 'Auto-send activado' : 'Auto-send desactivado',
+        description: !currentValue 
+          ? '✓ AL-E podrá enviar mensajes automáticamente por Telegram'
+          : '✓ AL-E solicitará tu aprobación antes de enviar mensajes',
+      });
+      
+      loadBots();
+    } catch (error) {
+      console.error('Error actualizando configuración:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'No se pudo actualizar la configuración',
+      });
+    }
   }
 
   return (
@@ -88,62 +112,137 @@ export default function TelegramSettingsPage() {
             {/* Connected bots */}
             {bots.length > 0 && (
               <div className="space-y-4 mb-6">
-                {bots.map(bot => (
-                  <div
-                    key={bot.id}
-                    className="p-5 rounded-xl border flex items-center justify-between"
-                    style={{
-                      backgroundColor: 'var(--color-bg-secondary)',
-                      borderColor: 'var(--color-border)',
-                    }}
-                  >
-                    <div className="flex items-center gap-4">
-                      <Send size={24} style={{ color: 'var(--color-accent)' }} />
-                      <div>
-                        <h3 
-                          className="font-semibold text-lg"
-                          style={{ color: 'var(--color-text-primary)' }}
-                        >
-                          @{bot.botUsername}
-                        </h3>
-                        <div className="flex items-center gap-2 mt-1">
-                          {bot.isConnected ? (
-                            <>
-                              <CheckCircle2 size={16} style={{ color: '#10b981' }} />
-                              <span 
-                                className="text-sm"
-                                style={{ color: '#10b981' }}
-                              >
-                                Conectado
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <XCircle size={16} style={{ color: '#ef4444' }} />
-                              <span 
-                                className="text-sm"
-                                style={{ color: '#ef4444' }}
-                              >
-                                Desconectado
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <Link
-                      to="/telegram"
-                      className="py-2 px-4 rounded-lg font-medium border transition-all hover:opacity-80"
+                {bots.map(bot => {
+                  // Determinar estado del bot
+                  const hasStarted = bot.chat_id || bot.has_started;
+                  const status = bot.isConnected && hasStarted 
+                    ? 'connected' 
+                    : bot.isConnected && !hasStarted 
+                    ? 'waiting' 
+                    : 'error';
+                  
+                  return (
+                    <div
+                      key={bot.id}
+                      className="p-5 rounded-xl border"
                       style={{
+                        backgroundColor: 'var(--color-bg-secondary)',
                         borderColor: 'var(--color-border)',
-                        color: 'var(--color-text-primary)',
                       }}
                     >
-                      Ver mensajes
-                    </Link>
-                  </div>
-                ))}
+                      <div className="flex items-start justify-between gap-4 mb-4">
+                        <div className="flex items-center gap-4">
+                          <Send size={24} style={{ color: 'var(--color-accent)' }} />
+                          <div>
+                            <h3 
+                              className="font-semibold text-lg"
+                              style={{ color: 'var(--color-text-primary)' }}
+                            >
+                              @{bot.botUsername || bot.bot_username}
+                            </h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              {status === 'connected' && (
+                                <>
+                                  <CheckCircle2 size={16} style={{ color: '#10b981' }} />
+                                  <span 
+                                    className="text-sm font-medium"
+                                    style={{ color: '#10b981' }}
+                                  >
+                                    ✅ Conectado
+                                  </span>
+                                </>
+                              )}
+                              {status === 'waiting' && (
+                                <>
+                                  <AlertTriangle size={16} style={{ color: '#f59e0b' }} />
+                                  <span 
+                                    className="text-sm font-medium"
+                                    style={{ color: '#f59e0b' }}
+                                  >
+                                    ⚠️ Falta presionar Start
+                                  </span>
+                                </>
+                              )}
+                              {status === 'error' && (
+                                <>
+                                  <XCircle size={16} style={{ color: '#ef4444' }} />
+                                  <span 
+                                    className="text-sm font-medium"
+                                    style={{ color: '#ef4444' }}
+                                  >
+                                    ❌ Error de conexión
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <Link
+                          to="/telegram"
+                          className="py-2 px-4 rounded-lg font-medium border transition-all hover:opacity-80"
+                          style={{
+                            borderColor: 'var(--color-border)',
+                            color: 'var(--color-text-primary)',
+                          }}
+                        >
+                          Ver mensajes
+                        </Link>
+                      </div>
+
+                      {/* Toggle Auto-send */}
+                      <div 
+                        className="flex items-center justify-between p-4 rounded-lg"
+                        style={{ backgroundColor: 'var(--color-bg-primary)' }}
+                      >
+                        <div>
+                          <h4 
+                            className="font-medium mb-1"
+                            style={{ color: 'var(--color-text-primary)' }}
+                          >
+                            Auto-send permitido
+                          </h4>
+                          <p 
+                            className="text-sm"
+                            style={{ color: 'var(--color-text-secondary)' }}
+                          >
+                            {bot.auto_send_enabled 
+                              ? 'AL-E puede enviar mensajes automáticamente' 
+                              : 'AL-E pedirá tu aprobación antes de enviar'}
+                          </p>
+                        </div>
+                        
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            checked={bot.auto_send_enabled || false}
+                            onChange={() => handleToggleAutoSend(bot.id, bot.auto_send_enabled)}
+                          />
+                          <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0078d4]"></div>
+                        </label>
+                      </div>
+
+                      {/* Instrucciones si falta Start */}
+                      {status === 'waiting' && (
+                        <div 
+                          className="mt-3 p-3 rounded-lg border-l-4"
+                          style={{ 
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            borderLeftColor: '#f59e0b'
+                          }}
+                        >
+                          <p 
+                            className="text-sm font-medium"
+                            style={{ color: 'var(--color-text-primary)' }}
+                          >
+                            📱 <strong>Último paso:</strong> Abre Telegram, busca tu bot <span className="font-mono">@{bot.botUsername || bot.bot_username}</span> y presiona <strong>INICIAR</strong>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
 

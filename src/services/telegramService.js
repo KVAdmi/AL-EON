@@ -92,6 +92,37 @@ export async function disconnectBot(botId) {
 }
 
 /**
+ * Actualiza la configuración de un bot (auto-send, notificaciones, etc.)
+ * @param {string} botId - ID del bot
+ * @param {Object} settings - Configuración a actualizar
+ * @param {boolean} [settings.auto_send_enabled] - Permitir envío automático
+ * @param {boolean} [settings.notifications_enabled] - Habilitar notificaciones
+ * @returns {Promise<Object>} Bot actualizado
+ */
+export async function updateBotSettings(botId, settings) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/telegram/bots/${botId}/settings`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(settings),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al actualizar configuración del bot');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[TelegramService] Error en updateBotSettings:', error);
+    throw error;
+  }
+}
+
+/**
  * Obtiene la lista de chats/conversaciones de Telegram
  * @param {string} userId - ID del usuario
  * @param {string} [botId] - ID del bot (opcional, si no se especifica usa el bot activo)

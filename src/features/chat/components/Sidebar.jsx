@@ -4,7 +4,7 @@ import {
   Plus, MessageSquare, Trash2, Edit3, Check, X, Search,
   LogOut, User, Settings, ChevronDown, ChevronRight,
   Folder, FolderPlus, Calendar, Sparkles, Zap, Users, MoreVertical, Share2, FileText,
-  Mail, Send, Bell
+  Mail, Send, Bell, Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils';
@@ -502,11 +502,24 @@ function ConversationItem({ conversation, isActive, onSelect, onUpdate, onDelete
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(conversation.title);
   const [isHovered, setIsHovered] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDelete = (e) => {
+  const handleDelete = async (e) => {
     e.stopPropagation();
-    if (confirm('¿Eliminar esta conversación?')) {
-      onDelete();
+    
+    if (!confirm('¿Eliminar esta conversación? Esta acción no se puede deshacer.')) {
+      return;
+    }
+    
+    try {
+      setIsDeleting(true);
+      await onDelete();
+      console.log('✅ Conversación eliminada exitosamente');
+    } catch (error) {
+      console.error('❌ Error eliminando conversación:', error);
+      alert('Error al eliminar la conversación. Por favor intenta de nuevo.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -587,11 +600,16 @@ function ConversationItem({ conversation, isActive, onSelect, onUpdate, onDelete
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="p-1.5 rounded-xl hover:bg-red-500/10 transition-all"
-                  style={{ color: 'var(--color-text-tertiary)' }}
-                  title="Eliminar"
+                  disabled={isDeleting}
+                  className="p-1.5 rounded-xl hover:bg-red-500/10 transition-all disabled:opacity-50"
+                  style={{ color: isDeleting ? 'var(--color-text-tertiary)' : 'var(--color-text-tertiary)' }}
+                  title={isDeleting ? 'Eliminando...' : 'Eliminar'}
                 >
-                  <Trash2 size={14} />
+                  {isDeleting ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Trash2 size={14} />
+                  )}
                 </button>
               </div>
             )}
