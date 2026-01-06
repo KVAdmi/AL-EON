@@ -7,6 +7,11 @@ import {
   Mail, 
   Plus, 
   Settings, 
+  Inbox as InboxIcon, 
+  Send, 
+  Archive, 
+  Trash2,
+  Star,
   Menu,
   X,
   Mic,
@@ -21,7 +26,6 @@ import EmailConfigWizard from '@/features/email/components/EmailConfigWizard';
 import EmailInbox from '@/features/email/components/EmailInbox';
 import EmailComposer from '@/features/email/components/EmailComposer';
 import EmailMessageDetail from '@/features/email/components/EmailMessageDetail';
-import EmailAccountSection from '@/features/email/components/EmailAccountSection';
 
 export default function EmailModulePage() {
   const { user, accessToken } = useAuth();
@@ -94,20 +98,6 @@ export default function EmailModulePage() {
     });
   };
 
-  const handleAccountSelect = (account) => {
-    console.log('🔵 [EmailModulePage] Cuenta seleccionada:', account);
-    setCurrentAccount(account);
-    setCurrentFolder('inbox'); // Resetear a inbox al cambiar de cuenta
-    setSelectedMessage(null); // Limpiar mensaje seleccionado
-  };
-
-  const handleFolderSelect = (account, folderId) => {
-    console.log('🔵 [EmailModulePage] Carpeta seleccionada:', folderId, 'para cuenta:', account.id);
-    setCurrentAccount(account);
-    setCurrentFolder(folderId);
-    setSelectedMessage(null); // Limpiar mensaje seleccionado al cambiar carpeta
-  };
-
   const handleCompose = () => {
     setComposerMode('new');
     setReplyToMessage(null);
@@ -139,6 +129,14 @@ export default function EmailModulePage() {
     });
     // TODO: Integrar con módulo de tareas
   };
+
+  const folders = [
+    { id: 'inbox', name: 'Bandeja de entrada', icon: InboxIcon, color: 'var(--color-primary)' },
+    { id: 'sent', name: 'Enviados', icon: Send, color: 'var(--color-text-secondary)' },
+    { id: 'starred', name: 'Destacados', icon: Star, color: '#facc15' },
+    { id: 'archive', name: 'Archivados', icon: Archive, color: 'var(--color-text-secondary)' },
+    { id: 'trash', name: 'Papelera', icon: Trash2, color: '#ef4444' },
+  ];
 
   if (loading) {
     return (
@@ -272,52 +270,83 @@ export default function EmailModulePage() {
             borderColor: 'var(--color-border)',
           }}
         >
-          <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: 'var(--color-border)' }}>
-            <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-              MIS CUENTAS
-            </h2>
-            <button
-              onClick={() => setShowSidebar(false)}
-              className="lg:hidden p-1 rounded-2xl hover:opacity-80"
-            >
-              <X className="w-4 h-4" style={{ color: 'var(--color-text-secondary)' }} />
-            </button>
-          </div>
-
-          {/* Lista de cuentas colapsables */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {accounts.length === 0 && (
-              <div className="text-center py-8">
-                <Mail className="w-12 h-12 mx-auto mb-3" style={{ color: 'var(--color-text-tertiary)' }} />
-                <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
+          <div className="p-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                CUENTAS
+              </h2>
+              <button
+                onClick={() => setShowSidebar(false)}
+                className="lg:hidden p-1 rounded-2xl hover:opacity-80"
+              >
+                <X className="w-4 h-4" style={{ color: 'var(--color-text-secondary)' }} />
+              </button>
+            </div>
+            
+            {/* Lista de cuentas */}
+            <div className="space-y-1">
+              {accounts.length === 0 && (
+                <p className="text-sm text-center py-4" style={{ color: 'var(--color-text-tertiary)' }}>
                   No hay cuentas configuradas
                 </p>
-              </div>
-            )}
-            {accounts.map((account) => (
-              <EmailAccountSection
-                key={account.id}
-                account={account}
-                currentFolder={currentAccount?.id === account.id ? currentFolder : null}
-                onFolderSelect={handleFolderSelect}
-                isOnlyAccount={accounts.length === 1}
-              />
-            ))}
+              )}
+              {accounts.map((account) => (
+                <button
+                  key={account.id}
+                  onClick={() => handleAccountSelect(account)}
+                  className={`w-full text-left px-3 py-2 rounded-2xl transition-all ${
+                    currentAccount?.id === account.id ? 'ring-2' : ''
+                  }`}
+                  style={{
+                    backgroundColor: currentAccount?.id === account.id 
+                      ? 'var(--color-bg-secondary)' 
+                      : 'transparent',
+                    ringColor: 'var(--color-primary)',
+                    color: 'var(--color-text-primary)',
+                  }}
+                >
+                  <p className="font-medium truncate text-sm">{account.from_name || account.fromName || 'Sin nombre'}</p>
+                  <p className="text-xs truncate" style={{ color: 'var(--color-text-tertiary)' }}>
+                    {account.from_email || account.fromEmail || 'sin-email@example.com'}
+                  </p>
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Botón para agregar cuenta */}
-          <div className="p-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
-            <button
-              onClick={() => setShowWizard(true)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg hover:opacity-90 transition-all"
-              style={{
-                backgroundColor: 'var(--color-bg-secondary)',
-                color: 'var(--color-text-primary)',
-              }}
-            >
-              <Plus className="w-4 h-4" />
-              <span className="text-sm font-medium">Agregar cuenta</span>
-            </button>
+          {/* Carpetas */}
+          <div className="flex-1 overflow-y-auto p-4">
+            <h2 className="font-semibold text-sm mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+              CARPETAS
+            </h2>
+            <div className="space-y-1">
+              {folders.map((folder) => {
+                const FolderIcon = folder.icon;
+                return (
+                  <button
+                    key={folder.id}
+                    onClick={() => setCurrentFolder(folder.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-2xl transition-all ${
+                      currentFolder === folder.id ? 'ring-2' : ''
+                    }`}
+                    style={{
+                      backgroundColor: currentFolder === folder.id 
+                        ? 'var(--color-bg-secondary)' 
+                        : 'transparent',
+                      ringColor: 'var(--color-primary)',
+                    }}
+                  >
+                    <FolderIcon className="w-5 h-5" style={{ color: folder.color }} />
+                    <span 
+                      className="text-sm font-medium"
+                      style={{ color: 'var(--color-text-primary)' }}
+                    >
+                      {folder.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
