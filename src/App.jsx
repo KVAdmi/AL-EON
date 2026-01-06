@@ -21,7 +21,6 @@ const PrivacyPolicyPage = lazy(() => import('@/pages/PrivacyPolicyPage'));
 const TermsOfServicePage = lazy(() => import('@/pages/TermsOfServicePage'));
 const UserIntegrationsPage = lazy(() => import('@/pages/UserIntegrationsPage'));
 const EmailSettingsPage = lazy(() => import('@/pages/EmailSettingsPage'));
-const EmailPage = lazy(() => import('@/pages/EmailPage'));
 const EmailPageOutlook = lazy(() => import('@/pages/EmailPageOutlook'));
 const DraftsPage = lazy(() => import('@/pages/DraftsPage'));
 const CalendarPage = lazy(() => import('@/pages/CalendarPage'));
@@ -297,7 +296,7 @@ function App() {
           path="/correo" 
           element={
             <ProtectedRoute>
-              <EmailModulePage />
+              <EmailPageOutlook />
             </ProtectedRoute>
           } 
         />

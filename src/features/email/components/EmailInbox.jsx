@@ -142,67 +142,70 @@ export default function EmailInbox({ accountId, folder, onSelectMessage }) {
     );
   }
 
-  // Empty state cuando IMAP no está configurado o backend no disponible
-  if (messages.length === 0) {
-    return (
-      <div 
-        className="flex-1 flex items-center justify-center p-6"
-      >
-        <div className="text-center max-w-md">
-          <Mail size={48} className="mx-auto mb-4" style={{ color: 'var(--color-text-tertiary)' }} />
-          <h3 
-            className="text-lg font-semibold mb-2"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            No hay mensajes en esta carpeta
-          </h3>
-          <p 
-            className="text-sm"
-            style={{ color: 'var(--color-text-secondary)' }}
-          >
-            Los mensajes que envíes aparecerán aquí.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex-1 flex flex-col">
-      {/* Lista de mensajes */}
+      {/* Header - SIEMPRE VISIBLE */}
       <div 
-        className="flex-1 flex flex-col"
+        className="px-4 py-3 border-b flex items-center justify-between"
         style={{ borderColor: 'var(--color-border)' }}
       >
-        {/* Header */}
-        <div 
-          className="px-4 py-3 border-b flex items-center justify-between"
-          style={{ borderColor: 'var(--color-border)' }}
+        <h3 
+          className="font-semibold"
+          style={{ color: 'var(--color-text-primary)' }}
         >
-          <h3 
-            className="font-semibold"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            {folder === 'inbox' && 'Bandeja de entrada'}
-            {folder === 'sent' && 'Enviados'}
-            {folder === 'starred' && 'Destacados'}
-            {folder === 'archive' && 'Archivados'}
-            {folder === 'trash' && 'Papelera'}
-            {!folder && 'Todos los mensajes'}
-          </h3>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="p-2 rounded-lg transition-all hover:opacity-80"
-            style={{ color: 'var(--color-text-secondary)' }}
-          >
-            <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-          </button>
-        </div>
+          {folder === 'inbox' && 'Bandeja de entrada'}
+          {folder === 'sent' && 'Enviados'}
+          {folder === 'starred' && 'Destacados'}
+          {folder === 'archive' && 'Archivados'}
+          {folder === 'trash' && 'Papelera'}
+          {!folder && 'Todos los mensajes'}
+        </h3>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="p-2 rounded-lg transition-all hover:opacity-80"
+          style={{ color: 'var(--color-text-secondary)' }}
+          title="Sincronizar mensajes"
+        >
+          <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
+        </button>
+      </div>
 
-        {/* Message list */}
-        <div className="flex-1 overflow-y-auto">
-          {messages.map((message) => (
+      {/* Empty state cuando NO hay mensajes */}
+      {messages.length === 0 ? (
+        <div 
+          className="flex-1 flex items-center justify-center p-6"
+        >
+          <div className="text-center max-w-md">
+            <Mail size={48} className="mx-auto mb-4" style={{ color: 'var(--color-text-tertiary)' }} />
+            <h3 
+              className="text-lg font-semibold mb-2"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              No hay mensajes en esta carpeta
+            </h3>
+            <p 
+              className="text-sm mb-4"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Los mensajes que envíes o recibas aparecerán aquí.
+            </p>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg mx-auto transition-all hover:opacity-90"
+              style={{
+                backgroundColor: 'var(--color-primary)',
+                color: 'white',
+              }}
+            >
+              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+              Sincronizar ahora
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto">{messages.map((message) => (
             <button
               key={message.id}
               onClick={() => {
@@ -266,9 +269,7 @@ export default function EmailInbox({ accountId, folder, onSelectMessage }) {
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Message viewer removed - parent will handle this */}
+      )}
     </div>
   );
 }
