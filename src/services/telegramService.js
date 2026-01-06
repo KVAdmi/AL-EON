@@ -130,7 +130,7 @@ export async function updateBotSettings(botId, settings) {
  */
 export async function getChats(userId, botId = null) {
   try {
-    const params = new URLSearchParams({ userId });
+    const params = new URLSearchParams({ ownerUserId: userId });
     if (botId) params.append('botId', botId);
 
     const response = await fetch(`${BACKEND_URL}/api/telegram/chats?${params}`, {

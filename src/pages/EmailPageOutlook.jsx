@@ -317,6 +317,8 @@ export default function EmailPageOutlook() {
             <button onClick={() => setShowSidebar(false)} className="p-1">
               <X className="w-5 h-5" style={{ color: 'var(--color-text-primary)' }} />
             </button>
+          </div>
+
           <div className="p-3 sm:p-4">
             <button
               className="w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 rounded-xl font-medium text-sm sm:text-base hover:opacity-90 transition-all shadow-lg"
@@ -739,7 +741,6 @@ export default function EmailPageOutlook() {
           </div>
         </div>
       )}
-      </div>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import {
   Plus, MessageSquare, Trash2, Edit3, Check, X, Search,
   LogOut, User, Settings, ChevronDown, ChevronRight,
   Folder, FolderPlus, Calendar, Sparkles, Zap, Users, MoreVertical, Share2, FileText,
-  Mail, Send, Bell, Loader2
+  Mail, Send, Bell, Loader2, Mic, MicOff
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils';
@@ -45,6 +45,8 @@ function Sidebar({
   const [projectForDocs, setProjectForDocs] = useState(null);
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [isVoiceMode, setIsVoiceMode] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     today: true,
     yesterday: true,
@@ -57,12 +59,57 @@ function Sidebar({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = 0;
     }
-  }, [conversations.length]);
-
+  }, []);
+  
   // Cargar proyectos al montar el componente
   useEffect(() => {
     loadProjects();
+    checkNotificationPermission();
   }, []);
+
+  const checkNotificationPermission = () => {
+    if ('Notification' in window) {
+      setNotificationsEnabled(Notification.permission === 'granted');
+    }
+  };
+
+  const requestNotificationPermission = async () => {
+    if (!('Notification' in window)) {
+      toast({
+        variant: 'destructive',
+        title: 'No soportado',
+        description: 'Tu navegador no soporta notificaciones',
+      });
+      return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        setNotificationsEnabled(true);
+        toast({
+          title: 'Notificaciones activadas',
+          description: 'Recibirás notificaciones de correos y agenda',
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Permiso denegado',
+          description: 'No podrás recibir notificaciones',
+        });
+      }
+    } catch (error) {
+      console.error('Error solicitando permiso:', error);
+    }
+  };
+
+  const toggleVoiceMode = () => {
+    setIsVoiceMode(!isVoiceMode);
+    toast({
+      title: isVoiceMode ? 'Modo voz desactivado' : 'Modo voz activado',
+      description: isVoiceMode ? 'Volviendo a modo texto' : 'Puedes hablar con AL-E',
+    });
+  };
 
   const loadProjects = async () => {
     try {
@@ -167,7 +214,7 @@ function Sidebar({
           <ThemeToggle />
         </div>
 
-        {/* Botones: Nuevo Chat + Nuevo Proyecto */}
+        {/* Botones: Nuevo Chat + Nuevo Proyecto + Voz + Notificaciones */}
         <div className="flex gap-2">
           <button
             onClick={onNewConversation}
@@ -180,6 +227,34 @@ function Sidebar({
             <Plus size={18} strokeWidth={2.5} />
             <span className="font-medium" style={{ color: '#FFFFFF' }}>Nuevo chat</span>
           </button>
+          
+          <button
+            onClick={toggleVoiceMode}
+            className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl transition-all duration-200"
+            style={{
+              backgroundColor: isVoiceMode ? 'var(--color-accent)' : 'var(--color-bg-secondary)',
+              border: '1px solid var(--color-border)',
+              color: isVoiceMode ? '#FFFFFF' : 'var(--color-text-primary)'
+            }}
+            title={isVoiceMode ? "Desactivar modo voz" : "Activar modo voz"}
+          >
+            {isVoiceMode ? <Mic size={18} /> : <MicOff size={18} />}
+          </button>
+
+          {!notificationsEnabled && (
+            <button
+              onClick={requestNotificationPermission}
+              className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl transition-all duration-200"
+              style={{
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid #ef4444',
+                color: '#ef4444'
+              }}
+              title="Activar notificaciones"
+            >
+              <Bell size={18} />
+            </button>
+          )}
           
           <button
             onClick={() => setShowCreateProjectModal(true)}
