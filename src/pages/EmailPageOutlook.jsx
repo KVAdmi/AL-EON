@@ -439,7 +439,31 @@ export default function EmailPageOutlook() {
           `}
           style={{ borderColor: 'var(--color-border)' }}
         >
-          <div className="p-3 sm:p-4 border-b flex items-center justify-between shrink-0" style={{ borderColor: 'var(--color-border)' }}>
+          {/* Header con nombre de cuenta y carpeta */}
+          <div className="p-3 sm:p-4 border-b shrink-0" style={{ borderColor: 'var(--color-border)' }}>
+            {/* Título de cuenta y carpeta */}
+            <div className="mb-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Mail size={16} style={{ color: '#0078d4' }} />
+                <h2 className="text-lg font-bold truncate" style={{ color: 'var(--color-text-primary)' }}>
+                  {selectedAccount?.display_name || selectedAccount?.email || 'Cuenta de correo'}
+                </h2>
+              </div>
+              {selectedFolder && (
+                <div className="flex items-center gap-2 ml-6">
+                  <span className="text-sm font-medium truncate" style={{ color: 'var(--color-text-secondary)' }}>
+                    {selectedFolder.folder_name}
+                  </span>
+                  {selectedFolder.unread_count > 0 && (
+                    <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'var(--color-accent)', color: '#fff' }}>
+                      {selectedFolder.unread_count} sin leer
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            {/* Filtros */}
             <div className="flex items-center gap-2 overflow-x-auto">
               <button 
                 onClick={() => setFilterTab('prioritarios')}
@@ -865,8 +889,8 @@ function AccountFolderTree({
   const isSelectedAccount = selectedAccount?.id === accountId || selectedAccount?.account_id === accountId;
 
   return (
-    <div className="mb-3">
-      {/* Header de la cuenta (colapsable) */}
+    <div className="mb-4">
+      {/* Header de la cuenta (MÁS VISIBLE) */}
       <button
         onClick={() => {
           setIsExpanded(!isExpanded);
@@ -874,28 +898,37 @@ function AccountFolderTree({
             onSelectAccount(account);
           }
         }}
-        className="w-full flex items-center gap-2 px-2 py-2 rounded-xl hover:opacity-80 transition-all"
+        className="w-full flex items-center gap-2 px-3 py-3 rounded-xl hover:opacity-90 transition-all shadow-sm"
         style={{
-          backgroundColor: isSelectedAccount ? 'rgba(0, 120, 212, 0.1)' : 'transparent',
-          color: 'var(--color-text-primary)'
+          backgroundColor: isSelectedAccount ? '#0078d4' : 'var(--color-bg-tertiary)',
+          color: isSelectedAccount ? '#fff' : 'var(--color-text-primary)',
+          border: `2px solid ${isSelectedAccount ? '#0078d4' : 'var(--color-border)'}`
         }}
       >
         <ChevronRight 
-          size={14} 
-          className={`transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+          size={16} 
+          className={`transition-transform shrink-0 ${isExpanded ? 'rotate-90' : ''}`}
         />
-        <Mail size={16} className="shrink-0" />
+        <Mail size={18} className="shrink-0" />
         <div className="flex-1 text-left min-w-0">
-          <div className="text-sm font-semibold truncate">{account.display_name || account.email}</div>
-          <div className="text-xs truncate" style={{ color: 'var(--color-text-tertiary)' }}>
+          <div className="text-sm font-bold truncate">{account.display_name || 'Mi cuenta'}</div>
+          <div className="text-xs truncate opacity-80">
             {account.email}
           </div>
         </div>
+        {folders.length > 0 && (
+          <span className="text-xs px-2 py-1 rounded-full shrink-0 font-medium" style={{ 
+            backgroundColor: isSelectedAccount ? 'rgba(255,255,255,0.2)' : 'var(--color-bg-primary)',
+            color: isSelectedAccount ? '#fff' : 'var(--color-text-tertiary)'
+          }}>
+            {folders.length}
+          </span>
+        )}
       </button>
 
-      {/* Carpetas de la cuenta */}
+      {/* Carpetas de la cuenta (MÁS INDENTADAS) */}
       {isExpanded && (
-        <div className="ml-4 mt-1">
+        <div className="ml-6 mt-2 space-y-1 pl-2 border-l-2" style={{ borderColor: isSelectedAccount ? '#0078d4' : 'var(--color-border)' }}>
           {loading ? (
             <div className="px-3 py-2 text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
               Cargando...
@@ -915,18 +948,21 @@ function AccountFolderTree({
                     onSelectAccount(account);
                     onSelectFolder(folder);
                   }}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg mb-0.5 hover:opacity-80"
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:opacity-90 transition-all"
                   style={{
-                    backgroundColor: isSelected ? 'var(--color-bg-tertiary)' : 'transparent',
-                    color: 'var(--color-text-primary)'
+                    backgroundColor: isSelected ? 'var(--color-accent)' : 'transparent',
+                    color: isSelected ? '#fff' : 'var(--color-text-primary)'
                   }}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Icon className="w-4 h-4 shrink-0" />
-                    <span className="text-sm truncate">{folder.folder_name}</span>
+                    <span className="text-sm font-medium truncate">{folder.folder_name}</span>
                   </div>
                   {folder.unread_count > 0 && (
-                    <span className="text-xs px-2 py-0.5 rounded-full shrink-0 font-medium" style={{ backgroundColor: 'var(--color-accent)', color: '#fff' }}>
+                    <span className="text-xs px-2 py-0.5 rounded-full shrink-0 font-bold" style={{ 
+                      backgroundColor: isSelected ? 'rgba(255,255,255,0.3)' : 'var(--color-accent)', 
+                      color: '#fff' 
+                    }}>
                       {folder.unread_count}
                     </span>
                   )}

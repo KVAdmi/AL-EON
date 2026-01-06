@@ -191,9 +191,9 @@ export function NotificationBell() {
           {/* Overlay */}
           <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setIsOpen(false)} />
           
-          {/* Modal/Dropdown */}
+          {/* Modal/Dropdown - ABRE HACIA ARRIBA en desktop */}
           <div
-            className="fixed bottom-0 left-0 right-0 lg:absolute lg:bottom-auto lg:right-0 lg:left-auto lg:top-full lg:mt-2 w-full lg:w-96 rounded-t-2xl lg:rounded-xl shadow-2xl z-50 flex flex-col max-h-[80vh] lg:max-h-[600px]"
+            className="fixed bottom-0 left-0 right-0 lg:fixed lg:bottom-16 lg:right-4 lg:left-auto lg:top-auto w-full lg:w-96 rounded-t-2xl lg:rounded-xl shadow-2xl z-50 flex flex-col max-h-[80vh] lg:max-h-[600px]"
             style={{
               backgroundColor: 'var(--color-bg-primary)',
               borderColor: 'var(--color-border)',
