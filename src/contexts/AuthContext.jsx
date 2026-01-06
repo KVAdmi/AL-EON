@@ -176,9 +176,6 @@ export function AuthProvider({ children }) {
         console.error('[AUTH] ❌ Mensaje:', error.message);
         
         // Mensajes de error más claros
-        if (error.message.includes('Email')) {
-          throw new Error('⚠️ Las confirmaciones por email están habilitadas. Contacta al administrador.');
-        }
         if (error.message.includes('rate limit')) {
           throw new Error('⚠️ Demasiados intentos. Espera 1 minuto e intenta de nuevo.');
         }

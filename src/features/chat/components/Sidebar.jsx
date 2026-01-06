@@ -219,7 +219,7 @@ function Sidebar({
         {/* Navegación rápida: Email, Calendar, Telegram */}
         <div className="grid grid-cols-3 gap-2">
           <button
-            onClick={() => navigate('/mail')}
+            onClick={() => navigate('/correo')}
             className="flex items-center justify-center py-3 px-2 rounded-xl transition-all hover:opacity-80"
             style={{
               backgroundColor: 'var(--color-bg-secondary)',

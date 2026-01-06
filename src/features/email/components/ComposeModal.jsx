@@ -64,7 +64,7 @@ export default function ComposeModal({ accounts, defaultAccountId, onClose }) {
       toast({
         variant: 'destructive',
         title: 'Campos requeridos',
-        description: 'Completa los campos: cuenta, destinatario y asunto',
+        description: 'Conecta tu cuenta de Gmail o Outlook y completa destinatario y asunto',
       });
       return;
     }

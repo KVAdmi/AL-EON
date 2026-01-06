@@ -104,8 +104,8 @@ export default function EmailComposer({
     if (!currentAccount) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "No hay cuenta seleccionada",
+        title: "Sin cuenta conectada",
+        description: "Conecta tu cuenta de Gmail o Outlook para enviar correos",
       });
       return;
     }
