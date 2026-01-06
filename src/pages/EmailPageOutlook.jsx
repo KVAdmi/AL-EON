@@ -1,14 +1,19 @@
 /**
  * EmailPageOutlook.jsx
- * Réplica EXACTA de Outlook macOS con datos REALES (NO MOCKS)
+ * Réplica EXACTA de Outlook macOS PROFESIONAL con datos REALES
  */
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getEmailAccounts, getFolders, getInbox } from '@/services/emailService';
-import { Mail, Send, Inbox, Archive, Trash2, AlertCircle, FileText, Star, ArrowLeft, Search, Menu, X, ChevronLeft, RefreshCw, Settings, Edit3 } from 'lucide-react';
+import { 
+  Mail, Send, Inbox, Archive, Trash2, AlertCircle, FileText, Star, 
+  ArrowLeft, Search, Menu, X, ChevronLeft, RefreshCw, Settings, 
+  Edit3, Users, Filter, MoreVertical, Clock, Flag, Upload
+} from 'lucide-react';
 import EmailAccountForm from '@/features/email/components/EmailAccountForm';
+import EmailComposer from '@/features/email/components/EmailComposer';
 
 export default function EmailPageOutlook() {
   const { user, accessToken } = useAuth();
@@ -29,6 +34,8 @@ export default function EmailPageOutlook() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [view, setView] = useState('list'); // 'list' o 'detail' para mobile
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showComposer, setShowComposer] = useState(false);
+  const [showContactsModal, setShowContactsModal] = useState(false);
   const [filterTab, setFilterTab] = useState('prioritarios'); // 'prioritarios' o 'otro'
 
   useEffect(() => {
@@ -81,17 +88,30 @@ export default function EmailPageOutlook() {
   }
 
   async function loadEmails() {
+    if (!selectedAccount || !selectedFolder || !user) {
+      console.warn('⚠️ Faltan datos para cargar emails');
+      return;
+    }
+    
     try {
       setLoadingEmails(true);
       const accountId = selectedAccount.id || selectedAccount.account_id;
+      console.log('📧 Cargando emails...', { 
+        accountId, 
+        userId: user.id,
+        folder: selectedFolder.folder_name 
+      });
+      
       const data = await getInbox(accountId, {
+        ownerUserId: user.id,
         folder: selectedFolder.folder_name,
         limit: 50,
       });
+      
       console.log('✉️ Emails cargados:', data);
-      setEmails(data.messages || []);
+      setEmails(data.messages || data.emails || []);
     } catch (error) {
-      console.error('Error cargando emails:', error);
+      console.error('❌ Error cargando emails:', error);
       setEmails([]);
     } finally {
       setLoadingEmails(false);
@@ -211,41 +231,57 @@ export default function EmailPageOutlook() {
   }
 
   return (
-    <div className="h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
-      {/* Top Bar */}
-      <div className="flex items-center justify-between px-3 sm:px-4 py-3 border-b shrink-0" style={{ borderColor: 'var(--color-border)' }}>
+    <div className="h-screen flex flex-col" style={{ backgroundColor: '#1c1c1e' }}>
+      {/* Top Bar - Más oscuro como Outlook */}
+      <div 
+        className="flex items-center justify-between px-3 sm:px-4 py-3 border-b shrink-0" 
+        style={{ 
+          borderColor: '#2c2c2e',
+          backgroundColor: '#1c1c1e'
+        }}
+      >
         <div className="flex items-center gap-2 sm:gap-4">
           <button 
             onClick={() => navigate(-1)} 
-            className="p-2 hover:opacity-80 rounded-xl shrink-0" 
-            style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }}
+            className="p-2 hover:bg-white/5 rounded-xl shrink-0 transition-all" 
+            style={{ color: '#ffffff' }}
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <button
             onClick={() => setShowSidebar(!showSidebar)}
-            className="p-2 hover:opacity-80 rounded-xl lg:hidden shrink-0"
-            style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }}
+            className="p-2 hover:bg-white/5 rounded-xl lg:hidden shrink-0 transition-all"
+            style={{ color: '#ffffff' }}
           >
             <Menu className="w-5 h-5" />
           </button>
-          <h1 className="text-lg sm:text-xl font-semibold truncate" style={{ color: 'var(--color-text-primary)' }}>AL-E Mail</h1>
+          <h1 className="text-lg sm:text-xl font-semibold truncate" style={{ color: '#ffffff' }}>
+            AL-E Mail
+          </h1>
         </div>
         
         <div className="flex items-center gap-2">
           <button 
             onClick={handleRefresh}
             disabled={refreshing}
-            className="p-2 hover:opacity-80 rounded-xl shrink-0" 
-            style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }}
+            className="p-2 hover:bg-white/5 rounded-xl shrink-0 transition-all" 
+            style={{ color: '#ffffff' }}
             title="Refrescar"
           >
             <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
           </button>
           <button 
+            onClick={() => setShowContactsModal(true)}
+            className="p-2 hover:bg-white/5 rounded-xl shrink-0 transition-all" 
+            style={{ color: '#ffffff' }}
+            title="Contactos"
+          >
+            <Users className="w-5 h-5" />
+          </button>
+          <button 
             onClick={() => setShowSettingsModal(true)}
-            className="p-2 hover:opacity-80 rounded-xl shrink-0" 
-            style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }}
+            className="p-2 hover:bg-white/5 rounded-xl shrink-0 transition-all" 
+            style={{ color: '#ffffff' }}
             title="Configurar cuentas"
           >
             <Settings className="w-5 h-5" />
@@ -281,19 +317,17 @@ export default function EmailPageOutlook() {
             <button onClick={() => setShowSidebar(false)} className="p-1">
               <X className="w-5 h-5" style={{ color: 'var(--color-text-primary)' }} />
             </button>
-          </div>
-
           <div className="p-3 sm:p-4">
             <button
-              className="w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 rounded-xl font-medium text-sm sm:text-base hover:opacity-90"
-              style={{ backgroundColor: 'var(--color-accent)', color: '#fff' }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 rounded-xl font-medium text-sm sm:text-base hover:opacity-90 transition-all shadow-lg"
+              style={{ backgroundColor: '#0078d4', color: '#fff' }}
               onClick={() => {
                 setShowSidebar(false);
-                // TODO: Abrir modal de redactar
+                setShowComposer(true);
               }}
             >
               <Edit3 className="w-4 h-4 shrink-0" />
-              <span>Redactar</span>
+              <span>Nuevo correo</span>
             </button>
           </div>
 
@@ -592,6 +626,120 @@ export default function EmailPageOutlook() {
           </div>
         </div>
       )}
+      
+      {/* Modal de Composer */}
+      {showComposer && (
+        <EmailComposer
+          mode="new"
+          onClose={() => setShowComposer(false)}
+          onSent={() => {
+            setShowComposer(false);
+            handleRefresh();
+          }}
+        />
+      )}
+      
+      {/* Modal de Contactos */}
+      {showContactsModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div 
+            className="max-w-4xl w-full max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl"
+            style={{ backgroundColor: 'var(--color-bg-primary)' }}
+          >
+            <div className="sticky top-0 z-10 p-6 border-b" style={{ 
+              backgroundColor: 'var(--color-bg-primary)',
+              borderColor: 'var(--color-border)' 
+            }}>
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
+                  Contactos
+                </h2>
+                <button 
+                  onClick={() => setShowContactsModal(false)}
+                  className="p-2 hover:opacity-80 rounded-xl transition-all"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              {/* Opciones de importar/crear */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <button
+                  onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.vcf,.vcard';
+                    input.onchange = (e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        // TODO: Implementar importación de vCard
+                        console.log('Importar vCard:', file);
+                      }
+                    };
+                    input.click();
+                  }}
+                  className="p-6 rounded-2xl border-2 border-dashed hover:opacity-80 transition-all text-center"
+                  style={{ 
+                    borderColor: 'var(--color-border)',
+                    backgroundColor: 'var(--color-bg-secondary)'
+                  }}
+                >
+                  <Upload className="w-12 h-12 mx-auto mb-3" style={{ color: 'var(--color-accent)' }} />
+                  <h3 className="font-semibold text-lg mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                    Importar vCard
+                  </h3>
+                  <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                    Importa contactos desde archivos .vcf o .vcard
+                  </p>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    // TODO: Abrir formulario de crear contacto
+                    console.log('Crear contacto nuevo');
+                  }}
+                  className="p-6 rounded-2xl border-2 hover:opacity-80 transition-all text-center"
+                  style={{ 
+                    borderColor: '#0078d4',
+                    backgroundColor: 'rgba(0, 120, 212, 0.1)'
+                  }}
+                >
+                  <Users className="w-12 h-12 mx-auto mb-3" style={{ color: '#0078d4' }} />
+                  <h3 className="font-semibold text-lg mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                    Crear contacto
+                  </h3>
+                  <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                    Agrega un nuevo contacto manualmente
+                  </p>
+                </button>
+              </div>
+              
+              {/* Lista de contactos (placeholder) */}
+              <div className="mt-6">
+                <h3 className="font-semibold text-lg mb-4" style={{ color: 'var(--color-text-primary)' }}>
+                  Mis contactos
+                </h3>
+                <div 
+                  className="text-center py-12 rounded-xl"
+                  style={{ backgroundColor: 'var(--color-bg-secondary)' }}
+                >
+                  <Users className="w-16 h-16 mx-auto mb-4 opacity-20" style={{ color: 'var(--color-text-tertiary)' }} />
+                  <p style={{ color: 'var(--color-text-secondary)' }}>
+                    No tienes contactos guardados aún
+                  </p>
+                  <p className="text-sm mt-2" style={{ color: 'var(--color-text-tertiary)' }}>
+                    Importa o crea tu primer contacto
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      </div>
     </div>
   );
 }
