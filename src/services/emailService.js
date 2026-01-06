@@ -849,3 +849,219 @@ export async function saveDraft(accountId, draftData) {
     throw error;
   }
 }
+
+/**
+ * Obtiene todos los contactos del usuario
+ * @param {string} userId - ID del usuario
+ * @returns {Promise<Array>} Lista de contactos
+ */
+export async function getContacts(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('contacts')
+      .select('*')
+      .eq('owner_user_id', userId)
+      .order('name', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('[EmailService] Error obteniendo contactos:', error);
+    throw error;
+  }
+}
+
+/**
+ * Crea un nuevo contacto
+ * @param {string} userId - ID del usuario
+ * @param {Object} contactData - Datos del contacto
+ * @returns {Promise<Object>} Contacto creado
+ */
+export async function createContact(userId, contactData) {
+  try {
+    const { data, error } = await supabase
+      .from('contacts')
+      .insert([{
+        owner_user_id: userId,
+        name: contactData.name,
+        email: contactData.email,
+        phone: contactData.phone || null,
+        company: contactData.company || null,
+        notes: contactData.notes || null,
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('[EmailService] Error creando contacto:', error);
+    throw error;
+  }
+}
+
+/**
+ * Actualiza un contacto existente
+ * @param {string} contactId - ID del contacto
+ * @param {Object} contactData - Datos actualizados
+ * @returns {Promise<Object>} Contacto actualizado
+ */
+export async function updateContact(contactId, contactData) {
+  try {
+    const { data, error } = await supabase
+      .from('contacts')
+      .update({
+        name: contactData.name,
+        email: contactData.email,
+        phone: contactData.phone || null,
+        company: contactData.company || null,
+        notes: contactData.notes || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', contactId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('[EmailService] Error actualizando contacto:', error);
+    throw error;
+  }
+}
+
+/**
+ * Elimina un contacto
+ * @param {string} contactId - ID del contacto
+ * @returns {Promise<void>}
+ */
+export async function deleteContact(contactId) {
+  try {
+    const { error } = await supabase
+      .from('contacts')
+      .delete()
+      .eq('id', contactId);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('[EmailService] Error eliminando contacto:', error);
+    throw error;
+  }
+}
+
+/**
+ * Importa contactos desde un archivo vCard
+ * @param {File} file - Archivo vCard
+ * @param {string} userId - ID del usuario
+ * @returns {Promise<Object>} Resultado de la importación
+ */
+export async function importVCard(file, userId) {
+  try {
+    const text = await file.text();
+    const contacts = parseVCard(text);
+    
+    console.log(`📇 Importando ${contacts.length} contactos desde vCard...`);
+    
+    const results = {
+      success: 0,
+      errors: 0,
+      imported: []
+    };
+
+    for (const contact of contacts) {
+      try {
+        const created = await createContact(userId, contact);
+        results.success++;
+        results.imported.push(created);
+      } catch (error) {
+        console.error('Error importando contacto:', contact, error);
+        results.errors++;
+      }
+    }
+    
+    console.log(`✅ Importación completada: ${results.success} éxitos, ${results.errors} errores`);
+    return results;
+  } catch (error) {
+    console.error('[EmailService] Error importando vCard:', error);
+    throw error;
+  }
+}
+
+/**
+ * Parsea un archivo vCard y extrae los contactos
+ * @param {string} vcardText - Contenido del archivo vCard
+ * @returns {Array<Object>} Lista de contactos parseados
+ */
+function parseVCard(vcardText) {
+  const contacts = [];
+  
+  // Normalizar saltos de línea
+  vcardText = vcardText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  
+  // Dividir por BEGIN:VCARD
+  const vcards = vcardText.split(/BEGIN:VCARD/i);
+  
+  console.log(`📇 Encontrados ${vcards.length - 1} posibles vCards en el archivo`);
+  
+  for (let i = 1; i < vcards.length; i++) {
+    const vcard = 'BEGIN:VCARD' + vcards[i];
+    const contact = {
+      name: '',
+      email: '',
+      phone: '',
+      company: '',
+      notes: ''
+    };
+    
+    // Extraer nombre (FN o N)
+    let fnMatch = vcard.match(/\nFN[;:]([^\n]+)/i);
+    if (fnMatch) {
+      contact.name = fnMatch[1].trim();
+    } else {
+      // Intentar con N (nombre estructurado: Apellido;Nombre;...)
+      let nMatch = vcard.match(/\nN[;:]([^\n]+)/i);
+      if (nMatch) {
+        const parts = nMatch[1].split(';');
+        // parts[0] = Apellido, parts[1] = Nombre
+        contact.name = `${parts[1] || ''} ${parts[0] || ''}`.trim();
+      }
+    }
+    
+    // Extraer email - puede tener varios formatos
+    let emailMatch = vcard.match(/\nEMAIL[^:]*:([^\n]+)/i);
+    if (emailMatch) {
+      contact.email = emailMatch[1].trim().toLowerCase();
+    }
+    
+    // Extraer teléfono - puede tener varios formatos
+    let telMatch = vcard.match(/\nTEL[^:]*:([^\n]+)/i);
+    if (telMatch) {
+      contact.phone = telMatch[1].trim();
+    }
+    
+    // Extraer empresa (ORG)
+    let orgMatch = vcard.match(/\nORG[;:]([^\n]+)/i);
+    if (orgMatch) {
+      contact.company = orgMatch[1].trim();
+    }
+    
+    // Extraer notas (NOTE)
+    let noteMatch = vcard.match(/\nNOTE[;:]([^\n]+)/i);
+    if (noteMatch) {
+      contact.notes = noteMatch[1].trim();
+    }
+    
+    // Validación: Solo agregar si tiene nombre Y email
+    if (contact.name && contact.email && contact.email.includes('@')) {
+      contacts.push(contact);
+    } else {
+      console.warn(`⚠️ Contacto ignorado (falta nombre o email):`, {
+        name: contact.name,
+        email: contact.email
+      });
+    }
+  }
+  
+  console.log(`✅ ${contacts.length} contactos válidos parseados`);
+  return contacts;
+}

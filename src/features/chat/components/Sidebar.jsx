@@ -18,6 +18,7 @@ import NotificationBell from '@/components/NotificationBell';
 import { createProject, getProjects, deleteProject } from '@/services/projectsService';
 import { useToast } from '@/ui/use-toast';
 import { useCapability } from '@/components/CapabilitiesGate';
+import { useVoiceMode } from '@/features/chat/hooks/useVoiceMode';
 
 function Sidebar({
   conversations,
@@ -37,6 +38,9 @@ function Sidebar({
   // 🔒 VERIFICAR CAPACIDADES
   const canSendEmail = useCapability('mail.send');
   
+  // 🎤 Hook de modo de voz
+  const { isListening, transcript, startListening, stopListening, clearTranscript } = useVoiceMode();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -45,7 +49,6 @@ function Sidebar({
   const [projectForDocs, setProjectForDocs] = useState(null);
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
-  const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     today: true,
@@ -104,11 +107,11 @@ function Sidebar({
   };
 
   const toggleVoiceMode = () => {
-    setIsVoiceMode(!isVoiceMode);
-    toast({
-      title: isVoiceMode ? 'Modo voz desactivado' : 'Modo voz activado',
-      description: isVoiceMode ? 'Volviendo a modo texto' : 'Puedes hablar con AL-E',
-    });
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
   };
 
   const loadProjects = async () => {
@@ -232,13 +235,13 @@ function Sidebar({
             onClick={toggleVoiceMode}
             className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl transition-all duration-200"
             style={{
-              backgroundColor: isVoiceMode ? 'var(--color-accent)' : 'var(--color-bg-secondary)',
+              backgroundColor: isListening ? 'var(--color-accent)' : 'var(--color-bg-secondary)',
               border: '1px solid var(--color-border)',
-              color: isVoiceMode ? '#FFFFFF' : 'var(--color-text-primary)'
+              color: isListening ? '#FFFFFF' : 'var(--color-text-primary)'
             }}
-            title={isVoiceMode ? "Desactivar modo voz" : "Activar modo voz"}
+            title={isListening ? "Desactivar modo voz" : "Activar modo voz"}
           >
-            {isVoiceMode ? <Mic size={18} /> : <MicOff size={18} />}
+            {isListening ? <Mic size={18} className="animate-pulse" /> : <MicOff size={18} />}
           </button>
 
           {!notificationsEnabled && (

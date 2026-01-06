@@ -6,18 +6,25 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { getEmailAccounts, getFolders, getInbox } from '@/services/emailService';
+import { 
+  getEmailAccounts, getFolders, getInbox, 
+  getContacts, createContact, importVCard,
+  syncEmailAccount
+} from '@/services/emailService';
 import { 
   Mail, Send, Inbox, Archive, Trash2, AlertCircle, FileText, Star, 
-  ArrowLeft, Search, Menu, X, ChevronLeft, RefreshCw, Settings, 
+  ArrowLeft, Search, Menu, X, ChevronLeft, ChevronRight, RefreshCw, Settings, 
   Edit3, Users, Filter, MoreVertical, Clock, Flag, Upload
 } from 'lucide-react';
 import EmailAccountForm from '@/features/email/components/EmailAccountForm';
 import EmailComposer from '@/features/email/components/EmailComposer';
+import ContactFormModal from '@/features/email/components/ContactFormModal';
+import { useToast } from '@/ui/use-toast';
 
 export default function EmailPageOutlook() {
   const { user, accessToken } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   // Estados principales
   const [accounts, setAccounts] = useState([]);
@@ -36,6 +43,8 @@ export default function EmailPageOutlook() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showComposer, setShowComposer] = useState(false);
   const [showContactsModal, setShowContactsModal] = useState(false);
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [contacts, setContacts] = useState([]);
   const [filterTab, setFilterTab] = useState('prioritarios'); // 'prioritarios' o 'otro'
 
   useEffect(() => {
@@ -122,6 +131,52 @@ export default function EmailPageOutlook() {
     setRefreshing(true);
     await loadEmails();
     setTimeout(() => setRefreshing(false), 500);
+  }
+
+  async function loadContacts() {
+    try {
+      const data = await getContacts(user.id);
+      setContacts(data || []);
+    } catch (error) {
+      console.error('Error cargando contactos:', error);
+    }
+  }
+
+  async function handleCreateContact(contactData) {
+    try {
+      await createContact(user.id, contactData);
+      toast({
+        title: 'Contacto creado',
+        description: `${contactData.name} ha sido agregado a tus contactos`,
+      });
+      await loadContacts();
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async function handleImportVCard(file) {
+    try {
+      toast({
+        title: 'Importando contactos...',
+        description: 'Por favor espera mientras procesamos el archivo',
+      });
+      
+      const result = await importVCard(file, user.id);
+      
+      toast({
+        title: 'Importación completada',
+        description: `${result.success} contactos importados${result.errors > 0 ? `, ${result.errors} errores` : ''}`,
+      });
+      
+      await loadContacts();
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'No se pudo importar el archivo vCard',
+      });
+    }
   }
 
   const FOLDER_ICONS = {
@@ -334,6 +389,7 @@ export default function EmailPageOutlook() {
           </div>
 
           <div className="flex-1 overflow-y-auto px-2">
+            {/* Favoritos */}
             <div className="mb-4">
               <div className="text-xs font-semibold mb-2 px-2 uppercase" style={{ color: 'var(--color-text-tertiary)' }}>
                 Favoritos
@@ -348,46 +404,30 @@ export default function EmailPageOutlook() {
               </button>
             </div>
 
-            <div className="mb-4">
-              <div className="text-xs font-semibold mb-2 px-2 uppercase" style={{ color: 'var(--color-text-tertiary)' }}>
-                Carpetas
+            {/* TODAS LAS CUENTAS CON SUS CARPETAS (estilo Outlook macOS) */}
+            {accounts.length === 0 ? (
+              <div className="px-3 py-8 text-center text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
+                No hay cuentas configuradas
               </div>
-              {folders.length === 0 ? (
-                <div className="px-3 py-8 text-center text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
-                  No hay carpetas
-                </div>
-              ) : (
-                folders.map((folder) => {
-                  const Icon = FOLDER_ICONS[folder.folder_name] || Mail;
-                  const isSelected = selectedFolder?.folder_id === folder.folder_id;
-                  return (
-                    <button
-                      key={folder.folder_id}
-                      onClick={() => {
-                        setSelectedFolder(folder);
-                        setShowSidebar(false);
-                        setSelectedEmail(null);
-                      }}
-                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl mb-1 hover:opacity-80"
-                      style={{
-                        backgroundColor: isSelected ? 'var(--color-bg-tertiary)' : 'transparent',
-                        color: 'var(--color-text-primary)'
-                      }}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <Icon className="w-4 h-4 shrink-0" />
-                        <span className="text-sm truncate">{folder.folder_name}</span>
-                      </div>
-                      {folder.unread_count > 0 && (
-                        <span className="text-xs px-2 py-0.5 rounded-full shrink-0" style={{ backgroundColor: 'var(--color-accent)', color: '#fff' }}>
-                          {folder.unread_count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })
-              )}
-            </div>
+            ) : (
+              accounts.map((account) => (
+                <AccountFolderTree
+                  key={account.id || account.account_id}
+                  account={account}
+                  user={user}
+                  accessToken={accessToken}
+                  selectedAccount={selectedAccount}
+                  selectedFolder={selectedFolder}
+                  onSelectAccount={setSelectedAccount}
+                  onSelectFolder={(folder) => {
+                    setSelectedFolder(folder);
+                    setShowSidebar(false);
+                    setSelectedEmail(null);
+                  }}
+                  FOLDER_ICONS={FOLDER_ICONS}
+                />
+              ))
+            )}
           </div>
         </div>
 
@@ -430,9 +470,43 @@ export default function EmailPageOutlook() {
                 <RefreshCw className="w-6 h-6 animate-spin" />
               </div>
             ) : emails.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full p-4" style={{ color: 'var(--color-text-tertiary)' }}>
+              <div className="flex flex-col items-center justify-center h-full p-8" style={{ color: 'var(--color-text-tertiary)' }}>
                 <Mail className="w-16 h-16 mb-4 opacity-20" />
-                <p className="text-sm text-center">No hay mensajes</p>
+                <p className="text-base font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                  No hay mensajes en esta carpeta
+                </p>
+                <p className="text-sm text-center mb-4">
+                  Los correos de tu cuenta se sincronizarán automáticamente
+                </p>
+                {selectedAccount && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        toast({
+                          title: 'Sincronizando...',
+                          description: 'Descargando correos del servidor',
+                        });
+                        await syncEmailAccount(selectedAccount.id || selectedAccount.account_id);
+                        await loadEmails();
+                        toast({
+                          title: 'Sincronización completada',
+                          description: 'Los correos se han actualizado',
+                        });
+                      } catch (error) {
+                        toast({
+                          variant: 'destructive',
+                          title: 'Error',
+                          description: error.message || 'No se pudo sincronizar',
+                        });
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl font-medium hover:opacity-90 transition-all"
+                    style={{ backgroundColor: '#0078d4', color: '#fff' }}
+                  >
+                    <RefreshCw className="w-4 h-4 inline mr-2" />
+                    Sincronizar ahora
+                  </button>
+                )}
               </div>
             ) : (
               <div>
@@ -677,8 +751,7 @@ export default function EmailPageOutlook() {
                     input.onchange = (e) => {
                       const file = e.target.files[0];
                       if (file) {
-                        // TODO: Implementar importación de vCard
-                        console.log('Importar vCard:', file);
+                        handleImportVCard(file);
                       }
                     };
                     input.click();
@@ -700,8 +773,7 @@ export default function EmailPageOutlook() {
                 
                 <button
                   onClick={() => {
-                    // TODO: Abrir formulario de crear contacto
-                    console.log('Crear contacto nuevo');
+                    setShowContactForm(true);
                   }}
                   className="p-6 rounded-2xl border-2 hover:opacity-80 transition-all text-center"
                   style={{ 
@@ -739,6 +811,129 @@ export default function EmailPageOutlook() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Modal de crear/editar contacto */}
+      <ContactFormModal
+        isOpen={showContactForm}
+        onClose={() => setShowContactForm(false)}
+        onSave={handleCreateContact}
+      />
+    </div>
+  );
+}
+
+/**
+ * Componente para mostrar un árbol de carpetas por cuenta (estilo Outlook macOS)
+ */
+function AccountFolderTree({ 
+  account, 
+  user, 
+  accessToken, 
+  selectedAccount,
+  selectedFolder, 
+  onSelectAccount,
+  onSelectFolder, 
+  FOLDER_ICONS 
+}) {
+  const [folders, setFolders] = useState([]);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isExpanded) {
+      loadFolders();
+    }
+  }, [isExpanded, account]);
+
+  async function loadFolders() {
+    try {
+      setLoading(true);
+      const data = await getFolders(account.id || account.account_id, user.id, accessToken);
+      console.log(`📁 Folders de ${account.email}:`, data);
+      setFolders(data || []);
+    } catch (error) {
+      console.error('Error cargando folders:', error);
+      setFolders([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const accountId = account.id || account.account_id;
+  const isSelectedAccount = selectedAccount?.id === accountId || selectedAccount?.account_id === accountId;
+
+  return (
+    <div className="mb-3">
+      {/* Header de la cuenta (colapsable) */}
+      <button
+        onClick={() => {
+          setIsExpanded(!isExpanded);
+          if (!isSelectedAccount) {
+            onSelectAccount(account);
+          }
+        }}
+        className="w-full flex items-center gap-2 px-2 py-2 rounded-xl hover:opacity-80 transition-all"
+        style={{
+          backgroundColor: isSelectedAccount ? 'rgba(0, 120, 212, 0.1)' : 'transparent',
+          color: 'var(--color-text-primary)'
+        }}
+      >
+        <ChevronRight 
+          size={14} 
+          className={`transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+        />
+        <Mail size={16} className="shrink-0" />
+        <div className="flex-1 text-left min-w-0">
+          <div className="text-sm font-semibold truncate">{account.display_name || account.email}</div>
+          <div className="text-xs truncate" style={{ color: 'var(--color-text-tertiary)' }}>
+            {account.email}
+          </div>
+        </div>
+      </button>
+
+      {/* Carpetas de la cuenta */}
+      {isExpanded && (
+        <div className="ml-4 mt-1">
+          {loading ? (
+            <div className="px-3 py-2 text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
+              Cargando...
+            </div>
+          ) : folders.length === 0 ? (
+            <div className="px-3 py-2 text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
+              Sin carpetas
+            </div>
+          ) : (
+            folders.map((folder) => {
+              const Icon = FOLDER_ICONS[folder.folder_name] || Mail;
+              const isSelected = selectedFolder?.folder_id === folder.folder_id;
+              return (
+                <button
+                  key={folder.folder_id}
+                  onClick={() => {
+                    onSelectAccount(account);
+                    onSelectFolder(folder);
+                  }}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg mb-0.5 hover:opacity-80"
+                  style={{
+                    backgroundColor: isSelected ? 'var(--color-bg-tertiary)' : 'transparent',
+                    color: 'var(--color-text-primary)'
+                  }}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span className="text-sm truncate">{folder.folder_name}</span>
+                  </div>
+                  {folder.unread_count > 0 && (
+                    <span className="text-xs px-2 py-0.5 rounded-full shrink-0 font-medium" style={{ backgroundColor: 'var(--color-accent)', color: '#fff' }}>
+                      {folder.unread_count}
+                    </span>
+                  )}
+                </button>
+              );
+            })
+          )}
         </div>
       )}
     </div>

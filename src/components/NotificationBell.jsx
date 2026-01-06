@@ -189,11 +189,11 @@ export function NotificationBell() {
       {isOpen && (
         <>
           {/* Overlay */}
-          <div className="fixed inset-0 z-[9998] bg-black/50" onClick={() => setIsOpen(false)} />
+          <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setIsOpen(false)} />
           
           {/* Modal/Dropdown */}
           <div
-            className="fixed bottom-16 left-4 sm:left-4 sm:bottom-auto sm:top-auto w-[calc(100%-2rem)] sm:w-96 rounded-xl shadow-2xl z-[9999] flex flex-col"
+            className="fixed bottom-0 left-0 right-0 lg:absolute lg:bottom-auto lg:right-0 lg:left-auto lg:top-full lg:mt-2 w-full lg:w-96 rounded-t-2xl lg:rounded-xl shadow-2xl z-50 flex flex-col max-h-[80vh] lg:max-h-[600px]"
             style={{
               backgroundColor: 'var(--color-bg-primary)',
               borderColor: 'var(--color-border)',

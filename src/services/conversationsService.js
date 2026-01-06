@@ -103,18 +103,47 @@ export async function deleteConversationFromSupabase(conversationId) {
       return false;
     }
 
-    const { error } = await supabase
+    // PRIMERO: Eliminar de user_conversations (relación muchos a muchos)
+    const { error: userConvError } = await supabase
       .from('user_conversations')
       .delete()
       .eq('user_id', user.id)
       .eq('conversation_id', conversationId);
 
-    if (error) {
-      console.error('❌ Error borrando conversación de Supabase:', error);
+    if (userConvError) {
+      console.error('❌ Error borrando relación usuario-conversación:', userConvError);
       return false;
     }
 
-    console.log(`✅ Conversación ${conversationId} borrada de Supabase`);
+    // SEGUNDO: Eliminar la conversación principal de ae_conversations
+    // (solo si no hay otros usuarios vinculados a esta conversación)
+    const { data: otherUsers, error: checkError } = await supabase
+      .from('user_conversations')
+      .select('user_id')
+      .eq('conversation_id', conversationId);
+
+    if (checkError) {
+      console.error('❌ Error verificando otros usuarios:', checkError);
+      // Continuar de todas formas para eliminar la conversación principal
+    }
+
+    // Si no hay otros usuarios, eliminar la conversación principal
+    if (!otherUsers || otherUsers.length === 0) {
+      const { error: convError } = await supabase
+        .from('ae_conversations')
+        .delete()
+        .eq('id', conversationId);
+
+      if (convError) {
+        console.error('❌ Error borrando conversación principal:', convError);
+        return false;
+      }
+      
+      console.log(`✅ Conversación ${conversationId} eliminada completamente (incluyendo ae_conversations)`);
+    } else {
+      console.log(`ℹ️ Conversación ${conversationId} eliminada para el usuario, pero otros usuarios aún la tienen`);
+    }
+
     return true;
 
   } catch (error) {
