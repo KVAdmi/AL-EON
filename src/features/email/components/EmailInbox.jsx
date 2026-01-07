@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getInbox } from '@/services/emailService';
+import { getInbox, getMessage } from '@/services/emailService';
 import { useToast } from '@/ui/use-toast';
 import { RefreshCw, Mail, MailOpen } from 'lucide-react';
 import EmailMessage from './EmailMessage';
@@ -12,6 +12,7 @@ export default function EmailInbox({ accountId, folder, onSelectMessage }) {
   const [loading, setLoading] = useState(true);
   const [selectedMessageId, setSelectedMessageId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingFullMessage, setLoadingFullMessage] = useState(false);
 
   useEffect(() => {
     loadMessages();
@@ -128,6 +129,48 @@ export default function EmailInbox({ accountId, folder, onSelectMessage }) {
     setRefreshing(false);
   }
 
+  /**
+   * 🔥 NUEVA FUNCIÓN: Cargar contenido completo del mensaje
+   */
+  async function handleMessageClick(message) {
+    try {
+      setSelectedMessageId(message.id);
+      setLoadingFullMessage(true);
+      
+      console.log('[EmailInbox] 📧 Cargando mensaje completo:', message.id);
+      
+      // ✅ LLAMAR ENDPOINT CORRECTO para obtener body_html y body_text
+      const fullMessage = await getMessage(accountId, message.id);
+      
+      console.log('[EmailInbox] ✅ Mensaje completo recibido:', {
+        id: fullMessage.id,
+        has_body_html: !!fullMessage.body_html,
+        has_body_text: !!fullMessage.body_text,
+        body_html_length: fullMessage.body_html?.length || 0,
+        body_text_length: fullMessage.body_text?.length || 0
+      });
+      
+      // Pasar mensaje completo al padre
+      if (onSelectMessage) {
+        onSelectMessage(fullMessage);
+      }
+    } catch (error) {
+      console.error('[EmailInbox] ❌ Error cargando mensaje completo:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo cargar el contenido del mensaje',
+      });
+      
+      // Fallback: pasar el mensaje sin contenido completo
+      if (onSelectMessage) {
+        onSelectMessage(message);
+      }
+    } finally {
+      setLoadingFullMessage(false);
+    }
+  }
+
   function formatDate(dateString) {
     if (!dateString) return 'Sin fecha';
     
@@ -235,15 +278,11 @@ export default function EmailInbox({ accountId, folder, onSelectMessage }) {
         <div className="flex-1 overflow-y-auto">{messages.map((message) => (
             <button
               key={message.id}
-              onClick={() => {
-                setSelectedMessageId(message.id);
-                if (onSelectMessage) {
-                  onSelectMessage(message);
-                }
-              }}
+              onClick={() => handleMessageClick(message)}
+              disabled={loadingFullMessage && selectedMessageId === message.id}
               className={`w-full px-4 py-3 border-b text-left transition-all hover:opacity-80 ${
                 selectedMessageId === message.id ? 'font-medium' : ''
-              }`}
+              } ${loadingFullMessage && selectedMessageId === message.id ? 'opacity-50 cursor-wait' : ''}`}
               style={{
                 backgroundColor: selectedMessageId === message.id 
                   ? 'var(--color-bg-secondary)' 
