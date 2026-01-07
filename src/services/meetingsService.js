@@ -162,37 +162,30 @@ export async function startLiveMeeting(title) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user?.id) throw new Error('No hay sesión activa');
 
-    // 1. Crear reunión en DB
-    const { data: meeting, error: dbError } = await supabase
-      .from('meetings')
-      .insert({
-        owner_user_id: session.user.id,
-        title: title || `Reunión en vivo ${new Date().toLocaleTimeString('es-ES')}`,
-        meeting_type: 'live',
-        status: 'recording',
-        is_live: true,
-        live_started_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (dbError) throw dbError;
-
-    // 2. Notificar al backend
+    // ⚠️ CORE: Primero crear en backend, luego guardar en DB
     const response = await fetch(`${BACKEND_URL}/api/meetings/live/start`, {
       method: 'POST',
       headers: await authHeaders(),
       body: JSON.stringify({
-        meetingId: meeting.id,
-        title: meeting.title
+        title: title || `Reunión en vivo ${new Date().toLocaleTimeString('es-ES')}`
       })
     });
 
     if (!response.ok) {
-      throw new Error('Error al iniciar reunión en backend');
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error al iniciar reunión en backend');
     }
 
-    return meeting;
+    const { meetingId } = await response.json();
+
+    // Sincronizar con DB local (opcional, CORE ya lo maneja)
+    const { data: meeting } = await supabase
+      .from('meetings')
+      .select('*')
+      .eq('id', meetingId)
+      .single();
+
+    return { id: meetingId, ...meeting };
   } catch (error) {
     console.error('[MeetingsService] Error iniciando reunión live:', error);
     throw error;
@@ -205,8 +198,7 @@ export async function startLiveMeeting(title) {
 export async function sendLiveChunk(meetingId, audioBlob) {
   try {
     const formData = new FormData();
-    formData.append('chunk', audioBlob, `chunk-${Date.now()}.webm`);
-    formData.append('meetingId', meetingId);
+    formData.append('chunk', audioBlob, `chunk-${Date.now()}.webm`); // ⚠️ "chunk" no "audio"
 
     const headers = await authHeaders(false);
     const response = await fetch(`${BACKEND_URL}/api/meetings/live/${meetingId}/chunk`, {
@@ -216,6 +208,8 @@ export async function sendLiveChunk(meetingId, audioBlob) {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[MeetingsService] Error enviando chunk:', errorText);
       throw new Error('Error enviando chunk');
     }
 
