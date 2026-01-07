@@ -154,6 +154,9 @@ export async function createFolder(folderData) {
  */
 export async function getDrafts(userId, accountId = null) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const url = accountId 
       ? `${BACKEND_URL}/api/mail/drafts?ownerUserId=${userId}&accountId=${accountId}`
       : `${BACKEND_URL}/api/mail/drafts?ownerUserId=${userId}`;
@@ -162,6 +165,7 @@ export async function getDrafts(userId, accountId = null) {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
     });
@@ -186,10 +190,14 @@ export async function getDrafts(userId, accountId = null) {
  */
 export async function createDraft(draftData) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/mail/drafts`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
       body: JSON.stringify(draftData),
@@ -215,10 +223,14 @@ export async function createDraft(draftData) {
  */
 export async function updateDraft(draftId, updates) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/mail/drafts/${draftId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
       body: JSON.stringify(updates),
@@ -243,8 +255,14 @@ export async function updateDraft(draftId, updates) {
  */
 export async function deleteDraft(draftId) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/mail/drafts/${draftId}`, {
       method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
+      },
       credentials: 'include',
     });
 
@@ -267,8 +285,14 @@ export async function deleteDraft(draftId) {
  */
 export async function sendDraft(draftId) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/mail/drafts/${draftId}/send`, {
       method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
+      },
       credentials: 'include',
     });
 
@@ -300,6 +324,9 @@ export async function sendDraft(draftId) {
  */
 export async function uploadAttachment(file, ownerUserId, draftId = null, messageId = null) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const formData = new FormData();
     formData.append('file', file);
     formData.append('ownerUserId', ownerUserId);
@@ -308,6 +335,9 @@ export async function uploadAttachment(file, ownerUserId, draftId = null, messag
     
     const response = await fetch(`${BACKEND_URL}/api/mail/attachments/upload`, {
       method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido (NO Content-Type con FormData)
+      },
       credentials: 'include',
       body: formData,
     });
@@ -340,8 +370,14 @@ export function getAttachmentDownloadUrl(attachmentId) {
  */
 export async function deleteAttachment(attachmentId) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/mail/attachments/${attachmentId}`, {
       method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
+      },
       credentials: 'include',
     });
 
@@ -762,10 +798,14 @@ export async function getMessage(accountId, messageId) {
  */
 export async function markAsRead(accountId, messageId) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/mail/messages/${messageId}/read`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
       body: JSON.stringify({ accountId, is_read: true }),
@@ -791,10 +831,14 @@ export async function markAsRead(accountId, messageId) {
  */
 export async function toggleStar(accountId, messageId) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/mail/messages/${messageId}/star`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
       body: JSON.stringify({ accountId }),
@@ -821,10 +865,14 @@ export async function toggleStar(accountId, messageId) {
  */
 export async function moveToFolder(accountId, messageId, folderName) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/mail/messages/${messageId}/move`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
       body: JSON.stringify({ accountId, folder: folderName }),
@@ -849,19 +897,14 @@ export async function moveToFolder(accountId, messageId, folderName) {
  */
 export async function syncEmailAccount(accountId) {
   try {
-    // Obtener token de Supabase
-    const { data: { session } } = await supabase.auth.getSession();
-    const accessToken = session?.access_token;
-    
-    if (!accessToken) {
-      throw new Error('No hay sesión activa');
-    }
+    // 🔐 Obtener token JWT usando helper
+    const token = await getAuthToken();
     
     const response = await fetch(`${BACKEND_URL}/api/email/accounts/${accountId}/sync`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
     });
@@ -886,10 +929,14 @@ export async function syncEmailAccount(accountId) {
  */
 export async function saveDraft(accountId, draftData) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/mail/drafts`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
       body: JSON.stringify({ accountId, ...draftData }),

@@ -358,9 +358,9 @@ function Message({ message, currentUser, assistantName = 'Luma' }) {
           )}
         </div>
         
-        {/* Botones de memoria (aparecen on hover) - Solo para mensajes de AL-E */}
-        {!isUser && !isError && (
-          <div className="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+        {/* Botones de memoria (aparecen on hover) - Para mensajes de AL-E Y del usuario */}
+        {!isError && (
+          <div className={`mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-all ${isUser ? 'justify-end' : 'justify-start'}`}>
             <button
               onClick={() => handleSaveMemoryClick('agreement')}
               className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-all"
