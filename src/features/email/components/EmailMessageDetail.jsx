@@ -32,6 +32,21 @@ export default function EmailMessageDetail({ message, onReply, onReplyAll, onFor
   const [starring, setStarring] = useState(false);
   const [archiving, setArchiving] = useState(false);
 
+  // 🔍 DEBUG: Ver qué datos tiene el mensaje
+  React.useEffect(() => {
+    if (message) {
+      console.log('📧 [EmailMessageDetail] Mensaje recibido:', {
+        id: message.id,
+        subject: message.subject,
+        has_body_html: !!message.body_html,
+        has_body_text: !!message.body_text,
+        body_html_length: message.body_html?.length || 0,
+        body_text_length: message.body_text?.length || 0,
+        all_keys: Object.keys(message)
+      });
+    }
+  }, [message]);
+
   if (!message) {
     return (
       <div 
@@ -357,13 +372,34 @@ export default function EmailMessageDetail({ message, onReply, onReplyAll, onFor
         )}
 
         {/* Cuerpo del mensaje */}
-        <div
-          className="prose max-w-none"
-          style={{ color: 'var(--color-text-primary)' }}
-          dangerouslySetInnerHTML={{
-            __html: getSanitizedHTML(message.body_html) || message.body_text?.replace(/\n/g, '<br />') || '',
-          }}
-        />
+        {message.body_html || message.body_text ? (
+          <div
+            className="prose max-w-none"
+            style={{ color: 'var(--color-text-primary)' }}
+            dangerouslySetInnerHTML={{
+              __html: getSanitizedHTML(message.body_html) || message.body_text?.replace(/\n/g, '<br />') || '',
+            }}
+          />
+        ) : (
+          <div 
+            className="p-6 rounded-lg text-center"
+            style={{ 
+              backgroundColor: 'var(--color-bg-secondary)',
+              color: 'var(--color-text-tertiary)'
+            }}
+          >
+            <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p className="font-medium mb-2">Sin contenido</p>
+            <p className="text-sm">
+              Este mensaje no tiene contenido disponible. 
+              {message.preview && (
+                <span className="block mt-2 text-xs">
+                  Preview: {message.preview}
+                </span>
+              )}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

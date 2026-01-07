@@ -897,6 +897,8 @@ export async function moveToFolder(accountId, messageId, folderName) {
  */
 export async function syncEmailAccount(accountId) {
   try {
+    console.log('[EmailService] 🔄 Iniciando sincronización para cuenta:', accountId);
+    
     // 🔐 Obtener token JWT usando helper
     const token = await getAuthToken();
     
@@ -910,13 +912,30 @@ export async function syncEmailAccount(accountId) {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error al sincronizar cuenta');
+      const errorData = await response.json().catch(() => ({ message: 'Error desconocido' }));
+      
+      console.error('[EmailService] ❌ Error del servidor:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData
+      });
+      
+      // Mensajes de error más descriptivos
+      if (response.status === 500 && errorData.message?.includes('Invalid credentials')) {
+        throw new Error('❌ Credenciales IMAP inválidas. Por favor verifica tu usuario y contraseña en la configuración de la cuenta.');
+      } else if (response.status === 500) {
+        throw new Error('❌ Error del servidor al sincronizar. El backend puede estar desconectado o las credenciales son incorrectas.');
+      } else {
+        throw new Error(errorData.message || 'Error al sincronizar cuenta');
+      }
     }
 
-    return await response.json();
+    const result = await response.json();
+    console.log('[EmailService] ✅ Sincronización exitosa:', result);
+    return result;
+    
   } catch (error) {
-    console.error('[EmailService] Error en syncEmailAccount:', error);
+    console.error('[EmailService] ❌ Error en syncEmailAccount:', error);
     throw error;
   }
 }

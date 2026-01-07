@@ -217,11 +217,16 @@ export default function EmailConfigWizard({ onComplete, onCancel }) {
 
       toast.success('✓ Cuenta guardada exitosamente');
 
-      // Sincronizar automáticamente
-      toast.info('Sincronizando correos...');
-      await syncEmailAccount(account.id);
-      
-      toast.success('✓ Sincronización completa');
+      // Intentar sincronizar automáticamente (NO CRÍTICO - puede fallar sin problema)
+      try {
+        toast.info('Sincronizando correos...');
+        await syncEmailAccount(account.id);
+        toast.success('✓ Sincronización completa');
+      } catch (syncError) {
+        console.warn('[EmailConfigWizard] ⚠️ No se pudo sincronizar automáticamente:', syncError.message);
+        toast.warning('⚠️ Cuenta guardada pero la sincronización falló. Puedes sincronizar manualmente más tarde.');
+        // No fallar todo el proceso si la sincronización falla
+      }
       
       if (onComplete) {
         onComplete(account);
