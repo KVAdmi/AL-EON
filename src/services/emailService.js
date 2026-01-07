@@ -9,6 +9,26 @@ import { supabase } from '../lib/supabase';
 const BACKEND_URL = 'https://api.al-eon.com';
 
 /**
+ * 🔐 Obtiene el token de autenticación JWT desde Supabase
+ * @returns {Promise<string>} Access token
+ * @throws {Error} Si no hay sesión activa
+ */
+async function getAuthToken() {
+  const { data: { session }, error } = await supabase.auth.getSession();
+  
+  if (error) {
+    console.error('[EmailService] Error obteniendo sesión:', error);
+    throw new Error('Error de autenticación');
+  }
+  
+  if (!session?.access_token) {
+    throw new Error('No hay sesión activa. Por favor inicia sesión.');
+  }
+  
+  return session.access_token;
+}
+
+/**
  * =====================================================
  * CUENTAS DE EMAIL
  * =====================================================
@@ -61,13 +81,13 @@ export async function getEmailAccounts(userId, accessToken) {
  */
 export async function getFolders(accountId, userId, accessToken) {
   try {
+    // 🔐 Obtener token JWT
+    const token = accessToken || await getAuthToken();
+    
     const headers = {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`, // ✅ Token incluido
     };
-    
-    if (accessToken) {
-      headers['Authorization'] = `Bearer ${accessToken}`;
-    }
 
     const response = await fetch(`${BACKEND_URL}/api/mail/folders/${accountId}?ownerUserId=${userId}`, {
       method: 'GET',
@@ -95,10 +115,14 @@ export async function getFolders(accountId, userId, accessToken) {
  */
 export async function createFolder(folderData) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/mail/folders`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
       body: JSON.stringify(folderData),
@@ -350,10 +374,14 @@ export async function deleteAttachment(attachmentId) {
  */
 export async function createEmailAccount(accountData) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/email/accounts`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
       body: JSON.stringify(accountData),
@@ -379,10 +407,14 @@ export async function createEmailAccount(accountData) {
  */
 export async function updateEmailAccount(accountId, accountData) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/email/accounts/${accountId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
       body: JSON.stringify(accountData),
@@ -407,10 +439,14 @@ export async function updateEmailAccount(accountId, accountData) {
  */
 export async function deleteEmailAccount(accountId) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/email/accounts/${accountId}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
     });
@@ -434,10 +470,14 @@ export async function deleteEmailAccount(accountId) {
  */
 export async function testEmailConnection(accountId) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/email/accounts/${accountId}/test`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
     });
@@ -653,6 +693,9 @@ export async function sendEmail(mailData, accessToken = null) {
  */
 export async function getInbox(accountId, options = {}) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const params = new URLSearchParams({
       accountId,
       ...options,
@@ -662,6 +705,7 @@ export async function getInbox(accountId, options = {}) {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
     });
@@ -686,10 +730,14 @@ export async function getInbox(accountId, options = {}) {
  */
 export async function getMessage(accountId, messageId) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/mail/messages/${messageId}?accountId=${accountId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
     });
