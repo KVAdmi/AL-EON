@@ -294,8 +294,8 @@ function Sidebar({
           />
         </div>
 
-        {/* Navegación rápida: Email, Calendar, Telegram */}
-        <div className="grid grid-cols-3 gap-2">
+        {/* Navegación rápida: Email, Calendar, Telegram, Reuniones */}
+        <div className="grid grid-cols-4 gap-2">
           <button
             onClick={() => navigate('/correo')}
             className="flex items-center justify-center py-3 px-2 rounded-xl transition-all hover:opacity-80"
@@ -333,6 +333,19 @@ function Sidebar({
             title="Telegram"
           >
             <Send size={22} />
+          </button>
+          
+          <button
+            onClick={() => navigate('/reuniones')}
+            className="flex items-center justify-center py-3 px-2 rounded-xl transition-all hover:opacity-80"
+            style={{
+              backgroundColor: 'var(--color-bg-secondary)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-primary)'
+            }}
+            title="Reuniones"
+          >
+            <Mic size={22} />
           </button>
         </div>
       </div>

@@ -27,6 +27,8 @@ const CalendarPage = lazy(() => import('@/pages/CalendarPage'));
 const TelegramSettingsPage = lazy(() => import('@/pages/TelegramSettingsPage'));
 const TelegramPage = lazy(() => import('@/pages/TelegramPage'));
 const EmailModulePage = lazy(() => import('@/pages/EmailModulePage'));
+const MeetingsPage = lazy(() => import('@/pages/MeetingsPage'));
+const MeetingDetailPage = lazy(() => import('@/pages/MeetingDetailPage'));
 
 // Loading component
 function PageLoader() {
@@ -321,6 +323,22 @@ function App() {
           element={
             <ProtectedRoute>
               <TelegramPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/reuniones" 
+          element={
+            <ProtectedRoute>
+              <MeetingsPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/reuniones/:id" 
+          element={
+            <ProtectedRoute>
+              <MeetingDetailPage />
             </ProtectedRoute>
           } 
         />
