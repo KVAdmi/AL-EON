@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Palette, Database, Link2, Mic, Eye, Bell, Lock, CreditCard, 
   Save, Check, Code, Trash2, Download, AlertTriangle, Shield, Globe, Volume2, 
-  Moon, Sun, Monitor, Wifi, WifiOff
+  Moon, Sun, Monitor, Wifi, WifiOff, Upload, Camera, X
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -12,11 +12,13 @@ import IntegrationModal from '../components/IntegrationModal';
 export default function SettingsPage() {
   const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
+  const fileInputRef = useRef(null);
   const [activeTab, setActiveTab] = useState('general');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [backendStatus, setBackendStatus] = useState('checking');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   
   // Estado del perfil y configuración
   const [profile, setProfile] = useState({
@@ -25,7 +27,8 @@ export default function SettingsPage() {
     preferred_language: 'es',
     timezone: 'America/Mexico_City',
     theme: 'system',
-    role: 'USER'
+    role: 'USER',
+    assistant_avatar_url: null
   });
   const [settings, setSettings] = useState({
     ai_model: 'gpt-4',
@@ -139,7 +142,8 @@ export default function SettingsPage() {
         // Nuevos campos de personalización
         preferred_name: profileData?.preferred_name || '',
         assistant_name: profileData?.assistant_name || 'Luma',
-        tone_pref: profileData?.tone_pref || 'barrio'
+        tone_pref: profileData?.tone_pref || 'barrio',
+        assistant_avatar_url: profileData?.assistant_avatar_url || null
       });
       
       // ✅ SOLO SI HAY SESIÓN: hacer fetch a user_settings
@@ -194,7 +198,8 @@ export default function SettingsPage() {
           // Nuevos campos de personalización
           preferred_name: profile.preferred_name,
           assistant_name: profile.assistant_name,
-          tone_pref: profile.tone_pref
+          tone_pref: profile.tone_pref,
+          assistant_avatar_url: profile.assistant_avatar_url
         })
         .eq('user_id', session.user.id);
       
@@ -231,6 +236,116 @@ export default function SettingsPage() {
       alert('Error al guardar cambios: ' + error.message);
     } finally {
       setSaving(false);
+    }
+  }
+
+  // 📸 SUBIR AVATAR DE AL-E
+  async function handleAvatarUpload(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validar que sea una imagen
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor selecciona una imagen válida');
+      return;
+    }
+
+    try {
+      setUploadingAvatar(true);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) {
+        alert('No hay sesión activa');
+        return;
+      }
+
+      // Generar nombre único para el archivo
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${session.user.id}/avatar-${Date.now()}.${fileExt}`;
+
+      // Eliminar avatar anterior si existe
+      if (profile.assistant_avatar_url) {
+        const oldPath = profile.assistant_avatar_url.split('/').slice(-2).join('/');
+        await supabase.storage
+          .from('ale-avatars')
+          .remove([oldPath]);
+      }
+
+      // Subir nuevo avatar
+      const { data, error: uploadError } = await supabase.storage
+        .from('ale-avatars')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Obtener URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('ale-avatars')
+        .getPublicUrl(fileName);
+
+      // Actualizar estado y base de datos
+      setProfile({ ...profile, assistant_avatar_url: publicUrl });
+      
+      await supabase
+        .from('user_profiles')
+        .update({ assistant_avatar_url: publicUrl })
+        .eq('user_id', session.user.id);
+
+      // Refresh del perfil
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+
+      alert('✅ Avatar actualizado correctamente');
+    } catch (error) {
+      console.error('Error subiendo avatar:', error);
+      alert('Error al subir avatar: ' + error.message);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
+  // 🗑️ ELIMINAR AVATAR DE AL-E
+  async function handleAvatarDelete() {
+    if (!confirm('¿Eliminar el avatar de AL-E?')) return;
+
+    try {
+      setUploadingAvatar(true);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return;
+
+      // Eliminar archivo de storage
+      if (profile.assistant_avatar_url) {
+        const oldPath = profile.assistant_avatar_url.split('/').slice(-2).join('/');
+        await supabase.storage
+          .from('ale-avatars')
+          .remove([oldPath]);
+      }
+
+      // Actualizar base de datos
+      await supabase
+        .from('user_profiles')
+        .update({ assistant_avatar_url: null })
+        .eq('user_id', session.user.id);
+
+      // Actualizar estado
+      setProfile({ ...profile, assistant_avatar_url: null });
+
+      // Refresh del perfil
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+
+      alert('✅ Avatar eliminado');
+    } catch (error) {
+      console.error('Error eliminando avatar:', error);
+      alert('Error al eliminar avatar: ' + error.message);
+    } finally {
+      setUploadingAvatar(false);
     }
   }
 
@@ -572,6 +687,94 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
                 }}
                 maxLength={30}
               />
+            </div>
+
+            {/* Avatar del asistente */}
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                Avatar de {profile.assistant_name || 'AL-E'}
+              </label>
+              <p className="text-xs mb-3" style={{ color: 'var(--color-text-tertiary)' }}>
+                Personaliza el avatar de tu asistente (aparecerá en el chat y sidebar)
+              </p>
+              
+              <div className="flex items-center gap-4">
+                {/* Preview del avatar */}
+                <div 
+                  className="w-20 h-20 rounded-full flex items-center justify-center overflow-hidden border-2"
+                  style={{ 
+                    borderColor: 'var(--color-accent)',
+                    backgroundColor: profile.assistant_avatar_url ? 'transparent' : 'var(--color-accent-light)'
+                  }}
+                >
+                  {profile.assistant_avatar_url ? (
+                    <img 
+                      src={profile.assistant_avatar_url} 
+                      alt="Avatar de AL-E"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Camera 
+                      size={32} 
+                      style={{ color: 'var(--color-accent)' }}
+                    />
+                  )}
+                </div>
+
+                {/* Botones de acción */}
+                <div className="flex flex-col gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                  
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl border transition-all hover:opacity-80"
+                    style={{
+                      backgroundColor: 'var(--color-accent)',
+                      borderColor: 'var(--color-accent)',
+                      color: '#fff'
+                    }}
+                  >
+                    {uploadingAvatar ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Subiendo...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={16} />
+                        <span>{profile.assistant_avatar_url ? 'Cambiar' : 'Subir'}</span>
+                      </>
+                    )}
+                  </button>
+
+                  {profile.assistant_avatar_url && (
+                    <button
+                      onClick={handleAvatarDelete}
+                      disabled={uploadingAvatar}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl border transition-all hover:opacity-80"
+                      style={{
+                        backgroundColor: 'transparent',
+                        borderColor: 'var(--color-border)',
+                        color: 'var(--color-text-secondary)'
+                      }}
+                    >
+                      <X size={16} />
+                      <span>Eliminar</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              <p className="text-xs mt-2" style={{ color: 'var(--color-text-tertiary)' }}>
+                Formatos: JPG, PNG, GIF, WEBP. Sin límite de tamaño.
+              </p>
             </div>
 
             {/* Tono de conversación */}
