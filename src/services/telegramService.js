@@ -38,8 +38,17 @@ async function getAuthToken() {
  */
 export async function connectBot(botData) {
   try {
+    console.log('[TelegramService] 🔍 Iniciando conexión de bot...');
+    console.log('[TelegramService] Datos recibidos:', {
+      ...botData,
+      botToken: botData.botToken ? '***HIDDEN***' : 'NO_TOKEN'
+    });
+    
     // 🔐 Obtener token JWT
     const token = await getAuthToken();
+    console.log('[TelegramService] ✅ Token JWT obtenido:', token ? token.substring(0, 20) + '...' : 'NO_TOKEN');
+    
+    console.log('[TelegramService] 📤 Enviando request a:', `${BACKEND_URL}/api/telegram/bots/connect`);
     
     const response = await fetch(`${BACKEND_URL}/api/telegram/bots/connect`, {
       method: 'POST',
@@ -51,14 +60,27 @@ export async function connectBot(botData) {
       body: JSON.stringify(botData),
     });
 
+    console.log('[TelegramService] 📥 Response status:', response.status, response.statusText);
+
     if (!response.ok) {
-      const error = await response.json();
+      const errorText = await response.text();
+      console.error('[TelegramService] ❌ Error response:', errorText);
+      
+      let error;
+      try {
+        error = JSON.parse(errorText);
+      } catch (e) {
+        error = { message: errorText };
+      }
+      
       throw new Error(error.message || 'Error al conectar bot de Telegram');
     }
 
-    return await response.json();
+    const result = await response.json();
+    console.log('[TelegramService] ✅ Bot conectado exitosamente:', result);
+    return result;
   } catch (error) {
-    console.error('[TelegramService] Error en connectBot:', error);
+    console.error('[TelegramService] ❌ Error en connectBot:', error);
     throw error;
   }
 }

@@ -66,33 +66,47 @@ export default function EmailInbox({ accountId, folder, onSelectMessage }) {
       }
       
       // Transformar formato de Supabase a formato esperado por UI
-      const transformedMessages = (dbMessages || []).map(msg => ({
-        id: msg.id,
-        from: msg.from_address,
-        from_address: msg.from_address,
-        from_name: msg.from_name,
-        to_addresses: msg.to_addresses || [],
-        cc_addresses: msg.cc_addresses || [],
-        bcc_addresses: msg.bcc_addresses || [],
-        subject: msg.subject,
-        preview: msg.body_text?.substring(0, 100) || msg.body_html?.substring(0, 100).replace(/<[^>]*>/g, '') || '',
-        body_text: msg.body_text || '',
-        body_html: msg.body_html || '',
-        date: msg.sent_at || msg.created_at,
-        sent_at: msg.sent_at,
-        received_at: msg.received_at,
-        created_at: msg.created_at,
-        read: msg.is_read || false,
-        is_read: msg.is_read || false,
-        starred: msg.is_starred || false,
-        is_starred: msg.is_starred || false,
-        folder: msg.folder,
-        account_id: msg.account_id,
-        has_attachments: msg.has_attachments || false,
-        attachments: msg.attachments || [],
-        attachment_count: msg.attachments?.length || 0,
-      }));
+      const transformedMessages = (dbMessages || [])
+        .filter(msg => {
+          // Validar que el mensaje tenga los campos mínimos necesarios
+          if (!msg.id) {
+            console.warn('[EmailInbox] ⚠️ Mensaje sin ID, ignorado:', msg);
+            return false;
+          }
+          if (!msg.from_address && !msg.from_email) {
+            console.warn('[EmailInbox] ⚠️ Mensaje sin remitente, ignorado. ID:', msg.id);
+            return false;
+          }
+          return true;
+        })
+        .map(msg => ({
+          id: msg.id,
+          from: msg.from_address || msg.from_email || 'Desconocido',
+          from_address: msg.from_address || msg.from_email || 'unknown@example.com',
+          from_name: msg.from_name || null,
+          to_addresses: msg.to_addresses || [],
+          cc_addresses: msg.cc_addresses || [],
+          bcc_addresses: msg.bcc_addresses || [],
+          subject: msg.subject || '(Sin asunto)',
+          preview: msg.body_text?.substring(0, 100) || msg.body_html?.substring(0, 100).replace(/<[^>]*>/g, '') || '',
+          body_text: msg.body_text || '',
+          body_html: msg.body_html || '',
+          date: msg.sent_at || msg.received_at || msg.created_at,
+          sent_at: msg.sent_at,
+          received_at: msg.received_at,
+          created_at: msg.created_at,
+          read: msg.is_read || false,
+          is_read: msg.is_read || false,
+          starred: msg.is_starred || false,
+          is_starred: msg.is_starred || false,
+          folder: msg.folder,
+          account_id: msg.account_id,
+          has_attachments: msg.has_attachments || false,
+          attachments: msg.attachments || [],
+          attachment_count: msg.attachments?.length || 0,
+        }));
       
+      console.log(`[EmailInbox] ✅ ${transformedMessages.length} mensajes válidos de ${dbMessages?.length || 0} totales`);
       setMessages(transformedMessages);
       
     } catch (error) {

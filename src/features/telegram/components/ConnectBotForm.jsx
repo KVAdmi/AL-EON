@@ -61,12 +61,18 @@ export default function ConnectBotForm({ userId, onSuccess, onCancel }) {
         botToken: formData.botToken.trim(),
       };
 
-      console.log('[ConnectBotForm] Enviando payload:', { 
+      console.log('[ConnectBotForm] 🔍 DEBUG - Información de envío:');
+      console.log('  - userId recibido:', userId);
+      console.log('  - tipo de userId:', typeof userId);
+      console.log('  - userId válido:', !!userId && userId !== 'undefined');
+      console.log('  - payload completo:', { 
         ...payload, 
         botToken: '***HIDDEN***' 
       });
 
       const result = await connectBot(payload);
+
+      console.log('[ConnectBotForm] ✅ Respuesta exitosa:', result);
 
       toast({
         title: 'Bot conectado',
@@ -82,6 +88,10 @@ export default function ConnectBotForm({ userId, onSuccess, onCancel }) {
 
       onSuccess();
     } catch (error) {
+      console.error('[ConnectBotForm] ❌ Error detallado:', error);
+      console.error('  - Mensaje:', error.message);
+      console.error('  - Stack:', error.stack);
+      
       toast({
         variant: 'destructive',
         title: 'Error',
