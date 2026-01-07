@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import { 
-  getEmailAccounts, getFolders, getInbox, getEmailById,
+  getEmailAccounts, getFolders, getInbox, getMessage,
   getContacts, createContact, importVCard,
   syncEmailAccount
 } from '@/services/emailService';
@@ -246,14 +246,25 @@ export default function EmailPageOutlook() {
 
   async function handleEmailClick(email) {
     try {
-      console.log('📧 Cargando contenido completo del correo:', email.id || email.message_id);
+      console.log('📧 Cargando contenido completo del correo:', {
+        id: email.id,
+        message_id: email.message_id,
+        account_id: email.account_id,
+        selectedAccount: selectedAccount?.id || selectedAccount?.account_id
+      });
       
-      // 🔥 CARGAR CONTENIDO COMPLETO desde backend
-      const fullEmail = await getEmailById(email.id || email.message_id);
+      // 🔥 CARGAR CONTENIDO COMPLETO desde Supabase
+      const accountId = email.account_id || selectedAccount?.id || selectedAccount?.account_id;
+      const messageId = email.id || email.message_id;
+      
+      console.log('📞 Llamando getMessage con:', { accountId, messageId });
+      const fullEmail = await getMessage(accountId, messageId);
       
       console.log('✅ Contenido completo cargado:', {
         has_body_html: !!fullEmail.body_html,
         has_body_text: !!fullEmail.body_text,
+        body_html_length: fullEmail.body_html?.length,
+        body_text_length: fullEmail.body_text?.length,
       });
       
       // Combinar datos de lista con contenido completo
