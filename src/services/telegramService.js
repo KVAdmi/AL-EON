@@ -4,22 +4,48 @@
  * Backend: https://api.al-eon.com
  */
 
+import { supabase } from '@/lib/supabase';
+
 const BACKEND_URL = 'https://api.al-eon.com';
+
+/**
+ * Obtiene el token de autenticación JWT desde Supabase
+ * @returns {Promise<string>} Access token
+ * @throws {Error} Si no hay sesión activa
+ */
+async function getAuthToken() {
+  const { data: { session }, error } = await supabase.auth.getSession();
+  
+  if (error) {
+    console.error('[TelegramService] Error obteniendo sesión:', error);
+    throw new Error('Error de autenticación');
+  }
+  
+  if (!session?.access_token) {
+    throw new Error('No hay sesión activa. Por favor inicia sesión.');
+  }
+  
+  return session.access_token;
+}
 
 /**
  * Conecta un bot de Telegram para el usuario
  * @param {Object} botData - Datos del bot
- * @param {string} botData.userId - ID del usuario
+ * @param {string} botData.ownerUserId - ID del usuario
  * @param {string} botData.botUsername - Username del bot
  * @param {string} botData.botToken - Token del bot de @BotFather
  * @returns {Promise<Object>} Bot conectado con instrucciones
  */
 export async function connectBot(botData) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/telegram/bots/connect`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
       body: JSON.stringify(botData),
@@ -44,10 +70,14 @@ export async function connectBot(botData) {
  */
 export async function getUserBots(userId) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/telegram/bots?userId=${userId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
     });
@@ -71,10 +101,14 @@ export async function getUserBots(userId) {
  */
 export async function disconnectBot(botId) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/telegram/bots/${botId}/disconnect`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
     });
@@ -101,10 +135,14 @@ export async function disconnectBot(botId) {
  */
 export async function updateBotSettings(botId, settings) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/telegram/bots/${botId}/settings`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
       body: JSON.stringify(settings),
@@ -130,6 +168,9 @@ export async function updateBotSettings(botId, settings) {
  */
 export async function getChats(userId, botId = null) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const params = new URLSearchParams({ ownerUserId: userId });
     if (botId) params.append('botId', botId);
 
@@ -137,6 +178,7 @@ export async function getChats(userId, botId = null) {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
     });
@@ -161,6 +203,9 @@ export async function getChats(userId, botId = null) {
  */
 export async function getMessages(chatId, options = {}) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const params = new URLSearchParams({
       chatId,
       ...options,
@@ -170,6 +215,7 @@ export async function getMessages(chatId, options = {}) {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
     });
@@ -196,10 +242,14 @@ export async function getMessages(chatId, options = {}) {
  */
 export async function sendMessage(messageData) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/telegram/send`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
       body: JSON.stringify(messageData),
@@ -224,10 +274,14 @@ export async function sendMessage(messageData) {
  */
 export async function checkBotStatus(botId) {
   try {
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
     const response = await fetch(`${BACKEND_URL}/api/telegram/bots/${botId}/status`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ Token incluido
       },
       credentials: 'include',
     });

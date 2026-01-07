@@ -12,6 +12,7 @@ export function useVoiceMode() {
   const [transcript, setTranscript] = useState('');
   const [isSupported, setIsSupported] = useState(false);
   const recognitionRef = useRef(null);
+  const shouldContinueRef = useRef(false); // Track if we want continuous listening
 
   useEffect(() => {
     // Verificar soporte del navegador
@@ -32,8 +33,21 @@ export function useVoiceMode() {
       };
       
       recognition.onend = () => {
-        console.log('🎤 Reconocimiento de voz detenido');
+        console.log('🛑 Reconocimiento de voz terminado');
         setIsListening(false);
+        
+        // Si shouldContinue está activado, reiniciar automáticamente
+        // Esto mantiene el reconocimiento activo incluso después de silencios
+        if (shouldContinueRef.current && recognitionRef.current) {
+          console.log('🔄 Reiniciando reconocimiento automáticamente');
+          try {
+            setTimeout(() => {
+              recognitionRef.current?.start();
+            }, 100); // Pequeño delay para evitar errores
+          } catch (error) {
+            console.error('Error al reiniciar reconocimiento:', error);
+          }
+        }
       };
       
       recognition.onerror = (event) => {
@@ -112,6 +126,9 @@ export function useVoiceMode() {
       // Detener el stream inmediatamente (solo queríamos el permiso)
       stream.getTracks().forEach(track => track.stop());
       
+      // Activar el flag para reinicio automático
+      shouldContinueRef.current = true;
+      
       // Iniciar reconocimiento
       if (recognitionRef.current) {
         setTranscript(''); // Limpiar transcript anterior
@@ -143,6 +160,8 @@ export function useVoiceMode() {
 
   const stopListening = () => {
     if (recognitionRef.current && isListening) {
+      // Desactivar el flag para que no se reinicie automáticamente
+      shouldContinueRef.current = false;
       recognitionRef.current.stop();
       
       toast({

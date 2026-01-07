@@ -924,9 +924,9 @@ function AccountFolderTree({
         />
         <Mail size={18} className="shrink-0" />
         <div className="flex-1 text-left min-w-0">
-          <div className="text-sm font-bold truncate">{account.display_name || 'Mi cuenta'}</div>
+          <div className="text-sm font-bold truncate">{account.email || 'Cuenta de correo'}</div>
           <div className="text-xs truncate opacity-80">
-            {account.email}
+            {account.display_name || account.from_name || ''}
           </div>
         </div>
         {folders.length > 0 && (
@@ -934,7 +934,7 @@ function AccountFolderTree({
             backgroundColor: isSelectedAccount ? 'rgba(255,255,255,0.2)' : 'var(--color-bg-primary)',
             color: isSelectedAccount ? '#fff' : 'var(--color-text-tertiary)'
           }}>
-            {folders.length}
+            {folders.length} carpetas
           </span>
         )}
       </button>
