@@ -1113,6 +1113,7 @@ export async function importVCard(file, userId) {
 /**
  * Parsea un archivo vCard y extrae los contactos
  * VERSIÓN ROBUSTA que maneja múltiples formatos
+ * ✅ Acepta contactos SIN email (solo teléfono)
  * @param {string} vcardText - Contenido del archivo vCard
  * @returns {Array<Object>} Lista de contactos parseados
  */
@@ -1138,7 +1139,7 @@ function parseVCard(vcardText) {
         notes: ''
       };
       
-      // Extraer nombre (FN o N) - MEJORADO para manejar CHARSET
+      // Extraer nombre (FN o N) - MEJORADO para manejar CHARSET y emojis
       let fnMatch = vcard.match(/\nFN[^:]*:([^\n]+)/i);
       if (fnMatch) {
         contact.name = cleanVCardValue(fnMatch[1]);
@@ -1146,23 +1147,27 @@ function parseVCard(vcardText) {
         let nMatch = vcard.match(/\nN[^:]*:([^\n]+)/i);
         if (nMatch) {
           const parts = nMatch[1].split(';');
-          contact.name = `${parts[1] || ''} ${parts[0] || ''}`.trim();
+          // Construir nombre desde componentes: Apellido, Nombre, Segundo nombre
+          const lastName = parts[0] || '';
+          const firstName = parts[1] || '';
+          const middleName = parts[2] || '';
+          contact.name = `${firstName} ${middleName} ${lastName}`.trim();
           contact.name = cleanVCardValue(contact.name);
         }
       }
       
-      // Extraer email - MEJORADO para limpiar caracteres extra
+      // Extraer email - MÚLTIPLES FORMATOS
       let emailMatch = vcard.match(/\nEMAIL[^:]*:([^\n]+)/i);
       if (emailMatch) {
         contact.email = cleanVCardValue(emailMatch[1]).toLowerCase();
         // Limpiar posibles <>
-        contact.email = contact.email.replace(/[<>\"']/g, '');
+        contact.email = contact.email.replace(/[<>\"']/g, '').trim();
       }
       
-      // Extraer teléfono
-      let telMatch = vcard.match(/\nTEL[^:]*:([^\n]+)/i);
+      // Extraer teléfono - MÚLTIPLES FORMATOS (TEL, item1.TEL, etc)
+      let telMatch = vcard.match(/\n(?:item\d+\.)?TEL[^:]*:([^\n]+)/i);
       if (telMatch) {
-        contact.phone = cleanVCardValue(telMatch[1]);
+        contact.phone = cleanVCardValue(telMatch[1]).trim();
       }
       
       // Extraer empresa (ORG)
@@ -1171,27 +1176,41 @@ function parseVCard(vcardText) {
         contact.company = cleanVCardValue(orgMatch[1]);
       }
       
-      // Extraer notas (NOTE)
+      // Extraer notas (NOTE o CATEGORIES)
       let noteMatch = vcard.match(/\nNOTE[^:]*:([^\n]+)/i);
       if (noteMatch) {
         contact.notes = cleanVCardValue(noteMatch[1]);
+      } else {
+        // Usar CATEGORIES como notas si no hay NOTE
+        let catMatch = vcard.match(/\nCATEGORIES[^:]*:([^\n]+)/i);
+        if (catMatch) {
+          contact.notes = cleanVCardValue(catMatch[1]);
+        }
       }
       
-      // Validación MÁS ESTRICTA
-      const hasValidName = contact.name && contact.name.length >= 2;
+      // ✅ VALIDACIÓN FLEXIBLE: Nombre + (Email O Teléfono)
+      const hasValidName = contact.name && contact.name.length >= 1;
       const hasValidEmail = contact.email && 
                            contact.email.includes('@') && 
                            contact.email.length >= 5 &&
                            !contact.email.includes(' ');
+      const hasValidPhone = contact.phone && contact.phone.length >= 7;
       
-      if (hasValidName && hasValidEmail) {
+      // Aceptar si tiene nombre Y (email O teléfono)
+      if (hasValidName && (hasValidEmail || hasValidPhone)) {
+        // Si no hay email, usar teléfono como identificador único
+        if (!contact.email && contact.phone) {
+          contact.email = `tel_${contact.phone.replace(/[^0-9]/g, '')}@phone.local`;
+        }
         contacts.push(contact);
       } else {
         console.warn(`⚠️ vCard ${i} ignorado:`, {
           name: contact.name?.substring(0, 30),
           email: contact.email?.substring(0, 40),
+          phone: contact.phone?.substring(0, 20),
           hasValidName,
-          hasValidEmail
+          hasValidEmail,
+          hasValidPhone
         });
       }
     } catch (error) {
@@ -1199,12 +1218,13 @@ function parseVCard(vcardText) {
     }
   }
   
-  console.log(`✅ ${contacts.length} de ${vcards.length - 1} contactos importados`);
+  console.log(`✅ ${contacts.length} de ${vcards.length - 1} contactos válidos encontrados`);
   return contacts;
 }
 
 /**
  * Limpia valores de vCard que pueden tener encoding QUOTED-PRINTABLE
+ * ✅ ELIMINA EMOJIS Y CARACTERES ESPECIALES
  */
 function cleanVCardValue(value) {
   if (!value) return '';
@@ -1222,6 +1242,27 @@ function cleanVCardValue(value) {
     }
   }
   
-  // Limpiar espacios y caracteres de control
-  return value.trim().replace(/[\x00-\x1F\x7F]/g, '');
+  // 🔥 ELIMINAR EMOJIS (rangos Unicode de emojis)
+  value = value.replace(/[\u{1F300}-\u{1F9FF}]/gu, ''); // Emojis y símbolos
+  value = value.replace(/[\u{1F600}-\u{1F64F}]/gu, ''); // Emoticones
+  value = value.replace(/[\u{1F680}-\u{1F6FF}]/gu, ''); // Transporte y símbolos
+  value = value.replace(/[\u{2600}-\u{26FF}]/gu, '');   // Símbolos misceláneos
+  value = value.replace(/[\u{2700}-\u{27BF}]/gu, '');   // Dingbats
+  value = value.replace(/[\u{FE00}-\u{FE0F}]/gu, '');   // Selectores de variación
+  value = value.replace(/[\u{1F900}-\u{1F9FF}]/gu, ''); // Símbolos y pictogramas suplementarios
+  value = value.replace(/[\u{1FA70}-\u{1FAFF}]/gu, ''); // Símbolos y pictogramas extendidos-A
+  
+  // 🔥 ELIMINAR SÍMBOLOS EXTRA (círculos de colores, flechas, etc)
+  value = value.replace(/[⚛️♉️🏻☘️]/g, '');
+  value = value.replace(/[\u{FE00}-\u{FE0F}\u{E0100}-\u{E01EF}]/gu, ''); // Variation selectors
+  
+  // 🔥 ELIMINAR SIGNOS DE INTERROGACIÓN Y CARACTERES RAROS
+  value = value.replace(/\?+/g, '');
+  
+  // Limpiar espacios múltiples, tabs, y caracteres de control
+  value = value.replace(/[\x00-\x1F\x7F]/g, '');
+  value = value.replace(/\s+/g, ' ');
+  
+  // Trim final
+  return value.trim();
 }
