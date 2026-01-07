@@ -103,7 +103,8 @@ export async function deleteConversationFromSupabase(conversationId) {
       return false;
     }
 
-    // PRIMERO: Eliminar de user_conversations (relación muchos a muchos)
+    // Eliminar la conversación del usuario de user_conversations
+    // Esto elimina solo la relación del usuario con la conversación
     const { error: userConvError } = await supabase
       .from('user_conversations')
       .delete()
@@ -111,39 +112,17 @@ export async function deleteConversationFromSupabase(conversationId) {
       .eq('conversation_id', conversationId);
 
     if (userConvError) {
-      console.error('❌ Error borrando relación usuario-conversación:', userConvError);
+      console.error('❌ Error borrando conversación del usuario:', userConvError);
+      console.error('Detalles del error:', {
+        code: userConvError.code,
+        message: userConvError.message,
+        details: userConvError.details,
+        hint: userConvError.hint
+      });
       return false;
     }
 
-    // SEGUNDO: Eliminar la conversación principal de ae_conversations
-    // (solo si no hay otros usuarios vinculados a esta conversación)
-    const { data: otherUsers, error: checkError } = await supabase
-      .from('user_conversations')
-      .select('user_id')
-      .eq('conversation_id', conversationId);
-
-    if (checkError) {
-      console.error('❌ Error verificando otros usuarios:', checkError);
-      // Continuar de todas formas para eliminar la conversación principal
-    }
-
-    // Si no hay otros usuarios, eliminar la conversación principal
-    if (!otherUsers || otherUsers.length === 0) {
-      const { error: convError } = await supabase
-        .from('ae_conversations')
-        .delete()
-        .eq('id', conversationId);
-
-      if (convError) {
-        console.error('❌ Error borrando conversación principal:', convError);
-        return false;
-      }
-      
-      console.log(`✅ Conversación ${conversationId} eliminada completamente (incluyendo ae_conversations)`);
-    } else {
-      console.log(`ℹ️ Conversación ${conversationId} eliminada para el usuario, pero otros usuarios aún la tienen`);
-    }
-
+    console.log(`✅ Conversación ${conversationId} eliminada para el usuario ${user.id}`);
     return true;
 
   } catch (error) {
