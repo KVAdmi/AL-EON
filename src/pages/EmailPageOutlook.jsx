@@ -758,7 +758,16 @@ export default function EmailPageOutlook() {
                 <div style={{ color: 'var(--color-text-primary)' }}>
                   {(() => {
                     // 🔥 RENDERIZAR CONTENIDO COMPLETO CON SANITIZACIÓN
-                    if (selectedEmail.body_html) {
+                    // Validar que body_html/body_text no sean strings vacíos o "false"
+                    const hasValidHtml = selectedEmail.body_html && 
+                                        selectedEmail.body_html !== 'false' && 
+                                        selectedEmail.body_html.trim().length > 0;
+                    
+                    const hasValidText = selectedEmail.body_text && 
+                                        selectedEmail.body_text !== 'false' && 
+                                        selectedEmail.body_text.trim().length > 0;
+                    
+                    if (hasValidHtml) {
                       // Sanitizar HTML antes de renderizar
                       const sanitizedHtml = DOMPurify.sanitize(selectedEmail.body_html);
                       return (
@@ -767,7 +776,7 @@ export default function EmailPageOutlook() {
                           dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
                         />
                       );
-                    } else if (selectedEmail.body_text) {
+                    } else if (hasValidText) {
                       // Fallback a texto plano
                       return (
                         <pre className="email-text-content whitespace-pre-wrap font-sans">
@@ -780,7 +789,7 @@ export default function EmailPageOutlook() {
                         <div className="text-gray-500 italic">
                           <p className="mb-2">Vista previa:</p>
                           <p>{selectedEmail.preview || selectedEmail.body_preview}</p>
-                          <p className="mt-4 text-sm">⚠️ Contenido completo no disponible</p>
+                          <p className="mt-4 text-sm">⚠️ Contenido completo no disponible en este correo</p>
                         </div>
                       );
                     } else {
