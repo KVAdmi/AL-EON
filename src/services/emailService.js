@@ -10,22 +10,27 @@ const BACKEND_URL = 'https://api.al-eon.com';
 
 /**
  * 🔐 Obtiene el token de autenticación JWT desde Supabase
- * @returns {Promise<string>} Access token
- * @throws {Error} Si no hay sesión activa
+ * @returns {Promise<string|null>} Access token o null si no hay sesión
  */
 async function getAuthToken() {
-  const { data: { session }, error } = await supabase.auth.getSession();
-  
-  if (error) {
-    console.error('[EmailService] Error obteniendo sesión:', error);
-    throw new Error('Error de autenticación');
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.warn('[EmailService] ⚠️ Error obteniendo sesión:', error.message);
+      return null;
+    }
+    
+    if (!session?.access_token) {
+      console.warn('[EmailService] ⚠️ No hay sesión activa');
+      return null;
+    }
+    
+    return session.access_token;
+  } catch (error) {
+    console.error('[EmailService] ❌ Error en getAuthToken:', error);
+    return null;
   }
-  
-  if (!session?.access_token) {
-    throw new Error('No hay sesión activa. Por favor inicia sesión.');
-  }
-  
-  return session.access_token;
 }
 
 /**
