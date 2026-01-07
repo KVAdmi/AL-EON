@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { updateEvent, deleteEvent } from '@/services/calendarService';
+import { scheduleNotification } from '@/services/notificationsService';
 import { useToast } from '@/ui/use-toast';
-import { X, Clock, MapPin, Users, Edit3, Trash2, Loader2 } from 'lucide-react';
+import { X, Clock, MapPin, Users, Edit3, Trash2, Loader2, Bell } from 'lucide-react';
 
 export default function EventDetail({ event, accessToken, onClose, onEventUpdated, onEventDeleted }) {
   const { toast } = useToast();
@@ -16,6 +17,7 @@ export default function EventDetail({ event, accessToken, onClose, onEventUpdate
     title: event.title,
     description: event.description || '',
     location: event.location || '',
+    reminder: event.notification_minutes ? String(event.notification_minutes) : null,
   });
 
   function formatDateTime(dateString) {
@@ -49,7 +51,37 @@ export default function EventDetail({ event, accessToken, onClose, onEventUpdate
 
     try {
       setLoading(true);
+      
+      // Actualizar evento básico
       await updateEvent(event.id, formData, accessToken);
+      
+      // Si el recordatorio cambió, programar nueva notificación
+      if (formData.reminder !== (event.notification_minutes ? String(event.notification_minutes) : null)) {
+        try {
+          if (formData.reminder) {
+            const reminderMinutes = parseInt(formData.reminder);
+            const reminderDate = new Date(startTime);
+            reminderDate.setMinutes(reminderDate.getMinutes() - reminderMinutes);
+
+            await scheduleNotification({
+              userId: event.ownerUserId || event.userId,
+              type: 'calendar_reminder',
+              title: `Recordatorio: ${formData.title}`,
+              message: `Tu evento "${formData.title}" comienza en ${reminderMinutes === 15 ? '15 minutos' : reminderMinutes === 60 ? '1 hora' : '1 día'}`,
+              scheduledFor: reminderDate.toISOString(),
+              channel: 'telegram',
+              metadata: {
+                eventId: event.id,
+                eventTitle: formData.title,
+                eventStartTime: startTime,
+              },
+            });
+          }
+        } catch (reminderError) {
+          console.warn('⚠️ No se pudo actualizar recordatorio:', reminderError);
+        }
+      }
+      
       toast({
         title: 'Evento actualizado',
         description: 'Los cambios se guardaron correctamente',
@@ -185,6 +217,47 @@ export default function EventDetail({ event, accessToken, onClose, onEventUpdate
                   }}
                 />
               </div>
+
+              {/* Reminder */}
+              <div>
+                <label 
+                  className="block text-sm font-medium mb-2 flex items-center gap-2"
+                  style={{ color: 'var(--color-text-primary)' }}
+                >
+                  <Bell size={14} />
+                  Recordarme
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { value: null, label: 'Sin recordatorio' },
+                    { value: '15', label: '15 min antes' },
+                    { value: '30', label: '30 min antes' },
+                    { value: '60', label: '1 hora antes' },
+                  ].map(option => (
+                    <button
+                      key={option.value || 'none'}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, reminder: option.value }))}
+                      className={`px-3 py-2 text-sm rounded-lg border transition-all ${
+                        formData.reminder === option.value ? 'font-semibold' : ''
+                      }`}
+                      style={{
+                        backgroundColor: formData.reminder === option.value 
+                          ? 'var(--color-accent)' 
+                          : 'var(--color-bg-primary)',
+                        borderColor: formData.reminder === option.value
+                          ? 'var(--color-accent)'
+                          : 'var(--color-border)',
+                        color: formData.reminder === option.value
+                          ? '#FFFFFF'
+                          : 'var(--color-text-primary)',
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </>
           ) : (
             <>
@@ -222,6 +295,37 @@ export default function EventDetail({ event, accessToken, onClose, onEventUpdate
                     </p>
                   </div>
                 </div>
+
+                {/* Recordatorio */}
+                {event.notification_minutes && (
+                  <div className="flex items-start gap-3">
+                    <Bell size={20} style={{ color: 'var(--color-accent)', marginTop: '2px' }} />
+                    <div>
+                      <p 
+                        className="font-medium"
+                        style={{ color: 'var(--color-text-primary)' }}
+                      >
+                        Recordatorio
+                      </p>
+                      <p 
+                        className="text-sm mt-1"
+                        style={{ color: 'var(--color-text-secondary)' }}
+                      >
+                        {event.notification_minutes === 15 && '15 minutos antes'}
+                        {event.notification_minutes === 30 && '30 minutos antes'}
+                        {event.notification_minutes === 60 && '1 hora antes'}
+                        {event.notification_minutes === 1440 && '1 día antes'}
+                        {![15, 30, 60, 1440].includes(event.notification_minutes) && `${event.notification_minutes} minutos antes`}
+                      </p>
+                      <p 
+                        className="text-xs mt-1"
+                        style={{ color: 'var(--color-text-tertiary)' }}
+                      >
+                        Recibirás notificación por Telegram
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {event.location && (
                   <div className="space-y-3">
