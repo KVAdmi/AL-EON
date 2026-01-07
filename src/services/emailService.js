@@ -801,10 +801,19 @@ export async function moveToFolder(accountId, messageId, folderName) {
  */
 export async function syncEmailAccount(accountId) {
   try {
+    // Obtener token de Supabase
+    const { data: { session } } = await supabase.auth.getSession();
+    const accessToken = session?.access_token;
+    
+    if (!accessToken) {
+      throw new Error('No hay sesión activa');
+    }
+    
     const response = await fetch(`${BACKEND_URL}/api/email/accounts/${accountId}/sync`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
       },
       credentials: 'include',
     });
@@ -989,6 +998,7 @@ export async function importVCard(file, userId) {
 
 /**
  * Parsea un archivo vCard y extrae los contactos
+ * VERSIÓN ROBUSTA que maneja múltiples formatos
  * @param {string} vcardText - Contenido del archivo vCard
  * @returns {Array<Object>} Lista de contactos parseados
  */
@@ -1004,64 +1014,100 @@ function parseVCard(vcardText) {
   console.log(`📇 Encontrados ${vcards.length - 1} posibles vCards en el archivo`);
   
   for (let i = 1; i < vcards.length; i++) {
-    const vcard = 'BEGIN:VCARD' + vcards[i];
-    const contact = {
-      name: '',
-      email: '',
-      phone: '',
-      company: '',
-      notes: ''
-    };
-    
-    // Extraer nombre (FN o N)
-    let fnMatch = vcard.match(/\nFN[;:]([^\n]+)/i);
-    if (fnMatch) {
-      contact.name = fnMatch[1].trim();
-    } else {
-      // Intentar con N (nombre estructurado: Apellido;Nombre;...)
-      let nMatch = vcard.match(/\nN[;:]([^\n]+)/i);
-      if (nMatch) {
-        const parts = nMatch[1].split(';');
-        // parts[0] = Apellido, parts[1] = Nombre
-        contact.name = `${parts[1] || ''} ${parts[0] || ''}`.trim();
+    try {
+      const vcard = 'BEGIN:VCARD' + vcards[i];
+      const contact = {
+        name: '',
+        email: '',
+        phone: '',
+        company: '',
+        notes: ''
+      };
+      
+      // Extraer nombre (FN o N) - MEJORADO para manejar CHARSET
+      let fnMatch = vcard.match(/\nFN[^:]*:([^\n]+)/i);
+      if (fnMatch) {
+        contact.name = cleanVCardValue(fnMatch[1]);
+      } else {
+        let nMatch = vcard.match(/\nN[^:]*:([^\n]+)/i);
+        if (nMatch) {
+          const parts = nMatch[1].split(';');
+          contact.name = `${parts[1] || ''} ${parts[0] || ''}`.trim();
+          contact.name = cleanVCardValue(contact.name);
+        }
       }
-    }
-    
-    // Extraer email - puede tener varios formatos
-    let emailMatch = vcard.match(/\nEMAIL[^:]*:([^\n]+)/i);
-    if (emailMatch) {
-      contact.email = emailMatch[1].trim().toLowerCase();
-    }
-    
-    // Extraer teléfono - puede tener varios formatos
-    let telMatch = vcard.match(/\nTEL[^:]*:([^\n]+)/i);
-    if (telMatch) {
-      contact.phone = telMatch[1].trim();
-    }
-    
-    // Extraer empresa (ORG)
-    let orgMatch = vcard.match(/\nORG[;:]([^\n]+)/i);
-    if (orgMatch) {
-      contact.company = orgMatch[1].trim();
-    }
-    
-    // Extraer notas (NOTE)
-    let noteMatch = vcard.match(/\nNOTE[;:]([^\n]+)/i);
-    if (noteMatch) {
-      contact.notes = noteMatch[1].trim();
-    }
-    
-    // Validación: Solo agregar si tiene nombre Y email
-    if (contact.name && contact.email && contact.email.includes('@')) {
-      contacts.push(contact);
-    } else {
-      console.warn(`⚠️ Contacto ignorado (falta nombre o email):`, {
-        name: contact.name,
-        email: contact.email
-      });
+      
+      // Extraer email - MEJORADO para limpiar caracteres extra
+      let emailMatch = vcard.match(/\nEMAIL[^:]*:([^\n]+)/i);
+      if (emailMatch) {
+        contact.email = cleanVCardValue(emailMatch[1]).toLowerCase();
+        // Limpiar posibles <>
+        contact.email = contact.email.replace(/[<>\"']/g, '');
+      }
+      
+      // Extraer teléfono
+      let telMatch = vcard.match(/\nTEL[^:]*:([^\n]+)/i);
+      if (telMatch) {
+        contact.phone = cleanVCardValue(telMatch[1]);
+      }
+      
+      // Extraer empresa (ORG)
+      let orgMatch = vcard.match(/\nORG[^:]*:([^\n]+)/i);
+      if (orgMatch) {
+        contact.company = cleanVCardValue(orgMatch[1]);
+      }
+      
+      // Extraer notas (NOTE)
+      let noteMatch = vcard.match(/\nNOTE[^:]*:([^\n]+)/i);
+      if (noteMatch) {
+        contact.notes = cleanVCardValue(noteMatch[1]);
+      }
+      
+      // Validación MÁS ESTRICTA
+      const hasValidName = contact.name && contact.name.length >= 2;
+      const hasValidEmail = contact.email && 
+                           contact.email.includes('@') && 
+                           contact.email.length >= 5 &&
+                           !contact.email.includes(' ');
+      
+      if (hasValidName && hasValidEmail) {
+        contacts.push(contact);
+      } else {
+        console.warn(`⚠️ vCard ${i} ignorado:`, {
+          name: contact.name?.substring(0, 30),
+          email: contact.email?.substring(0, 40),
+          hasValidName,
+          hasValidEmail
+        });
+      }
+    } catch (error) {
+      console.error(`❌ Error en vCard ${i}:`, error.message);
     }
   }
   
-  console.log(`✅ ${contacts.length} contactos válidos parseados`);
+  console.log(`✅ ${contacts.length} de ${vcards.length - 1} contactos importados`);
   return contacts;
+}
+
+/**
+ * Limpia valores de vCard que pueden tener encoding QUOTED-PRINTABLE
+ */
+function cleanVCardValue(value) {
+  if (!value) return '';
+  
+  // Decodificar QUOTED-PRINTABLE (=XX donde XX es hexadecimal)
+  if (value.includes('=')) {
+    try {
+      value = value.replace(/=([0-9A-F]{2})/gi, (match, hex) => {
+        return String.fromCharCode(parseInt(hex, 16));
+      });
+      // Quitar = al final de líneas (continuación)
+      value = value.replace(/=$/g, '');
+    } catch (e) {
+      // Si falla, continuar con el valor original
+    }
+  }
+  
+  // Limpiar espacios y caracteres de control
+  return value.trim().replace(/[\x00-\x1F\x7F]/g, '');
 }

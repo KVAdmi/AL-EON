@@ -233,13 +233,31 @@ export function NotificationBell() {
                     const diffMs = startDate - now;
                     const diffMins = Math.floor(diffMs / 60000);
                     const diffHours = Math.floor(diffMins / 60);
+                    const diffDays = Math.floor(diffHours / 24);
+                    
+                    // Verificar si es hoy, mañana o más adelante
+                    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    const eventDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
                     
                     let timeText = '';
-                    if (diffMins < 60) {
+                    if (diffMins < 0) {
+                      timeText = 'Ahora';
+                    } else if (diffMins < 60) {
                       timeText = `En ${diffMins} min`;
-                    } else if (diffHours < 24) {
+                    } else if (eventDay.getTime() === today.getTime()) {
+                      // Es HOY
                       timeText = `Hoy ${startDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
+                    } else if (eventDay.getTime() === tomorrow.getTime()) {
+                      // Es MAÑANA
+                      timeText = `Mañana ${startDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
+                    } else if (diffDays < 7) {
+                      // Esta semana
+                      const dayName = startDate.toLocaleDateString('es-MX', { weekday: 'short' });
+                      timeText = `${dayName} ${startDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
                     } else {
+                      // Más adelante
                       timeText = startDate.toLocaleDateString('es-MX', {
                         day: 'numeric',
                         month: 'short',

@@ -446,13 +446,13 @@ export default function EmailPageOutlook() {
               <div className="flex items-center gap-2 mb-1">
                 <Mail size={16} style={{ color: '#0078d4' }} />
                 <h2 className="text-lg font-bold truncate" style={{ color: 'var(--color-text-primary)' }}>
-                  {selectedAccount?.display_name || selectedAccount?.email || 'Cuenta de correo'}
+                  {selectedAccount?.email || 'Selecciona una cuenta'}
                 </h2>
               </div>
               {selectedFolder && (
                 <div className="flex items-center gap-2 ml-6">
                   <span className="text-sm font-medium truncate" style={{ color: 'var(--color-text-secondary)' }}>
-                    {selectedFolder.folder_name}
+                    📁 {selectedFolder.folder_name}
                   </span>
                   {selectedFolder.unread_count > 0 && (
                     <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'var(--color-accent)', color: '#fff' }}>
@@ -535,10 +535,16 @@ export default function EmailPageOutlook() {
             ) : (
               <div>
                 {emails.map((email) => {
-                  const fromName = email.from_name || email.from_email || 'Desconocido';
+                  const fromName = email.from_name || email.from_email || email.sender || email.from || 'Remitente desconocido';
+                  const fromEmail = email.from_email || email.sender || email.from || '';
                   const avatar = getInitials(fromName);
-                  const avatarColor = getAvatarColor(email.from_email);
+                  const avatarColor = getAvatarColor(fromEmail);
                   const isUnread = !email.is_read;
+                  
+                  // Debug log
+                  if (!email.from_name && !email.from_email) {
+                    console.warn('⚠️ Email sin remitente:', email);
+                  }
                   
                   return (
                     <button
@@ -559,12 +565,19 @@ export default function EmailPageOutlook() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1 gap-2">
-                            <span 
-                              className={`font-medium text-sm truncate ${isUnread ? 'font-bold' : ''}`} 
-                              style={{ color: 'var(--color-text-primary)' }}
-                            >
-                              {fromName}
-                            </span>
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <span 
+                                className={`font-medium text-sm truncate ${isUnread ? 'font-bold' : ''}`} 
+                                style={{ color: 'var(--color-text-primary)' }}
+                              >
+                                {fromName}
+                              </span>
+                              {fromEmail && fromEmail !== fromName && (
+                                <span className="text-xs truncate" style={{ color: 'var(--color-text-tertiary)' }}>
+                                  {fromEmail}
+                                </span>
+                              )}
+                            </div>
                             <span className="text-xs shrink-0" style={{ color: 'var(--color-text-tertiary)' }}>
                               {formatDate(email.received_at || email.date)}
                             </span>
