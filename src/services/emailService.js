@@ -729,29 +729,44 @@ export async function sendEmail(mailData, accessToken = null) {
  */
 export async function getInbox(accountId, options = {}) {
   try {
-    // 🔐 Obtener token JWT
-    const token = await getAuthToken();
+    console.log('[EmailService] � getInbox llamado con:', { accountId, options });
     
-    const params = new URLSearchParams({
-      accountId,
-      ...options,
-    });
-
-    const response = await fetch(`${BACKEND_URL}/api/mail/inbox?${params}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`, // ✅ Token incluido
-      },
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error al obtener inbox');
+    // 🔥 LEER DIRECTO DE SUPABASE (más confiable)
+    const { data: messages, error } = await supabase
+      .from('email_messages')
+      .select('*')
+      .eq('account_id', accountId)
+      .order('date', { ascending: false })
+      .limit(options.limit || 50);
+    
+    if (error) {
+      console.error('[EmailService] Error de Supabase:', error);
+      throw new Error('Error al obtener mensajes de Supabase');
     }
-
-    return await response.json();
+    
+    console.log(`[EmailService] ✅ ${messages?.length || 0} mensajes obtenidos de Supabase`);
+    
+    // Transformar al formato esperado
+    return {
+      messages: (messages || []).map(msg => ({
+        id: msg.id,
+        message_id: msg.id,
+        from_address: msg.from_address,
+        from_name: msg.from_name,
+        from_email: msg.from_address,
+        to_addresses: msg.to_addresses,
+        subject: msg.subject,
+        preview: msg.body_preview,
+        body_preview: msg.body_preview,
+        date: msg.date,
+        received_at: msg.date,
+        is_read: msg.is_read,
+        is_starred: msg.is_starred,
+        has_attachments: msg.has_attachments,
+        account_id: msg.account_id,
+        folder: msg.folder,
+      }))
+    };
   } catch (error) {
     console.error('[EmailService] Error en getInbox:', error);
     throw error;
