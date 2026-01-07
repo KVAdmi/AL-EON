@@ -167,13 +167,27 @@ export async function startLiveMeeting(title) {
       method: 'POST',
       headers: await authHeaders(),
       body: JSON.stringify({
-        title: title || `Reunión en vivo ${new Date().toLocaleTimeString('es-ES')}`
+        title: title || `Reunión en vivo ${new Date().toLocaleTimeString('es-ES')}`,
+        mode: 'live',
+        auto_send_enabled: false,
+        send_email: false,
+        send_telegram: false,
+        participants: []
       })
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Error al iniciar reunión en backend');
+      let errorMsg = 'Error al iniciar reunión en backend';
+      try {
+        const errorData = await response.json();
+        if (errorData?.error || errorData?.message) {
+          errorMsg = errorData.error || errorData.message;
+        }
+      } catch (e) {
+        // Response no es JSON válido, usar mensaje genérico
+        console.warn('[MeetingsService] Error response not JSON:', e);
+      }
+      throw new Error(errorMsg);
     }
 
     const { meetingId } = await response.json();

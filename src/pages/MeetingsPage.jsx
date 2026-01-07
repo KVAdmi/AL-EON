@@ -123,9 +123,11 @@ export default function MeetingsPage() {
   // =====================================================
   
   async function handleStartLive() {
+    let stream = null;
+    
     try {
       // Solicitar permiso de micrófono
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioStreamRef.current = stream;
 
       const title = prompt(
@@ -170,7 +172,20 @@ export default function MeetingsPage() {
       alert('⚠️ Esta sesión está grabando audio para transcripción. Asegúrate de tener consentimiento.');
     } catch (error) {
       console.error('Error iniciando grabación:', error);
-      alert('Error al acceder al micrófono: ' + error.message);
+      
+      // Detener stream si se obtuvo pero falló después
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      
+      // Mensaje de error específico según la fase que falló
+      if (error.message && error.message.includes('Permission denied')) {
+        alert('Error al acceder al micrófono: Permiso denegado. Por favor, permite el acceso al micrófono en la configuración de tu navegador.');
+      } else if (error.message && error.message.includes('meeting')) {
+        alert('Error al crear la reunión en el servidor: ' + error.message);
+      } else {
+        alert('Error al iniciar la grabación: ' + error.message);
+      }
     }
   }
 
