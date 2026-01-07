@@ -33,12 +33,7 @@ export default function LandingPage() {
       {/* Content */}
       <div className="relative z-10 flex-1 flex flex-col">
         {/* Header */}
-        <header className="w-full px-6 sm:px-8 py-6 flex justify-between items-center">
-          <img 
-            src="/Logo AL-E sobre fondo negro.png" 
-            alt="AL-EON" 
-            className="h-12 sm:h-16 object-contain"
-          />
+        <header className="w-full px-6 sm:px-8 py-6 flex justify-end items-center">
           <button
             onClick={() => navigate('/login')}
             className="px-6 py-2.5 rounded-full font-medium transition-all duration-300 hover:scale-105"
@@ -69,7 +64,7 @@ export default function LandingPage() {
                 <img 
                   src="/Logo AL-E sobre fondo negro.png" 
                   alt="AL-EON" 
-                  className="relative h-32 sm:h-40 object-contain animate-float"
+                  className="relative h-64 sm:h-80 lg:h-96 object-contain animate-float"
                 />
               </div>
             </div>
