@@ -12,7 +12,7 @@ import {
   ExclamationTriangleIcon,
   LightBulbIcon
 } from '@heroicons/react/24/outline';
-import { getMeetingById, sendMinutes, createCalendarEvents } from '../services/meetingsService';
+import { getMeetingById, sendMinutes, createCalendarEvents } from '@/services/meetingsService';
 
 const MeetingDetailPage = () => {
   const { id } = useParams();

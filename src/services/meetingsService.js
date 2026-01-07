@@ -367,6 +367,18 @@ export async function sendMinutesByTelegram(meetingId) {
 }
 
 /**
+ * Enviar minuta por canal específico (wrapper)
+ */
+export async function sendMinutes(meetingId, channel) {
+  if (channel === 'email') {
+    return await sendMinutesByEmail(meetingId, []);
+  } else if (channel === 'telegram') {
+    return await sendMinutesByTelegram(meetingId);
+  }
+  throw new Error(`Canal desconocido: ${channel}`);
+}
+
+/**
  * Crear eventos de calendario desde acuerdos
  */
 export async function createCalendarEvents(meetingId) {
