@@ -766,26 +766,59 @@ export async function getInbox(accountId, options = {}) {
  */
 export async function getMessage(accountId, messageId) {
   try {
-    // 🔐 Obtener token JWT
-    const token = await getAuthToken();
+    console.log('[EmailService] 📧 getMessage - Leyendo DIRECTO de Supabase:', { accountId, messageId });
     
-    const response = await fetch(`${BACKEND_URL}/api/mail/messages/${messageId}?accountId=${accountId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`, // ✅ Token incluido
-      },
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error al obtener mensaje');
+    // ✅ LEER DIRECTO DE SUPABASE (donde SÍ está el contenido completo)
+    const { data: message, error } = await supabase
+      .from('email_messages')
+      .select('*')
+      .eq('id', messageId)
+      .eq('account_id', accountId)
+      .single();
+    
+    if (error) {
+      console.error('[EmailService] ❌ Error Supabase:', error);
+      throw new Error('Error al obtener mensaje de base de datos');
     }
-
-    return await response.json();
+    
+    if (!message) {
+      throw new Error('Mensaje no encontrado');
+    }
+    
+    console.log('[EmailService] ✅ Mensaje obtenido de Supabase:', {
+      id: message.id,
+      has_body_html: !!message.body_html,
+      has_body_text: !!message.body_text,
+      body_html_length: message.body_html?.length || 0,
+      body_text_length: message.body_text?.length || 0,
+      subject: message.subject
+    });
+    
+    // Transformar formato de Supabase a formato esperado
+    return {
+      id: message.id,
+      from: message.from_address || message.from_name || 'Desconocido',
+      from_address: message.from_address,
+      from_name: message.from_name,
+      to_addresses: message.to_addresses || [],
+      cc_addresses: message.cc_addresses || [],
+      bcc_addresses: message.bcc_addresses || [],
+      subject: message.subject || '(Sin asunto)',
+      body_text: message.body_text || '',
+      body_html: message.body_html || '',
+      body_preview: message.body_preview || '',
+      date: message.date || message.created_at,
+      sent_at: message.date,
+      is_read: message.is_read || false,
+      is_starred: message.is_starred || false,
+      has_attachments: message.has_attachments || false,
+      attachment_count: message.attachment_count || 0,
+      account_id: message.account_id,
+      folder: message.folder,
+    };
+    
   } catch (error) {
-    console.error('[EmailService] Error en getMessage:', error);
+    console.error('[EmailService] ❌ Error en getMessage:', error);
     throw error;
   }
 }

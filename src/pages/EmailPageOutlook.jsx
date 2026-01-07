@@ -541,11 +541,6 @@ export default function EmailPageOutlook() {
                   const avatarColor = getAvatarColor(fromEmail);
                   const isUnread = !email.is_read;
                   
-                  // Debug log
-                  if (!email.from_name && !email.from_email) {
-                    console.warn('⚠️ Email sin remitente:', email);
-                  }
-                  
                   return (
                     <button
                       key={email.message_id || email.id}

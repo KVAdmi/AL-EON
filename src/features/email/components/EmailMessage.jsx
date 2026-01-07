@@ -78,21 +78,29 @@ export default function EmailMessage({ message, accountId }) {
                 color: 'var(--color-text-primary)',
               }}
             >
-              {displayMessage.from?.charAt(0).toUpperCase()}
+              {(displayMessage.from_name || displayMessage.from_address || displayMessage.from || 'U')?.charAt(0).toUpperCase()}
             </div>
             <div>
               <p 
                 className="font-medium"
                 style={{ color: 'var(--color-text-primary)' }}
               >
-                {displayMessage.from}
+                {displayMessage.from_name || displayMessage.from || 'Remitente desconocido'}
               </p>
+              {displayMessage.from_address && (
+                <p 
+                  className="text-xs"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  {displayMessage.from_address}
+                </p>
+              )}
               <p 
-                className="text-sm flex items-center gap-1"
+                className="text-sm flex items-center gap-1 mt-1"
                 style={{ color: 'var(--color-text-secondary)' }}
               >
                 <Calendar size={12} />
-                {formatDate(displayMessage.date)}
+                {formatDate(displayMessage.date || displayMessage.sent_at)}
               </p>
             </div>
           </div>
