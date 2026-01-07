@@ -62,10 +62,36 @@ export async function connectBot(botData) {
 
     console.log('[TelegramService] 📥 Response status:', response.status, response.statusText);
 
+    // WORKAROUND: Si el bot se creó pero backend devuelve error, intentar verificar en BD
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[TelegramService] ❌ Error response:', errorText);
+      console.error('[TelegramService] ⚠️ Error response:', errorText);
       
+      // Verificar si el bot existe en la base de datos (significa que se creó exitosamente)
+      try {
+        const botsResponse = await fetch(`${BACKEND_URL}/api/telegram/bots?userId=${botData.ownerUserId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          credentials: 'include',
+        });
+        
+        if (botsResponse.ok) {
+          const bots = await botsResponse.json();
+          const justCreatedBot = bots.find(b => b.bot_username === botData.botUsername || b.botUsername === botData.botUsername);
+          
+          if (justCreatedBot) {
+            console.log('[TelegramService] ✅ Bot encontrado en BD (se creó exitosamente a pesar del error):', justCreatedBot);
+            return justCreatedBot;
+          }
+        }
+      } catch (verifyError) {
+        console.error('[TelegramService] No se pudo verificar en BD:', verifyError);
+      }
+      
+      // Si no se pudo verificar, lanzar error original
       let error;
       try {
         error = JSON.parse(errorText);

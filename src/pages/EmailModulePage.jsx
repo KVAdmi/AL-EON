@@ -52,6 +52,16 @@ export default function EmailModulePage() {
   const [loading, setLoading] = useState(true);
   const [voiceMode, setVoiceMode] = useState(false);
 
+  // 🔍 DEBUG: Verificar user
+  useEffect(() => {
+    console.log('[EmailModule] 🔍 DEBUG User:', {
+      hasUser: !!user,
+      userId: user?.id,
+      userEmail: user?.email,
+      hasToken: !!accessToken
+    });
+  }, [user, accessToken]);
+
   // Cargar cuentas al montar
   useEffect(() => {
     if (user?.id) {

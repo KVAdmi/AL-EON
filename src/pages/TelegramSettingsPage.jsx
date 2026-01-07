@@ -15,6 +15,16 @@ export default function TelegramSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [showConnectForm, setShowConnectForm] = useState(false);
 
+  // 🔍 DEBUG: Verificar user
+  useEffect(() => {
+    console.log('[TelegramSettings] 🔍 DEBUG User:', {
+      hasUser: !!user,
+      userId: user?.id,
+      userEmail: user?.email,
+      userKeys: user ? Object.keys(user) : []
+    });
+  }, [user]);
+
   useEffect(() => {
     loadBots();
   }, [user]);
@@ -255,11 +265,32 @@ export default function TelegramSettingsPage() {
                   borderColor: 'var(--color-border)',
                 }}
               >
-                <ConnectBotForm
-                  userId={user?.id}
-                  onSuccess={handleBotConnected}
-                  onCancel={() => setShowConnectForm(false)}
-                />
+                {!user || !user.id ? (
+                  <div 
+                    className="text-center py-8"
+                    style={{ color: 'var(--color-text-tertiary)' }}
+                  >
+                    <AlertCircle size={48} className="mx-auto mb-4 opacity-50" />
+                    <p className="font-medium mb-2">No se pudo obtener información del usuario</p>
+                    <p className="text-sm">Por favor recarga la página o inicia sesión nuevamente</p>
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="mt-4 px-4 py-2 rounded-lg font-medium"
+                      style={{
+                        backgroundColor: 'var(--color-primary)',
+                        color: 'white'
+                      }}
+                    >
+                      Recargar página
+                    </button>
+                  </div>
+                ) : (
+                  <ConnectBotForm
+                    userId={user.id}
+                    onSuccess={handleBotConnected}
+                    onCancel={() => setShowConnectForm(false)}
+                  />
+                )}
               </div>
             ) : (
               <>
