@@ -759,7 +759,53 @@ export async function getInbox(accountId, options = {}) {
 }
 
 /**
- * Obtiene un mensaje específico
+ * Obtiene un mensaje específico CON CONTENIDO COMPLETO desde el backend
+ * 🔥 NUEVO: Llama al endpoint correcto del backend
+ * @param {string} messageId - ID del mensaje
+ * @returns {Promise<Object>} Detalles del mensaje con body_html y body_text
+ */
+export async function getEmailById(messageId) {
+  try {
+    console.log('[EmailService] 📧 getEmailById - Obteniendo contenido completo:', messageId);
+    
+    // 🔐 Obtener token JWT
+    const token = await getAuthToken();
+    
+    const response = await fetch(`${BACKEND_URL}/api/mail/messages/${messageId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Error desconocido' }));
+      throw new Error(error.message || 'Error al obtener mensaje');
+    }
+
+    const message = await response.json();
+    
+    console.log('[EmailService] ✅ Mensaje con contenido completo obtenido:', {
+      id: message.id,
+      has_body_html: !!message.body_html,
+      has_body_text: !!message.body_text,
+      body_html_length: message.body_html?.length || 0,
+      body_text_length: message.body_text?.length || 0,
+      subject: message.subject
+    });
+    
+    return message;
+  } catch (error) {
+    console.error('[EmailService] ❌ Error en getEmailById:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene un mensaje específico (LEGACY - usa Supabase directo)
+ * @deprecated Usar getEmailById() en su lugar para obtener contenido completo
  * @param {string} accountId - ID de la cuenta
  * @param {string} messageId - ID del mensaje
  * @returns {Promise<Object>} Detalles del mensaje

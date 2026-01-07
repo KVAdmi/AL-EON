@@ -6,8 +6,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import DOMPurify from 'dompurify';
 import { 
-  getEmailAccounts, getFolders, getInbox, 
+  getEmailAccounts, getFolders, getInbox, getEmailById,
   getContacts, createContact, importVCard,
   syncEmailAccount
 } from '@/services/emailService';
@@ -118,6 +119,18 @@ export default function EmailPageOutlook() {
       });
       
       console.log('✉️ Emails cargados:', data);
+      
+      // 🔥 DEBUG: Ver estructura del primer correo
+      if (data.messages && data.messages.length > 0) {
+        console.log('🔍 Estructura del primer correo:', {
+          keys: Object.keys(data.messages[0]),
+          from_address: data.messages[0].from_address,
+          from_name: data.messages[0].from_name,
+          from_email: data.messages[0].from_email,
+          subject: data.messages[0].subject,
+        });
+      }
+      
       setEmails(data.messages || data.emails || []);
     } catch (error) {
       console.error('❌ Error cargando emails:', error);
@@ -231,9 +244,35 @@ export default function EmailPageOutlook() {
     return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
   }
 
-  function handleEmailClick(email) {
-    setSelectedEmail(email);
-    setView('detail');
+  async function handleEmailClick(email) {
+    try {
+      console.log('📧 Cargando contenido completo del correo:', email.id || email.message_id);
+      
+      // 🔥 CARGAR CONTENIDO COMPLETO desde backend
+      const fullEmail = await getEmailById(email.id || email.message_id);
+      
+      console.log('✅ Contenido completo cargado:', {
+        has_body_html: !!fullEmail.body_html,
+        has_body_text: !!fullEmail.body_text,
+      });
+      
+      // Combinar datos de lista con contenido completo
+      setSelectedEmail({
+        ...email,
+        ...fullEmail,
+      });
+      setView('detail');
+    } catch (error) {
+      console.error('❌ Error cargando contenido del correo:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo cargar el contenido del correo',
+      });
+      // Fallback: mostrar sin contenido completo
+      setSelectedEmail(email);
+      setView('detail');
+    }
   }
 
   function handleBackToList() {
@@ -535,8 +574,36 @@ export default function EmailPageOutlook() {
             ) : (
               <div>
                 {emails.map((email) => {
-                  const fromName = email.from_name || email.from_email || email.sender || email.from || 'Remitente desconocido';
-                  const fromEmail = email.from_email || email.sender || email.from || '';
+                  // 🔥 MEJORAR EXTRACCIÓN DE NOMBRE Y EMAIL DEL REMITENTE
+                  // Intentar múltiples campos para obtener el nombre
+                  let fromName = email.from_name || email.from_display_name;
+                  
+                  // Si no hay nombre, intentar extraer de from_address
+                  if (!fromName && email.from_address) {
+                    // Formato: "Nombre <email@example.com>" o solo "email@example.com"
+                    const match = email.from_address.match(/^"?([^"<]+)"?\s*<?([^>]+)>?$/);
+                    if (match) {
+                      fromName = match[1].trim();
+                    } else {
+                      fromName = email.from_address.split('@')[0]; // Usar parte antes del @
+                    }
+                  }
+                  
+                  // Fallback a otros campos
+                  if (!fromName) {
+                    fromName = email.from_email || email.sender || email.from || 'Remitente desconocido';
+                  }
+                  
+                  // Obtener el email del remitente
+                  let fromEmail = email.from_email;
+                  if (!fromEmail && email.from_address) {
+                    const match = email.from_address.match(/<([^>]+)>/);
+                    fromEmail = match ? match[1] : email.from_address;
+                  }
+                  if (!fromEmail) {
+                    fromEmail = email.sender || email.from || '';
+                  }
+                  
                   const avatar = getInitials(fromName);
                   const avatarColor = getAvatarColor(fromEmail);
                   const isUnread = !email.is_read;
@@ -634,29 +701,81 @@ export default function EmailPageOutlook() {
                   {selectedEmail.subject || '(Sin asunto)'}
                 </h2>
                 <div className="flex items-center gap-3">
-                  <div 
-                    className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-full flex items-center justify-center text-white font-semibold text-base sm:text-lg" 
-                    style={{ backgroundColor: getAvatarColor(selectedEmail.from_email) }}
-                  >
-                    {getInitials(selectedEmail.from_name || selectedEmail.from_email)}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-semibold truncate" style={{ color: 'var(--color-text-primary)' }}>
-                      {selectedEmail.from_name || selectedEmail.from_email}
-                    </div>
-                    <div className="text-sm truncate" style={{ color: 'var(--color-text-secondary)' }}>
-                      Para: {selectedAccount?.from_email || 'ti'}
-                    </div>
-                  </div>
+                  {(() => {
+                    // 🔥 MEJORAR EXTRACCIÓN DE NOMBRE Y EMAIL PARA DETALLE
+                    let displayName = selectedEmail.from_name || selectedEmail.from_display_name;
+                    let displayEmail = selectedEmail.from_email;
+                    
+                    // Si no hay nombre, intentar extraer de from_address
+                    if (!displayName && selectedEmail.from_address) {
+                      const match = selectedEmail.from_address.match(/^"?([^"<]+)"?\s*<?([^>]+)>?$/);
+                      if (match) {
+                        displayName = match[1].trim();
+                        displayEmail = match[2].trim();
+                      } else {
+                        displayName = selectedEmail.from_address.split('@')[0];
+                        displayEmail = selectedEmail.from_address;
+                      }
+                    }
+                    
+                    if (!displayName) {
+                      displayName = displayEmail || selectedEmail.from || 'Remitente desconocido';
+                    }
+                    
+                    return (
+                      <>
+                        <div 
+                          className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-full flex items-center justify-center text-white font-semibold text-base sm:text-lg" 
+                          style={{ backgroundColor: getAvatarColor(displayEmail || displayName) }}
+                        >
+                          {getInitials(displayName)}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-semibold truncate" style={{ color: 'var(--color-text-primary)' }}>
+                            {displayName}
+                          </div>
+                          <div className="text-sm truncate" style={{ color: 'var(--color-text-secondary)' }}>
+                            Para: {selectedAccount?.from_email || 'ti'}
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto p-4 sm:p-6">
                 <div style={{ color: 'var(--color-text-primary)' }}>
-                  <div 
-                    dangerouslySetInnerHTML={{ 
-                      __html: selectedEmail.html_body || selectedEmail.text_body?.replace(/\n/g, '<br/>') || selectedEmail.preview || 'Sin contenido' 
-                    }}
-                  />
+                  {(() => {
+                    // 🔥 RENDERIZAR CONTENIDO COMPLETO CON SANITIZACIÓN
+                    if (selectedEmail.body_html) {
+                      // Sanitizar HTML antes de renderizar
+                      const sanitizedHtml = DOMPurify.sanitize(selectedEmail.body_html);
+                      return (
+                        <div 
+                          className="email-html-content"
+                          dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+                        />
+                      );
+                    } else if (selectedEmail.body_text) {
+                      // Fallback a texto plano
+                      return (
+                        <pre className="email-text-content whitespace-pre-wrap font-sans">
+                          {selectedEmail.body_text}
+                        </pre>
+                      );
+                    } else if (selectedEmail.preview || selectedEmail.body_preview) {
+                      // Último fallback: preview
+                      return (
+                        <div className="text-gray-500 italic">
+                          <p className="mb-2">Vista previa:</p>
+                          <p>{selectedEmail.preview || selectedEmail.body_preview}</p>
+                          <p className="mt-4 text-sm">⚠️ Contenido completo no disponible</p>
+                        </div>
+                      );
+                    } else {
+                      return <p className="text-gray-500 italic">Sin contenido</p>;
+                    }
+                  })()}
                 </div>
               </div>
             </>
