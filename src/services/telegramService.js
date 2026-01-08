@@ -137,7 +137,13 @@ export async function getUserBots(userId) {
       if (response.ok) {
         const bots = await response.json();
         console.log('[TelegramService] ✅ Bots obtenidos desde backend:', bots);
-        return bots;
+        
+        // Validar que sea un array, si no, ir directo a Supabase
+        if (Array.isArray(bots) && bots.length > 0) {
+          return bots;
+        }
+        
+        console.warn('[TelegramService] ⚠️ Backend devolvió formato inválido o vacío, usando Supabase');
       }
     } catch (backendError) {
       console.warn('[TelegramService] ⚠️ Backend no disponible, usando Supabase directamente:', backendError.message);
