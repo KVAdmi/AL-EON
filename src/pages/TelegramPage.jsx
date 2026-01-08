@@ -32,15 +32,19 @@ export default function TelegramPage() {
     try {
       setLoading(true);
       const data = await getUserBots(user.id);
-      setBots(data || []);
+      
+      // Asegurar que siempre sea un array
+      const botsArray = Array.isArray(data) ? data : [];
+      setBots(botsArray);
       
       // Seleccionar primer bot conectado
-      const connectedBot = data?.find(b => b.isConnected);
+      const connectedBot = botsArray.find(b => b.isConnected);
       if (connectedBot) {
         setSelectedBot(connectedBot);
       }
     } catch (error) {
       console.error('Error cargando bots:', error);
+      setBots([]); // Asegurar que sea array vacío en caso de error
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -80,7 +84,7 @@ export default function TelegramPage() {
     );
   }
 
-  if (bots.length === 0 || !bots.some(b => b.isConnected)) {
+  if (!Array.isArray(bots) || bots.length === 0 || !bots.some(b => b.isConnected)) {
     return (
       <div 
         className="min-h-screen flex items-center justify-center p-6"
@@ -156,7 +160,7 @@ export default function TelegramPage() {
               Bots conectados
             </h3>
             <div className="space-y-2">
-              {bots.filter(b => b.isConnected).map(bot => (
+              {Array.isArray(bots) && bots.filter(b => b.isConnected).map(bot => (
                 <button
                   key={bot.id}
                   onClick={() => setSelectedBot(bot)}
