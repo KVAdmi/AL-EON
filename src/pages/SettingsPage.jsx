@@ -484,6 +484,9 @@ export default function SettingsPage() {
                 isOwner={isOwner}
                 backendStatus={backendStatus}
                 setIntegrationModal={setIntegrationModal}
+                uploadingAvatar={uploadingAvatar}
+                setUploadingAvatar={setUploadingAvatar}
+                handleAvatarUpload={handleAvatarUpload}
               />
             </div>
           </div>
@@ -501,7 +504,7 @@ export default function SettingsPage() {
   );
 }
 
-function TabContent({ activeTab, profile, setProfile, settings, setSettings, isOwner, backendStatus, setIntegrationModal }) {
+function TabContent({ activeTab, profile, setProfile, settings, setSettings, isOwner, backendStatus, setIntegrationModal, uploadingAvatar, setUploadingAvatar, handleAvatarUpload }) {
   // Estados para notificaciones
   const [notifSettings, setNotifSettings] = useState({
     push_enabled: false,
@@ -510,6 +513,9 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
     notify_responses: false,
     notify_errors: true,
   });
+  
+  // Referencia para el input de archivo (avatar)
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     // Actualizar estado de notificaciones al cargar
