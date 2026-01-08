@@ -182,19 +182,19 @@ export async function connectBot(botData) {
 
 /**
  * Obtiene los bots conectados del usuario
- * @param {string} userId - ID del usuario
+ * @param {string} userId - ID del usuario (solo para fallback de Supabase)
  * @returns {Promise<Array>} Lista de bots conectados
  */
 export async function getUserBots(userId) {
   try {
-    console.log('[TelegramService] 🔍 Obteniendo bots para userId:', userId);
+    console.log('[TelegramService] 🔍 Obteniendo bots del usuario...');
     
     // 🔐 Obtener token JWT
     const token = await getAuthToken();
     
-    // 🔥 OPCIÓN 1: Intentar obtener desde backend
+    // 🔥 OPCIÓN 1: Intentar obtener desde backend (SOLO CON JWT, SIN userId)
     try {
-      const response = await fetch(`${BACKEND_URL}/api/telegram/bots?userId=${userId}`, {
+      const response = await fetch(`${BACKEND_URL}/api/telegram/bots`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -318,21 +318,22 @@ export async function updateBotSettings(botId, settings) {
 
 /**
  * Obtiene la lista de chats/conversaciones de Telegram
- * @param {string} userId - ID del usuario
+ * @param {string} userId - ID del usuario (solo para fallback de Supabase)
  * @param {string} [botId] - ID del bot (opcional, si no se especifica usa el bot activo)
  * @returns {Promise<Array>} Lista de chats
  */
 export async function getChats(userId, botId = null) {
   try {
-    console.log('[TelegramService] 🔍 Obteniendo chats para userId:', userId, 'botId:', botId);
+    console.log('[TelegramService] 🔍 Obteniendo chats para botId:', botId);
     
     // 🔐 Obtener token JWT
     const token = await getAuthToken();
     
-    // 🔥 OPCIÓN 1: Intentar obtener desde backend
+    // 🔥 OPCIÓN 1: Intentar obtener desde backend (SOLO CON JWT, SIN ownerUserId)
     try {
-      const params = new URLSearchParams({ ownerUserId: userId });
+      const params = new URLSearchParams();
       if (botId) params.append('botId', botId);
+      // ❌ NO enviar ownerUserId - Core debe extraerlo del JWT
 
       const response = await fetch(`${BACKEND_URL}/api/telegram/chats?${params}`, {
         method: 'GET',
