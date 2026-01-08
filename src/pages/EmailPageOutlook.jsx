@@ -66,6 +66,25 @@ export default function EmailPageOutlook() {
     }
   }, [selectedFolder, selectedAccount]);
 
+  // 🔄 AUTO-SYNC: Sincronizar emails cada 5 minutos
+  useEffect(() => {
+    if (!selectedAccount || !selectedFolder) return;
+
+    const syncInterval = setInterval(async () => {
+      console.log('🔄 Auto-sincronizando emails...');
+      try {
+        const accountId = selectedAccount.id || selectedAccount.account_id;
+        await syncEmailAccount(accountId);
+        await loadEmails();
+        console.log('✅ Auto-sincronización completada');
+      } catch (error) {
+        console.error('❌ Error en auto-sincronización:', error);
+      }
+    }, 5 * 60 * 1000); // 5 minutos
+
+    return () => clearInterval(syncInterval);
+  }, [selectedAccount, selectedFolder]);
+
   async function loadAccounts() {
     try {
       const data = await getEmailAccounts(user.id, accessToken);
@@ -141,9 +160,28 @@ export default function EmailPageOutlook() {
   }
 
   async function handleRefresh() {
+    if (!selectedAccount) return;
+    
     setRefreshing(true);
-    await loadEmails();
-    setTimeout(() => setRefreshing(false), 500);
+    try {
+      const accountId = selectedAccount.id || selectedAccount.account_id;
+      console.log('🔄 Sincronizando cuenta:', accountId);
+      await syncEmailAccount(accountId);
+      await loadEmails();
+      toast({
+        title: 'Correos sincronizados',
+        description: 'Tus correos están actualizados',
+      });
+    } catch (error) {
+      console.error('❌ Error al sincronizar:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error al sincronizar',
+        description: error.message || 'No se pudieron sincronizar los correos',
+      });
+    } finally {
+      setTimeout(() => setRefreshing(false), 500);
+    }
   }
 
   async function loadContacts() {
