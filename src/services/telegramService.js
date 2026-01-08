@@ -62,12 +62,47 @@ export async function connectBot(botData) {
 
     console.log('[TelegramService] 📥 Response status:', response.status, response.statusText);
 
-    // WORKAROUND: Si el bot se creó pero backend devuelve error, intentar verificar en BD
+    // Si el bot ya existe o hay error, manejar respuesta
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[TelegramService] ⚠️ Error response:', errorText);
+      let errorText = '';
+      try {
+        errorText = await response.text();
+        console.error('[TelegramService] ⚠️ Error response:', errorText);
+      } catch (textError) {
+        console.error('[TelegramService] No se pudo leer el texto del error:', textError);
+      }
       
-      // Verificar si el bot existe en la base de datos (significa que se creó exitosamente)
+      // Si el bot ya existe (código 409 o mensaje que lo indique)
+      if (response.status === 409 || errorText.includes('already exists') || errorText.includes('ya existe')) {
+        console.log('[TelegramService] ℹ️ Bot ya existe, buscando en BD...');
+        
+        // Intentar leer desde Supabase directamente
+        try {
+          const { data, error } = await supabase
+            .from('telegram_bots')
+            .select('*')
+            .eq('bot_username', botData.botUsername)
+            .eq('owner_user_id', botData.ownerUserId)
+            .single();
+
+          if (!error && data) {
+            console.log('[TelegramService] ✅ Bot encontrado en Supabase:', data);
+            return {
+              id: data.id,
+              botUsername: data.bot_username,
+              botToken: data.bot_token_enc,
+              ownerUserId: data.owner_user_id,
+              isConnected: true,
+              webhook: data.webhook_url,
+              createdAt: data.created_at,
+            };
+          }
+        } catch (supabaseError) {
+          console.error('[TelegramService] Error consultando Supabase:', supabaseError);
+        }
+      }
+      
+      // Verificar si el bot existe en la base de datos consultando el endpoint
       try {
         const botsResponse = await fetch(`${BACKEND_URL}/api/telegram/bots?userId=${botData.ownerUserId}`, {
           method: 'GET',
@@ -80,31 +115,65 @@ export async function connectBot(botData) {
         
         if (botsResponse.ok) {
           const bots = await botsResponse.json();
-          const justCreatedBot = bots.find(b => b.bot_username === botData.botUsername || b.botUsername === botData.botUsername);
-          
-          if (justCreatedBot) {
-            console.log('[TelegramService] ✅ Bot encontrado en BD (se creó exitosamente a pesar del error):', justCreatedBot);
-            return justCreatedBot;
+          if (Array.isArray(bots)) {
+            const justCreatedBot = bots.find(b => 
+              (b.bot_username === botData.botUsername || b.botUsername === botData.botUsername)
+            );
+            
+            if (justCreatedBot) {
+              console.log('[TelegramService] ✅ Bot encontrado via endpoint:', justCreatedBot);
+              return justCreatedBot;
+            }
           }
         }
       } catch (verifyError) {
-        console.error('[TelegramService] No se pudo verificar en BD:', verifyError);
+        console.error('[TelegramService] No se pudo verificar via endpoint:', verifyError);
       }
       
-      // Si no se pudo verificar, lanzar error original
+      // Si no se encontró el bot, lanzar error
       let error;
       try {
         error = JSON.parse(errorText);
       } catch (e) {
-        error = { message: errorText };
+        // Si no es JSON válido, usar el texto como mensaje
+        error = { message: errorText.includes('<!DOCTYPE') ? 'Error del servidor (HTML response)' : errorText };
       }
       
       throw new Error(error.message || 'Error al conectar bot de Telegram');
     }
 
-    const result = await response.json();
-    console.log('[TelegramService] ✅ Bot conectado exitosamente:', result);
-    return result;
+    // Respuesta exitosa - parsear JSON
+    let result;
+    try {
+      result = await response.json();
+      console.log('[TelegramService] ✅ Bot conectado exitosamente:', result);
+      return result;
+    } catch (jsonError) {
+      console.error('[TelegramService] Error parseando JSON de respuesta exitosa:', jsonError);
+      
+      // Si hay error parseando pero la respuesta fue OK, intentar leer desde BD
+      const { data, error } = await supabase
+        .from('telegram_bots')
+        .select('*')
+        .eq('bot_username', botData.botUsername)
+        .eq('owner_user_id', botData.ownerUserId)
+        .single();
+
+      if (!error && data) {
+        console.log('[TelegramService] ✅ Bot recuperado desde Supabase después de error de parsing:', data);
+        return {
+          id: data.id,
+          botUsername: data.bot_username,
+          botToken: data.bot_token_enc,
+          ownerUserId: data.owner_user_id,
+          isConnected: true,
+          webhook: data.webhook_url,
+          createdAt: data.created_at,
+        };
+      }
+      
+      throw new Error('Bot conectado pero no se pudo obtener la información');
+    }
   } catch (error) {
     console.error('[TelegramService] ❌ Error en connectBot:', error);
     throw error;
