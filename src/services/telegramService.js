@@ -118,24 +118,57 @@ export async function connectBot(botData) {
  */
 export async function getUserBots(userId) {
   try {
+    console.log('[TelegramService] 🔍 Obteniendo bots para userId:', userId);
+    
     // 🔐 Obtener token JWT
     const token = await getAuthToken();
     
-    const response = await fetch(`${BACKEND_URL}/api/telegram/bots?userId=${userId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`, // ✅ Token incluido
-      },
-      credentials: 'include',
-    });
+    // 🔥 OPCIÓN 1: Intentar obtener desde backend
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/telegram/bots?userId=${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+      });
 
-    if (!response.ok) {
-      const error = await response.json();
+      if (response.ok) {
+        const bots = await response.json();
+        console.log('[TelegramService] ✅ Bots obtenidos desde backend:', bots);
+        return bots;
+      }
+    } catch (backendError) {
+      console.warn('[TelegramService] ⚠️ Backend no disponible, usando Supabase directamente:', backendError.message);
+    }
+
+    // 🔥 OPCIÓN 2: Si backend falla, leer directamente de Supabase
+    const { data, error } = await supabase
+      .from('telegram_bots')
+      .select('*')
+      .eq('owner_user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('[TelegramService] ❌ Error en Supabase:', error);
       throw new Error(error.message || 'Error al obtener bots');
     }
 
-    return await response.json();
+    console.log('[TelegramService] ✅ Bots obtenidos desde Supabase:', data);
+    
+    // Mapear campos de Supabase a formato esperado por el frontend
+    const mappedBots = data.map(bot => ({
+      id: bot.id,
+      botUsername: bot.bot_username,
+      botToken: bot.bot_token_enc,
+      ownerUserId: bot.owner_user_id,
+      isConnected: true, // Si está en la BD, está conectado
+      webhook: bot.webhook_url,
+      createdAt: bot.created_at,
+    }));
+
+    return mappedBots;
   } catch (error) {
     console.error('[TelegramService] Error en getUserBots:', error);
     throw error;
@@ -216,27 +249,67 @@ export async function updateBotSettings(botId, settings) {
  */
 export async function getChats(userId, botId = null) {
   try {
+    console.log('[TelegramService] 🔍 Obteniendo chats para userId:', userId, 'botId:', botId);
+    
     // 🔐 Obtener token JWT
     const token = await getAuthToken();
     
-    const params = new URLSearchParams({ ownerUserId: userId });
-    if (botId) params.append('botId', botId);
+    // 🔥 OPCIÓN 1: Intentar obtener desde backend
+    try {
+      const params = new URLSearchParams({ ownerUserId: userId });
+      if (botId) params.append('botId', botId);
 
-    const response = await fetch(`${BACKEND_URL}/api/telegram/chats?${params}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`, // ✅ Token incluido
-      },
-      credentials: 'include',
-    });
+      const response = await fetch(`${BACKEND_URL}/api/telegram/chats?${params}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+      });
 
-    if (!response.ok) {
-      const error = await response.json();
+      if (response.ok) {
+        const chats = await response.json();
+        console.log('[TelegramService] ✅ Chats obtenidos desde backend:', chats);
+        return chats;
+      }
+    } catch (backendError) {
+      console.warn('[TelegramService] ⚠️ Backend no disponible, usando Supabase directamente:', backendError.message);
+    }
+
+    // 🔥 OPCIÓN 2: Si backend falla, leer directamente de Supabase
+    let query = supabase
+      .from('telegram_chats')
+      .select('*')
+      .eq('owner_user_id', userId)
+      .order('last_message_at', { ascending: false });
+
+    if (botId) {
+      query = query.eq('bot_id', botId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('[TelegramService] ❌ Error en Supabase:', error);
       throw new Error(error.message || 'Error al obtener chats');
     }
 
-    return await response.json();
+    console.log('[TelegramService] ✅ Chats obtenidos desde Supabase:', data);
+    
+    // Mapear campos de Supabase a formato esperado por el frontend
+    const mappedChats = data.map(chat => ({
+      id: chat.id,
+      chatId: chat.chat_id,
+      name: chat.chat_name,
+      username: chat.chat_username,
+      lastMessage: chat.last_message_text,
+      lastMessageDate: chat.last_message_at,
+      botId: chat.bot_id,
+      ownerUserId: chat.owner_user_id,
+    }));
+
+    return mappedChats;
   } catch (error) {
     console.error('[TelegramService] Error en getChats:', error);
     throw error;
