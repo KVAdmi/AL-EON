@@ -100,8 +100,14 @@ export default function TelegramInbox({ botId, chats, onChatsUpdated }) {
               style={{ color: 'var(--color-text-tertiary)' }}
             >
               <MessageSquare size={48} className="mx-auto mb-3" />
-              <p className="text-sm">
+              <p 
+                className="text-sm font-medium mb-2"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
                 No hay conversaciones aún
+              </p>
+              <p className="text-xs max-w-xs mx-auto">
+                Abre Telegram en tu teléfono y envía un mensaje a tu bot para iniciar una conversación
               </p>
             </div>
           )}
