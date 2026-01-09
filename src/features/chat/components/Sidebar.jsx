@@ -909,11 +909,29 @@ function ProjectItem({ project, conversations, currentConversationId, onSelectCo
           {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           <span className="text-lg">{project.icon || '📁'}</span>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>
-              {project.name}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>
+                {project.name}
+              </p>
+              {/* ✅ Indicador de proyecto compartido */}
+              {project.isShared && (
+                <span 
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium"
+                  style={{
+                    backgroundColor: 'rgba(99, 179, 237, 0.15)',
+                    color: '#63B3ED',
+                    border: '1px solid rgba(99, 179, 237, 0.3)'
+                  }}
+                  title={`Compartido - Rol: ${project.myRole}`}
+                >
+                  <Users size={10} />
+                  Compartido
+                </span>
+              )}
+            </div>
             <p className="text-xs truncate" style={{ color: 'var(--color-text-tertiary)' }}>
               {conversations.length} chat{conversations.length !== 1 ? 's' : ''}
+              {project.isShared && ` • ${project.myRole === 'editor' ? 'Editor' : 'Visor'}`}
             </p>
           </div>
         </button>
@@ -929,59 +947,68 @@ function ProjectItem({ project, conversations, currentConversationId, onSelectCo
             <Plus size={14} />
           </button>
           
-          <button
-            onClick={onManageDocuments}
-            className="p-1.5 rounded-xl hover:bg-[var(--color-bg-tertiary)] transition-all"
-            style={{ color: 'var(--color-text-tertiary)' }}
-            title="Documentos del proyecto"
-          >
-            <FileText size={14} />
-          </button>
-          
-          <button
-            onClick={onShareProject}
-            className="p-1.5 rounded-xl hover:bg-[var(--color-bg-tertiary)] transition-all"
-            style={{ color: 'var(--color-text-tertiary)' }}
-            title="Compartir proyecto"
-          >
-            <Share2 size={14} />
-          </button>
-          
-          <div className="relative">
+          {/* Solo mostrar documentos si no es visor */}
+          {project.myRole !== 'viewer' && (
             <button
-              onClick={() => setShowMenu(!showMenu)}
+              onClick={onManageDocuments}
               className="p-1.5 rounded-xl hover:bg-[var(--color-bg-tertiary)] transition-all"
               style={{ color: 'var(--color-text-tertiary)' }}
-              title="Más opciones"
+              title="Documentos del proyecto"
             >
-              <MoreVertical size={14} />
+              <FileText size={14} />
             </button>
-            
-            {showMenu && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                <div 
-                  className="absolute right-0 top-full mt-1 rounded-xl shadow-lg overflow-hidden z-20 border"
-                  style={{
-                    backgroundColor: 'var(--color-bg-secondary)',
-                    borderColor: 'var(--color-border)',
-                    minWidth: '150px'
-                  }}
-                >
-                  <button
-                    onClick={() => {
-                      setShowMenu(false);
-                      onDeleteProject();
+          )}
+          
+          {/* Solo mostrar compartir si es owner */}
+          {project.isOwner && (
+            <button
+              onClick={onShareProject}
+              className="p-1.5 rounded-xl hover:bg-[var(--color-bg-tertiary)] transition-all"
+              style={{ color: 'var(--color-text-tertiary)' }}
+              title="Compartir proyecto"
+            >
+              <Share2 size={14} />
+            </button>
+          )}
+          
+          {/* Solo mostrar eliminar si es owner */}
+          {project.isOwner && (
+            <div className="relative">
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="p-1.5 rounded-xl hover:bg-[var(--color-bg-tertiary)] transition-all"
+                style={{ color: 'var(--color-text-tertiary)' }}
+                title="Más opciones"
+              >
+                <MoreVertical size={14} />
+              </button>
+              
+              {showMenu && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+                  <div 
+                    className="absolute right-0 top-full mt-1 rounded-xl shadow-lg overflow-hidden z-20 border"
+                    style={{
+                      backgroundColor: 'var(--color-bg-secondary)',
+                      borderColor: 'var(--color-border)',
+                      minWidth: '150px'
                     }}
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--color-bg-tertiary)] transition-all"
-                    style={{ color: 'var(--color-error, #ef4444)' }}
                   >
-                    Eliminar proyecto
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        onDeleteProject();
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--color-bg-tertiary)] transition-all"
+                      style={{ color: 'var(--color-error, #ef4444)' }}
+                    >
+                      Eliminar proyecto
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

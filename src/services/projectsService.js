@@ -6,7 +6,7 @@
 import { supabase } from '@/lib/supabase';
 
 /**
- * Obtener todos los proyectos del usuario
+ * Obtener todos los proyectos del usuario (propios + compartidos)
  * @returns {Promise<Array>} Lista de proyectos ordenados
  */
 export async function getProjects() {
@@ -18,10 +18,20 @@ export async function getProjects() {
       return [];
     }
 
+    // ✅ INCLUIR PROYECTOS COMPARTIDOS
+    // Gracias a las RLS policies, esta query automáticamente incluye:
+    // 1. Proyectos propios (user_id = auth.uid())
+    // 2. Proyectos compartidos aceptados (project_members con accepted_at)
     const { data, error } = await supabase
       .from('user_projects')
-      .select('*')
-      .eq('user_id', user.id)
+      .select(`
+        *,
+        project_members!left(
+          user_id,
+          role,
+          accepted_at
+        )
+      `)
       .eq('is_archived', false)
       .order('sort_order', { ascending: true });
 
@@ -30,8 +40,21 @@ export async function getProjects() {
       throw error;
     }
 
-    console.log(`✅ Cargados ${data.length} proyectos`);
-    return data;
+    // Marcar cuáles son compartidos vs propios
+    const projectsWithOwnership = (data || []).map(project => {
+      const isOwner = project.user_id === user.id;
+      const membership = project.project_members?.find(m => m.user_id === user.id);
+      
+      return {
+        ...project,
+        isOwner,
+        isShared: !isOwner,
+        myRole: membership?.role || (isOwner ? 'owner' : null)
+      };
+    });
+
+    console.log(`✅ Cargados ${projectsWithOwnership.length} proyectos (${projectsWithOwnership.filter(p => p.isOwner).length} propios, ${projectsWithOwnership.filter(p => p.isShared).length} compartidos)`);
+    return projectsWithOwnership;
 
   } catch (error) {
     console.error('❌ Error en getProjects:', error);
