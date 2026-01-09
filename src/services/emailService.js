@@ -66,7 +66,7 @@ export async function getEmailAccounts(userId, accessToken) {
     console.log('[EmailService] ✅ Cuentas encontradas:', accounts?.length || 0);
     console.log('[EmailService] 📋 Detalle de cuentas:', accounts?.map(a => ({
       id: a.id,
-      email: a.email_address,
+      email: a.from_email, // ✅ Corregido: from_email, no email_address
       provider: a.provider,
       is_active: a.is_active
     })));

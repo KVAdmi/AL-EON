@@ -6,7 +6,7 @@
 SELECT 
   id,
   owner_user_id,
-  email_address,
+  from_email,
   provider,
   is_active,
   created_at,
@@ -18,7 +18,7 @@ ORDER BY created_at DESC;
 SELECT 
   id,
   owner_user_id,
-  email_address,
+  from_email,
   provider,
   is_active
 FROM email_accounts
@@ -28,7 +28,7 @@ WHERE is_active = true;
 -- SELECT 
 --   id,
 --   owner_user_id,
---   email_address,
+--   from_email,
 --   provider,
 --   is_active
 -- FROM email_accounts
@@ -41,7 +41,7 @@ WHERE is_active = true;
 -- Si tu cuenta está con is_active = false, ejecuta esto:
 -- UPDATE email_accounts
 -- SET is_active = true
--- WHERE email_address = 'p.garibay@infinitykode.com';
+-- WHERE from_email = 'p.garibay@infinitykode.com';
 
 -- O activar TODAS las cuentas:
 -- UPDATE email_accounts

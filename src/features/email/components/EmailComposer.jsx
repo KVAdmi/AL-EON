@@ -46,7 +46,7 @@ export default function EmailComposer({
     console.log('[EmailComposer] 🔍 DEBUG currentAccount:', {
       existe: !!currentAccount,
       id: currentAccount?.id,
-      email: currentAccount?.email_address,
+      email: currentAccount?.from_email, // ✅ Corregido: from_email
       mode,
       replyTo: !!replyTo
     });
