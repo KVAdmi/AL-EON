@@ -30,12 +30,17 @@ import { useNavigate } from 'react-router-dom';
 export default function EmailComposer({ 
   mode = 'new', // 'new', 'reply', 'replyAll', 'forward'
   replyTo = null,
+  account = null, // ✅ NUEVO: cuenta desde el padre
   onClose,
   onSent
 }) {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { currentAccount, composeDraft, updateComposeDraft, closeCompose, triggerRefresh } = useEmailStore();
+  const { currentAccount: storeAccount, composeDraft, updateComposeDraft, closeCompose, triggerRefresh } = useEmailStore();
+  
+  // ✅ Usar account del padre O del store
+  const currentAccount = account || storeAccount;
+  
   const [sending, setSending] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [showCc, setShowCc] = useState(false);
