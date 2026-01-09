@@ -52,15 +52,15 @@ export function ProjectDocumentsModal({ isOpen, onClose, project }) {
     try {
       // Subir cada archivo a la carpeta del proyecto
       for (const file of files) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        // ✅ MANTENER NOMBRE ORIGINAL (sin renombrar)
+        const fileName = file.name;
         const filePath = `${userId}/projects/${project.id}/${fileName}`;
 
         const { error } = await supabase.storage
           .from('user-files')
           .upload(filePath, file, {
             cacheControl: '3600',
-            upsert: false
+            upsert: true // ✅ Permitir sobrescribir si subes el mismo archivo
           });
 
         if (error) throw error;
