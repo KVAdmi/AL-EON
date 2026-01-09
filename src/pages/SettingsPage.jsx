@@ -604,11 +604,13 @@ export default function SettingsPage() {
                 uploadingAvatar={uploadingAvatar}
                 setUploadingAvatar={setUploadingAvatar}
                 handleAvatarUpload={handleAvatarUpload}
+                handleAvatarDelete={handleAvatarDelete}
                 uploadingUserAvatar={uploadingUserAvatar}
                 setUploadingUserAvatar={setUploadingUserAvatar}
                 handleUserAvatarUpload={handleUserAvatarUpload}
                 handleUserAvatarDelete={handleUserAvatarDelete}
                 userAvatarInputRef={userAvatarInputRef}
+                fileInputRef={fileInputRef}
               />
             </div>
           </div>
@@ -638,11 +640,13 @@ function TabContent({
   uploadingAvatar, 
   setUploadingAvatar, 
   handleAvatarUpload,
+  handleAvatarDelete,
   uploadingUserAvatar,
   setUploadingUserAvatar,
   handleUserAvatarUpload,
   handleUserAvatarDelete,
-  userAvatarInputRef
+  userAvatarInputRef,
+  fileInputRef
 }) {
   // Estados para notificaciones
   const [notifSettings, setNotifSettings] = useState({
@@ -652,9 +656,6 @@ function TabContent({
     notify_responses: false,
     notify_errors: true,
   });
-  
-  // Referencia para el input de archivo (avatar)
-  const fileInputRef = useRef(null);
 
   useEffect(() => {
     // Actualizar estado de notificaciones al cargar
