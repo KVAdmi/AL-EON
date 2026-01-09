@@ -425,6 +425,10 @@ export default function EmailPageOutlook() {
           <h1 className="text-lg sm:text-xl font-semibold truncate" style={{ color: '#ffffff' }}>
             AL-E Mail
           </h1>
+          {/* 🔥 MARCA TEMPORAL - Para verificar deploy */}
+          <div className="ml-2 px-2 py-1 bg-yellow-500 text-black text-xs font-mono rounded">
+            v12:52 🚀
+          </div>
         </div>
         
         <div className="flex items-center gap-2">
