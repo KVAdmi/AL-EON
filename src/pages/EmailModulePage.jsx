@@ -15,7 +15,9 @@ import {
   Menu,
   X,
   Mic,
-  ArrowLeft
+  ArrowLeft,
+  FileText,
+  AlertCircle
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/ui/use-toast';
@@ -187,8 +189,9 @@ export default function EmailModulePage() {
   const folders = [
     { id: 'inbox', name: 'Bandeja de entrada', icon: InboxIcon, color: 'var(--color-primary)' },
     { id: 'sent', name: 'Enviados', icon: Send, color: 'var(--color-text-secondary)' },
+    { id: 'drafts', name: 'Borradores', icon: FileText, color: 'var(--color-text-secondary)' },
     { id: 'starred', name: 'Destacados', icon: Star, color: '#facc15' },
-    { id: 'archive', name: 'Archivados', icon: Archive, color: 'var(--color-text-secondary)' },
+    { id: 'spam', name: 'Spam', icon: AlertCircle, color: '#f97316' },
     { id: 'trash', name: 'Papelera', icon: Trash2, color: '#ef4444' },
   ];
 

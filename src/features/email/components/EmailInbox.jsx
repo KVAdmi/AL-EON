@@ -50,7 +50,9 @@ export default function EmailInbox({ accountId, folder, onSelectMessage }) {
         const folderMap = {
           'inbox': 'Inbox',
           'sent': 'Sent',
+          'drafts': 'Drafts',
           'starred': 'Starred',
+          'spam': 'Spam',
           'archive': 'Archive',
           'trash': 'Trash'
         };
