@@ -47,26 +47,34 @@ async function getAuthToken() {
  */
 export async function getEmailAccounts(userId, accessToken) {
   try {
-    console.log('[EmailService] Obteniendo cuentas para userId:', userId);
+    console.log('[EmailService] 🔍 Obteniendo cuentas para userId:', userId);
     
     // 🔥 TEMPORAL: Leer directo de Supabase mientras backend implementa endpoint
+    // ✅ ELIMINAR filtro is_active para debugging
     const { data: accounts, error } = await supabase
       .from('email_accounts')
       .select('*')
       .eq('owner_user_id', userId)
-      .eq('is_active', true)
+      // .eq('is_active', true) // ❌ COMENTADO para ver TODAS las cuentas
       .order('created_at', { ascending: false });
     
     if (error) {
-      console.error('[EmailService] Error de Supabase:', error);
+      console.error('[EmailService] ❌ Error de Supabase:', error);
       return [];
     }
     
-    console.log('[EmailService] ✅ Cuentas obtenidas de Supabase:', accounts);
+    console.log('[EmailService] ✅ Cuentas encontradas:', accounts?.length || 0);
+    console.log('[EmailService] 📋 Detalle de cuentas:', accounts?.map(a => ({
+      id: a.id,
+      email: a.email_address,
+      provider: a.provider,
+      is_active: a.is_active
+    })));
+    
     return accounts || [];
     
   } catch (error) {
-    console.error('[EmailService] Error en getEmailAccounts:', error);
+    console.error('[EmailService] ❌ Error en getEmailAccounts:', error);
     return [];
   }
 }
