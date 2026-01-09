@@ -497,37 +497,16 @@ export default function EmailComposer({
           </button>
         </div>
 
-        {!currentAccount ? (
-          <div className="flex flex-col items-center gap-2 px-6 py-3 rounded-lg" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
-            <p className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-              Conecta tu correo para enviar mensajes
-            </p>
-            <button
-              onClick={() => {
-                // Redirigir a configuración de cuentas
-                window.location.href = '/email/settings';
-              }}
-              className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
-              style={{
-                backgroundColor: 'var(--color-primary)',
-                color: 'white',
-              }}
-            >
-              Conectar cuenta de correo
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={handleSend}
-            disabled={sending || !formData.to.length || !currentAccount}
-            className="flex items-center gap-2 px-6 py-2 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{
-              backgroundColor: (sending || !formData.to.length || !currentAccount) ? 'var(--color-bg-tertiary)' : 'var(--color-primary)',
-              color: 'white',
-            }}
-            title={!currentAccount ? 'Conecta una cuenta de correo primero' : ''}
-          >
-            {sending ? (
+        <button
+          onClick={handleSend}
+          disabled={sending || !formData.to.length}
+          className="flex items-center gap-2 px-6 py-2 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            backgroundColor: (sending || !formData.to.length) ? 'var(--color-bg-tertiary)' : 'var(--color-primary)',
+            color: 'white',
+          }}
+        >
+          {sending ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
                 Enviando...
@@ -538,8 +517,7 @@ export default function EmailComposer({
                 Enviar
               </>
             )}
-          </button>
-        )}
+        </button>
       </div>
     </div>
   );
