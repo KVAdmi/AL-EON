@@ -47,15 +47,62 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
     setError(null);
 
     try {
-      // 1. Subir archivos si existen
+      // 0. Obtener documentos del proyecto si existe
+      let projectDocuments = [];
+      if (currentConversation.project_id) {
+        console.log('📁 Buscando documentos del proyecto:', currentConversation.project_id);
+        try {
+          const projectPath = `${userId}/projects/${currentConversation.project_id}/`;
+          const { data, error: docsError } = await supabase.storage
+            .from('user-files')
+            .list(projectPath, {
+              limit: 100,
+              offset: 0
+            });
+
+          if (!docsError && data && data.length > 0) {
+            console.log(`✅ Encontrados ${data.length} documentos del proyecto`);
+            
+            // Obtener URLs públicas de los documentos
+            projectDocuments = data.map(doc => {
+              const { data: { publicUrl } } = supabase.storage
+                .from('user-files')
+                .getPublicUrl(`${projectPath}${doc.name}`);
+              
+              return {
+                name: doc.name,
+                url: publicUrl,
+                size: doc.metadata?.size || 0,
+                type: doc.metadata?.mimetype || 'application/octet-stream'
+              };
+            });
+
+            console.log('📄 Documentos del proyecto que se enviarán:', projectDocuments.map(d => d.name));
+          }
+        } catch (error) {
+          console.warn('⚠️ Error obteniendo documentos del proyecto:', error);
+        }
+      }
+
+      // 1. Subir archivos adjuntos si existen
       let uploadedFiles = [];
       if (attachments && attachments.length > 0) {
         setIsUploading(true);
-        console.log('📤 Subiendo archivos:', attachments.map(f => f.name));
+        console.log('📤 Subiendo archivos adjuntos:', attachments.map(f => f.name));
         uploadedFiles = await uploadFiles(attachments, userId);
-        console.log('✅ Archivos subidos:', uploadedFiles);
+        console.log('✅ Archivos adjuntos subidos:', uploadedFiles);
         setIsUploading(false);
       }
+
+      // Combinar documentos del proyecto + archivos adjuntos
+      const allFiles = [...projectDocuments, ...uploadedFiles.map(f => ({
+        name: f.name,
+        url: f.url,
+        type: f.type,
+        size: f.size
+      }))];
+
+      console.log(`📦 Total de archivos a enviar: ${allFiles.length} (${projectDocuments.length} del proyecto + ${uploadedFiles.length} adjuntos)`);
 
       // 2. Add user message con archivos
       const userMessage = {
@@ -119,7 +166,7 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
             handsFree: voiceMeta.handsFree || false
           })
         },
-        files: uploadedFiles,
+        files: allFiles.length > 0 ? allFiles : undefined, // ✅ Enviar TODOS los archivos (proyecto + adjuntos)
         signal: abortControllerRef.current.signal
       });
 
