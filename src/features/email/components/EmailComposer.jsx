@@ -55,8 +55,11 @@ export default function EmailComposer({
     });
   }, [currentAccount, mode, replyTo]);
 
-  // ❌ ELIMINADO: El modal "No hay cuenta" no debe existir
-  // Si no hay cuenta, el botón "Nuevo correo" en EmailModulePage no debe llamar startCompose()
+  // ⚠️ VALIDACIÓN: Si no hay cuenta, NO renderizar el composer
+  if (!currentAccount) {
+    console.error('[EmailComposer] ❌ NO HAY CUENTA - NO DEBERÍA ABRIR');
+    return null; // NO renderizar nada
+  }
 
   const [formData, setFormData] = useState({
     to: [],
