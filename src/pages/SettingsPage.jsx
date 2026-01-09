@@ -604,6 +604,11 @@ export default function SettingsPage() {
                 uploadingAvatar={uploadingAvatar}
                 setUploadingAvatar={setUploadingAvatar}
                 handleAvatarUpload={handleAvatarUpload}
+                uploadingUserAvatar={uploadingUserAvatar}
+                setUploadingUserAvatar={setUploadingUserAvatar}
+                handleUserAvatarUpload={handleUserAvatarUpload}
+                handleUserAvatarDelete={handleUserAvatarDelete}
+                userAvatarInputRef={userAvatarInputRef}
               />
             </div>
           </div>
@@ -621,7 +626,24 @@ export default function SettingsPage() {
   );
 }
 
-function TabContent({ activeTab, profile, setProfile, settings, setSettings, isOwner, backendStatus, setIntegrationModal, uploadingAvatar, setUploadingAvatar, handleAvatarUpload }) {
+function TabContent({ 
+  activeTab, 
+  profile, 
+  setProfile, 
+  settings, 
+  setSettings, 
+  isOwner, 
+  backendStatus, 
+  setIntegrationModal, 
+  uploadingAvatar, 
+  setUploadingAvatar, 
+  handleAvatarUpload,
+  uploadingUserAvatar,
+  setUploadingUserAvatar,
+  handleUserAvatarUpload,
+  handleUserAvatarDelete,
+  userAvatarInputRef
+}) {
   // Estados para notificaciones
   const [notifSettings, setNotifSettings] = useState({
     push_enabled: false,
