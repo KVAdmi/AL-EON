@@ -55,12 +55,6 @@ export default function EmailComposer({
     });
   }, [currentAccount, mode, replyTo]);
 
-  // ⚠️ VALIDACIÓN: Si no hay cuenta, NO renderizar el composer
-  if (!currentAccount) {
-    console.error('[EmailComposer] ❌ NO HAY CUENTA - NO DEBERÍA ABRIR');
-    return null; // NO renderizar nada
-  }
-
   const [formData, setFormData] = useState({
     to: [],
     cc: [],

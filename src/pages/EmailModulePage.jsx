@@ -415,24 +415,13 @@ export default function EmailModulePage() {
         <div className="flex-1 flex overflow-hidden">
           {/* Inbox List */}
           <div className={`${selectedMessage ? 'hidden lg:flex' : 'flex'} w-full lg:w-96 border-r flex-col`} style={{ borderColor: 'var(--color-border)' }}>
-            {currentAccount ? (
-              <EmailInbox 
-                accountId={currentAccount.id}
-                folder={currentFolder}
-                onSelectMessage={(message) => {
-                  setSelectedMessage(message);
-                }}
-              />
-            ) : (
-              <div className="flex-1 flex items-center justify-center p-6 text-center">
-                <div>
-                  <Mail className="w-16 h-16 mx-auto mb-4 opacity-50" style={{ color: 'var(--color-text-tertiary)' }} />
-                  <p style={{ color: 'var(--color-text-secondary)' }}>
-                    Selecciona una cuenta de correo
-                  </p>
-                </div>
-              </div>
-            )}
+            <EmailInbox 
+              accountId={currentAccount?.id}
+              folder={currentFolder}
+              onSelectMessage={(message) => {
+                setSelectedMessage(message);
+              }}
+            />
           </div>
 
           {/* Message Detail */}
