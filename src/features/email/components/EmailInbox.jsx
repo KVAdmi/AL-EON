@@ -26,17 +26,10 @@ export default function EmailInbox({ accountId, folder, onSelectMessage }) {
     try {
       setLoading(true);
       
-      // Intentar cargar desde backend
-      try {
-        const data = await getInbox(accountId, { folder });
-        setMessages(data?.messages || []);
-        return;
-      } catch (backendError) {
-        console.log('[EmailInbox] Backend no disponible, leyendo de Supabase:', backendError.message);
-      }
-      
-      // Fallback: Leer directo de Supabase
+      // ✅ LEER DIRECTO DE SUPABASE (backend tiene problemas CORS)
       const { supabase } = await import('../../../lib/supabase');
+      
+      console.log('[EmailInbox] 📬 Cargando mensajes para:', { accountId, folder });
       
       // ✅ PASO 1: Si hay filtro de folder, obtener su folder_id primero
       let targetFolderId = null;

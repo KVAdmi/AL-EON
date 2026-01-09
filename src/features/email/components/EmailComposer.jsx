@@ -72,13 +72,16 @@ export default function EmailComposer({
   // Inicializar según el modo
   useEffect(() => {
     if (mode === 'reply' && replyTo) {
+      // ✅ Crear quoted text limpio (sin HTML crudo visible)
+      const quotedText = `\n\n---\nDe: ${replyTo.from_name || replyTo.from_address}\nFecha: ${new Date(replyTo.date).toLocaleString()}\n\n${replyTo.body_text || replyTo.body_html || ''}`;
+      
       setFormData({
         to: [replyTo.from_address],
         cc: [],
         bcc: [],
         subject: `Re: ${replyTo.subject || ''}`,
-        body_html: `<br/><br/>---<br/><strong>De:</strong> ${replyTo.from_name || replyTo.from_address}<br/><strong>Fecha:</strong> ${new Date(replyTo.date).toLocaleString()}<br/><br/>${replyTo.body_html || ''}`,
-        body_text: '',
+        body_html: quotedText,
+        body_text: quotedText,
       });
     } else if (mode === 'replyAll' && replyTo) {
       const allRecipients = [...(replyTo.to_addresses || []), ...(replyTo.cc_addresses || [])];
@@ -86,13 +89,16 @@ export default function EmailComposer({
         email !== currentAccount?.fromEmail && email !== replyTo.from_address
       );
       
+      // ✅ Crear quoted text limpio (sin HTML crudo visible)
+      const quotedText = `\n\n---\nDe: ${replyTo.from_name || replyTo.from_address}\nFecha: ${new Date(replyTo.date).toLocaleString()}\n\n${replyTo.body_text || replyTo.body_html || ''}`;
+      
       setFormData({
         to: [replyTo.from_address],
         cc: filteredCc,
         bcc: [],
         subject: `Re: ${replyTo.subject || ''}`,
-        body_html: `<br/><br/>---<br/><strong>De:</strong> ${replyTo.from_name || replyTo.from_address}<br/><strong>Fecha:</strong> ${new Date(replyTo.date).toLocaleString()}<br/><br/>${replyTo.body_html || ''}`,
-        body_text: '',
+        body_html: quotedText,
+        body_text: quotedText,
       });
       setShowCc(filteredCc.length > 0);
     } else if (mode === 'forward' && replyTo) {
