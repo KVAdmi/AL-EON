@@ -209,7 +209,7 @@ export default function ContactFormModal({ isOpen, onClose, onSave, initialConta
               disabled={loading}
               className="flex-1 py-3 px-4 rounded-xl font-medium hover:opacity-90 transition-all disabled:opacity-50"
               style={{
-                backgroundColor: '#0078d4',
+                backgroundColor: 'var(--color-primary)',
                 color: '#fff'
               }}
             >

@@ -58,7 +58,7 @@ export default function EmailAccountsList({ accounts, onEdit, onAccountUpdated }
                     className="px-2 py-0.5 text-xs rounded-full font-medium"
                     style={{
                       backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                      color: '#10b981',
+                      color: 'var(--color-success, #10b981)',
                     }}
                   >
                     Activa
@@ -68,7 +68,7 @@ export default function EmailAccountsList({ accounts, onEdit, onAccountUpdated }
                     className="px-2 py-0.5 text-xs rounded-full font-medium"
                     style={{
                       backgroundColor: 'rgba(107, 114, 128, 0.1)',
-                      color: '#6b7280',
+                      color: 'var(--color-text-tertiary)',
                     }}
                   >
                     Inactiva
@@ -124,7 +124,7 @@ export default function EmailAccountsList({ accounts, onEdit, onAccountUpdated }
               className="p-2 rounded-lg transition-all hover:opacity-80"
               style={{
                 backgroundColor: 'var(--color-bg-primary)',
-                color: '#ef4444',
+                color: 'var(--color-error, #ef4444)',
               }}
               title="Eliminar"
             >

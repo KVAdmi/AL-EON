@@ -316,10 +316,10 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
             className="p-4 rounded-lg border-l-4 mb-4"
             style={{
               backgroundColor: 'rgba(59, 130, 246, 0.1)',
-              borderLeftColor: '#3b82f6',
+              borderLeftColor: 'var(--color-primary)',
             }}
           >
-            <p className="text-sm font-medium mb-1" style={{ color: '#3b82f6' }}>
+            <p className="text-sm font-medium mb-1" style={{ color: 'var(--color-primary)' }}>
               🔐 Modo Edición
             </p>
             <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
@@ -433,7 +433,7 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
                   type="button"
                   onClick={removeSignatureImage}
                   className="absolute -top-2 -right-2 p-1 rounded-full"
-                  style={{ backgroundColor: '#ef4444', color: 'white' }}
+                  style={{ backgroundColor: 'var(--color-error, #ef4444)', color: 'white' }}
                 >
                   <X size={16} />
                 </button>
@@ -795,18 +795,18 @@ export default function EmailAccountForm({ account = null, onSave, onCancel }) {
             backgroundColor: testResult.success 
               ? 'rgba(16, 185, 129, 0.1)' 
               : 'rgba(239, 68, 68, 0.1)',
-            borderColor: testResult.success ? '#10b981' : '#ef4444',
+            borderColor: testResult.success ? 'var(--color-success, #10b981)' : 'var(--color-error, #ef4444)',
           }}
         >
           {testResult.success ? (
-            <CheckCircle2 size={20} style={{ color: '#10b981', marginTop: '2px' }} />
+            <CheckCircle2 size={20} style={{ color: 'var(--color-success, #10b981)', marginTop: '2px' }} />
           ) : (
-            <XCircle size={20} style={{ color: '#ef4444', marginTop: '2px' }} />
+            <XCircle size={20} style={{ color: 'var(--color-error, #ef4444)', marginTop: '2px' }} />
           )}
           <div className="flex-1">
             <p 
               className="font-medium"
-              style={{ color: testResult.success ? '#10b981' : '#ef4444' }}
+              style={{ color: testResult.success ? 'var(--color-success, #10b981)' : 'var(--color-error, #ef4444)' }}
             >
               {testResult.success ? 'Conexión exitosa' : 'Error de conexión'}
             </p>

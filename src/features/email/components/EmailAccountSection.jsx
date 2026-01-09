@@ -46,9 +46,9 @@ export default function EmailAccountSection({
   const folders = [
     { id: 'inbox', name: 'Bandeja de entrada', icon: InboxIcon, color: 'var(--color-primary)' },
     { id: 'sent', name: 'Enviados', icon: Send, color: 'var(--color-text-secondary)' },
-    { id: 'starred', name: 'Destacados', icon: Star, color: '#facc15' },
+    { id: 'starred', name: 'Destacados', icon: Star, color: 'var(--color-accent)' },
     { id: 'archive', name: 'Archivados', icon: Archive, color: 'var(--color-text-secondary)' },
-    { id: 'trash', name: 'Papelera', icon: Trash2, color: '#ef4444' },
+    { id: 'trash', name: 'Papelera', icon: Trash2, color: 'var(--color-text-secondary)' },
   ];
 
   return (

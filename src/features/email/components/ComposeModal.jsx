@@ -317,25 +317,25 @@ export default function ComposeModal({ accounts, defaultAccountId, onClose }) {
                   ? 'rgba(16, 185, 129, 0.1)' 
                   : sendStatus === 'failed'
                   ? 'rgba(239, 68, 68, 0.1)'
-                  : 'rgba(59, 130, 246, 0.1)',
+                  : 'var(--color-bg-secondary)',
                 borderColor: sendStatus === 'sent' 
-                  ? '#10b981' 
+                  ? 'var(--color-success, #10b981)' 
                   : sendStatus === 'failed'
-                  ? '#ef4444'
-                  : '#3b82f6',
+                  ? 'var(--color-error, #ef4444)'
+                  : 'var(--color-primary)',
               }}
             >
               {sendStatus === 'sending' && (
                 <>
-                  <Loader2 size={20} className="animate-spin" style={{ color: '#3b82f6' }} />
-                  <span style={{ color: '#3b82f6' }}>Enviando...</span>
+                  <Loader2 size={20} className="animate-spin" style={{ color: 'var(--color-primary)' }} />
+                  <span style={{ color: 'var(--color-primary)' }}>Enviando...</span>
                 </>
               )}
               {sendStatus === 'sent' && (
                 <>
-                  <CheckCircle2 size={20} style={{ color: '#10b981' }} />
+                  <CheckCircle2 size={20} style={{ color: 'var(--color-success, #10b981)' }} />
                   <div>
-                    <p className="font-medium" style={{ color: '#10b981' }}>Enviado correctamente</p>
+                    <p className="font-medium" style={{ color: 'var(--color-success, #10b981)' }}>Enviado correctamente</p>
                     {messageId && (
                       <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>
                         ID: {messageId}
@@ -346,8 +346,8 @@ export default function ComposeModal({ accounts, defaultAccountId, onClose }) {
               )}
               {sendStatus === 'failed' && (
                 <>
-                  <XCircle size={20} style={{ color: '#ef4444' }} />
-                  <span style={{ color: '#ef4444' }}>Error al enviar</span>
+                  <XCircle size={20} style={{ color: 'var(--color-error, #ef4444)' }} />
+                  <span style={{ color: 'var(--color-error, #ef4444)' }}>Error al enviar</span>
                 </>
               )}
             </div>

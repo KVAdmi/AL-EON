@@ -196,11 +196,11 @@ export default function EmailMessageDetail({ message, onReply, onReplyAll, onFor
               className="p-2 rounded-lg hover:opacity-80 transition-all disabled:opacity-50"
               style={{
                 backgroundColor: 'var(--color-bg-secondary)',
-                color: message.is_starred ? '#facc15' : 'var(--color-text-primary)',
+                color: message.is_starred ? 'var(--color-accent)' : 'var(--color-text-primary)',
               }}
               title="Destacar"
             >
-              <Star className={`w-5 h-5 ${message.is_starred ? 'fill-yellow-400' : ''}`} />
+              <Star className={`w-5 h-5 ${message.is_starred ? 'fill-current' : ''}`} />
             </button>
 
             <button

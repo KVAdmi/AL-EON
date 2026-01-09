@@ -141,7 +141,7 @@ export default function EmailMessage({ message, accountId }) {
               className="p-2 rounded-lg transition-all hover:opacity-80"
               style={{
                 backgroundColor: 'var(--color-bg-secondary)',
-                color: '#ef4444',
+                color: 'var(--color-error, #ef4444)',
               }}
               title="Eliminar"
             >

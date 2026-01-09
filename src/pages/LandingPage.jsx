@@ -128,30 +128,10 @@ export default function LandingPage() {
           className="w-full px-6 sm:px-8 py-6 backdrop-blur-sm"
           style={{ borderTop: '1px solid rgba(47, 164, 199, 0.2)' }}
         >
-          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-gray-400">
-            <div className="flex items-center gap-2">
+          <div className="max-w-6xl mx-auto text-center">
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
               <Lock size={16} />
               <span>© 2025 AL-EON by Infinity Kode. Todos los derechos reservados.</span>
-            </div>
-            <div className="flex gap-6">
-              <a
-                href="/privacy"
-                className="transition-colors hover:underline"
-                style={{ color: '#2FA4C7' }}
-                onMouseEnter={(e) => e.target.style.color = '#4FC3E0'}
-                onMouseLeave={(e) => e.target.style.color = '#2FA4C7'}
-              >
-                Política de Privacidad
-              </a>
-              <a
-                href="/terms"
-                className="transition-colors hover:underline"
-                style={{ color: '#2FA4C7' }}
-                onMouseEnter={(e) => e.target.style.color = '#4FC3E0'}
-                onMouseLeave={(e) => e.target.style.color = '#2FA4C7'}
-              >
-                Términos de Servicio
-              </a>
             </div>
           </div>
         </footer>
