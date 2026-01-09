@@ -12,7 +12,12 @@ function ChatPage() {
   const { user, userProfile, accessToken, logout } = useAuth();
   const [handsFree, setHandsFree] = useState(false);
   
-  // 🔒 VERIFICAR SI VOZ ESTÁ HABILITADA
+  // � DEBUG: Ver qué datos tenemos del perfil
+  console.log('🔍 [ChatPage] userProfile:', userProfile);
+  console.log('🔍 [ChatPage] assistant_avatar_url:', userProfile?.assistant_avatar_url);
+  console.log('🔍 [ChatPage] assistant_name:', userProfile?.assistant_name);
+  
+  // �🔒 VERIFICAR SI VOZ ESTÁ HABILITADA
   const canUseVoice = useCapability('voice');
   
   // ✅ Sidebar cerrado por default en móvil, abierto en desktop
@@ -137,6 +142,7 @@ function ChatPage() {
           currentUser={userProfile?.display_name || user?.email || 'Usuario'}
           assistantName={userProfile?.assistant_name || 'Luma'}
           assistantAvatar={userProfile?.assistant_avatar_url}
+          userAvatar={userProfile?.user_avatar_url}
         />
         <MessageComposer
           onSendMessage={handleSendMessage}

@@ -13,12 +13,14 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
   const fileInputRef = useRef(null);
+  const userAvatarInputRef = useRef(null);
   const [activeTab, setActiveTab] = useState('general');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [backendStatus, setBackendStatus] = useState('checking');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingUserAvatar, setUploadingUserAvatar] = useState(false);
   
   // Estado del perfil y configuración
   const [profile, setProfile] = useState({
@@ -28,7 +30,8 @@ export default function SettingsPage() {
     timezone: 'America/Mexico_City',
     theme: 'system',
     role: 'USER',
-    assistant_avatar_url: null
+    assistant_avatar_url: null,
+    user_avatar_url: null
   });
   const [settings, setSettings] = useState({
     ai_model: 'gpt-4',
@@ -143,7 +146,8 @@ export default function SettingsPage() {
         preferred_name: profileData?.preferred_name || '',
         assistant_name: profileData?.assistant_name || 'Luma',
         tone_pref: profileData?.tone_pref || 'barrio',
-        assistant_avatar_url: profileData?.assistant_avatar_url || null
+        assistant_avatar_url: profileData?.assistant_avatar_url || null,
+        user_avatar_url: profileData?.user_avatar_url || null
       });
       
       // ✅ SOLO SI HAY SESIÓN: hacer fetch a user_settings
@@ -359,6 +363,109 @@ export default function SettingsPage() {
     }
   }
 
+  // 📸 SUBIR AVATAR DEL USUARIO
+  async function handleUserAvatarUpload(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor selecciona una imagen válida');
+      return;
+    }
+
+    try {
+      setUploadingUserAvatar(true);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) {
+        alert('No hay sesión activa');
+        return;
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${session.user.id}/user-avatar-${Date.now()}.${fileExt}`;
+
+      // Eliminar avatar anterior si existe
+      if (profile.user_avatar_url) {
+        const oldPath = profile.user_avatar_url.split('/').slice(-2).join('/');
+        await supabase.storage
+          .from('ale-avatars')
+          .remove([oldPath]);
+      }
+
+      // Subir nuevo avatar
+      const { data, error: uploadError } = await supabase.storage
+        .from('ale-avatars')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('ale-avatars')
+        .getPublicUrl(fileName);
+
+      setProfile({ ...profile, user_avatar_url: publicUrl });
+      
+      const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update({ user_avatar_url: publicUrl })
+        .eq('user_id', session.user.id);
+
+      if (updateError) throw new Error(`Error guardando avatar: ${updateError.message}`);
+
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+
+      alert('✅ Tu avatar se actualizó correctamente');
+    } catch (error) {
+      console.error('Error subiendo avatar del usuario:', error);
+      alert('Error al subir avatar: ' + error.message);
+    } finally {
+      setUploadingUserAvatar(false);
+    }
+  }
+
+  // 🗑️ ELIMINAR AVATAR DEL USUARIO
+  async function handleUserAvatarDelete() {
+    if (!confirm('¿Eliminar tu avatar?')) return;
+
+    try {
+      setUploadingUserAvatar(true);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return;
+
+      if (profile.user_avatar_url) {
+        const oldPath = profile.user_avatar_url.split('/').slice(-2).join('/');
+        await supabase.storage
+          .from('ale-avatars')
+          .remove([oldPath]);
+      }
+
+      await supabase
+        .from('user_profiles')
+        .update({ user_avatar_url: null })
+        .eq('user_id', session.user.id);
+
+      setProfile({ ...profile, user_avatar_url: null });
+
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+
+      alert('✅ Avatar eliminado');
+    } catch (error) {
+      console.error('Error eliminando avatar:', error);
+      alert('Error al eliminar avatar: ' + error.message);
+    } finally {
+      setUploadingUserAvatar(false);
+    }
+  }
+
   // Guardar configuración de integración
   async function saveIntegration(integrationName, formData) {
     const { data: { session } } = await supabase.auth.getSession();
@@ -553,6 +660,94 @@ function TabContent({ activeTab, profile, setProfile, settings, setSettings, isO
           <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>General</h2>
           <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
             Configuración básica de tu cuenta
+          </p>
+        </div>
+        
+        {/* Avatar del usuario */}
+        <div>
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+            Tu foto de perfil
+          </label>
+          <p className="text-xs mb-3" style={{ color: 'var(--color-text-tertiary)' }}>
+            Esta foto aparecerá en tus mensajes del chat
+          </p>
+          
+          <div className="flex items-center gap-4">
+            {/* Preview del avatar */}
+            <div 
+              className="w-20 h-20 rounded-full flex items-center justify-center overflow-hidden border-2"
+              style={{ 
+                borderColor: 'var(--color-accent)',
+                backgroundColor: profile.user_avatar_url ? 'transparent' : 'var(--color-accent-light)'
+              }}
+            >
+              {profile.user_avatar_url ? (
+                <img 
+                  src={profile.user_avatar_url} 
+                  alt="Tu avatar"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User 
+                  size={32} 
+                  style={{ color: 'var(--color-accent)' }}
+                />
+              )}
+            </div>
+
+            {/* Botones de acción */}
+            <div className="flex flex-col gap-2">
+              <input
+                ref={userAvatarInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleUserAvatarUpload}
+                className="hidden"
+              />
+              
+              <button
+                onClick={() => userAvatarInputRef.current?.click()}
+                disabled={uploadingUserAvatar}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border transition-all hover:opacity-80"
+                style={{
+                  backgroundColor: 'var(--color-accent)',
+                  borderColor: 'var(--color-accent)',
+                  color: '#fff'
+                }}
+              >
+                {uploadingUserAvatar ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Subiendo...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload size={16} />
+                    <span>{profile.user_avatar_url ? 'Cambiar' : 'Subir'}</span>
+                  </>
+                )}
+              </button>
+
+              {profile.user_avatar_url && (
+                <button
+                  onClick={handleUserAvatarDelete}
+                  disabled={uploadingUserAvatar}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl border transition-all hover:opacity-80"
+                  style={{
+                    backgroundColor: 'transparent',
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-text-secondary)'
+                  }}
+                >
+                  <X size={16} />
+                  <span>Eliminar</span>
+                </button>
+              )}
+            </div>
+          </div>
+          
+          <p className="text-xs mt-2" style={{ color: 'var(--color-text-tertiary)' }}>
+            Formatos: JPG, PNG, GIF, WEBP. Sin límite de tamaño.
           </p>
         </div>
         

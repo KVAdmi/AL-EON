@@ -40,7 +40,7 @@ function ProcessingTimer({ startTime }) {
   );
 }
 
-function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggleHandsFree, onToggleSidebar, onStopResponse, onRegenerateResponse, currentUser, assistantName, assistantAvatar }) {
+function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggleHandsFree, onToggleSidebar, onStopResponse, onRegenerateResponse, currentUser, assistantName, assistantAvatar, userAvatar }) {
   const scrollRef = useRef(null);
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -177,6 +177,7 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
                 currentUser={currentUser} 
                 assistantName={assistantName}
                 assistantAvatar={assistantAvatar}
+                userAvatar={userAvatar}
               />
             ))}
             {isLoading && (
@@ -225,13 +226,19 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
   );
 }
 
-function Message({ message, currentUser, assistantName = 'Luma', assistantAvatar }) {
+function Message({ message, currentUser, assistantName = 'Luma', assistantAvatar, userAvatar }) {
   const isUser = message.role === 'user';
   const isError = message.isError;
   const [copied, setCopied] = useState(false);
   const [showMemoryModal, setShowMemoryModal] = useState(false);
   const [memoryType, setMemoryType] = useState(null);
   const { toast } = useToast();
+  
+  // 🐛 DEBUG: Ver si llega el avatar
+  console.log('🔍 [Message] assistantAvatar:', assistantAvatar);
+  console.log('🔍 [Message] userAvatar:', userAvatar);
+  console.log('🔍 [Message] assistantName:', assistantName);
+  console.log('🔍 [Message] isUser:', isUser);
 
   // Obtener la inicial del usuario
   const getUserInitial = () => {
@@ -434,12 +441,23 @@ function Message({ message, currentUser, assistantName = 'Luma', assistantAvatar
 
       {isUser && (
         <div 
-          className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: 'var(--color-bg-secondary)' }}
+          className="w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
+          style={{ 
+            backgroundColor: userAvatar ? 'transparent' : 'var(--color-bg-secondary)',
+            border: userAvatar ? '2px solid var(--color-accent)' : 'none'
+          }}
         >
-          <span className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-            {getUserInitial()}
-          </span>
+          {userAvatar ? (
+            <img 
+              src={userAvatar} 
+              alt={currentUser}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span className="text-xs md:text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+              {getUserInitial()}
+            </span>
+          )}
         </div>
       )}
     </div>

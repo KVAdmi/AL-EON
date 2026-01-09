@@ -219,21 +219,21 @@ function Sidebar({
         <div className="relative">
           {/* Tarjeta glassmorphism */}
           <div 
-            className="relative p-4 rounded-2xl border backdrop-blur-xl overflow-hidden"
+            className="relative p-5 rounded-2xl border backdrop-blur-xl overflow-hidden"
             style={{
-              backgroundColor: 'rgba(0, 0, 0, 0.4)',
-              borderColor: 'rgba(99, 179, 237, 0.3)',
-              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              borderColor: 'rgba(99, 179, 237, 0.4)',
+              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(99, 179, 237, 0.1)'
             }}
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               {/* Avatar con efecto neón azul */}
               <div className="relative flex-shrink-0">
                 <div 
-                  className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border-2 relative"
+                  className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden border-2 relative"
                   style={{
                     borderColor: '#63B3ED',
-                    boxShadow: '0 0 20px rgba(99, 179, 237, 0.6), 0 0 40px rgba(99, 179, 237, 0.3)',
+                    boxShadow: '0 0 25px rgba(99, 179, 237, 0.7), 0 0 50px rgba(99, 179, 237, 0.4), inset 0 0 20px rgba(99, 179, 237, 0.2)',
                     backgroundColor: userProfile?.assistant_avatar_url ? 'transparent' : 'var(--color-accent)'
                   }}
                 >
@@ -243,12 +243,12 @@ function Sidebar({
                       alt={userProfile.assistant_name || 'AL-E'}
                       className="w-full h-full object-cover"
                       style={{
-                        filter: 'drop-shadow(0 0 10px rgba(99, 179, 237, 0.5))'
+                        filter: 'drop-shadow(0 0 12px rgba(99, 179, 237, 0.6))'
                       }}
                     />
                   ) : (
                     <Camera 
-                      size={24} 
+                      size={28} 
                       style={{ color: '#FFFFFF' }}
                     />
                   )}
@@ -257,7 +257,7 @@ function Sidebar({
                 <div 
                   className="absolute inset-0 rounded-full animate-pulse"
                   style={{
-                    boxShadow: '0 0 30px rgba(99, 179, 237, 0.4)',
+                    boxShadow: '0 0 40px rgba(99, 179, 237, 0.5), 0 0 60px rgba(99, 179, 237, 0.3)',
                     pointerEvents: 'none'
                   }}
                 />
@@ -266,26 +266,29 @@ function Sidebar({
               {/* Información del asistente */}
               <div className="flex-1 min-w-0">
                 <h3 
-                  className="font-semibold text-base truncate"
+                  className="font-bold text-lg truncate"
                   style={{ 
                     color: '#FFFFFF',
-                    textShadow: '0 0 10px rgba(99, 179, 237, 0.5)'
+                    textShadow: '0 0 12px rgba(99, 179, 237, 0.6), 0 2px 4px rgba(0, 0, 0, 0.5)'
                   }}
                 >
                   {userProfile?.assistant_name || 'AL-E'}
                 </h3>
                 <p 
-                  className="text-xs truncate"
+                  className="text-xs truncate mt-0.5"
                   style={{ 
-                    color: 'rgba(255, 255, 255, 0.7)'
+                    color: 'rgba(255, 255, 255, 0.8)',
+                    textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)'
                   }}
                 >
-                  Tu asistente personal
+                  Tu asistente inteligente
                 </p>
               </div>
               
               {/* Theme Toggle */}
-              <ThemeToggle />
+              <div className="flex-shrink-0">
+                <ThemeToggle />
+              </div>
             </div>
           </div>
         </div>
