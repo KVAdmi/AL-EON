@@ -400,15 +400,21 @@ export async function getChats(userId, botId = null) {
  */
 export async function getMessages(chatId, options = {}) {
   try {
+    console.log('[TelegramService] 📬 getMessages - chatId:', chatId, 'options:', options);
+    
     // 🔐 Obtener token JWT
     const token = await getAuthToken();
+    console.log('[TelegramService] Token obtenido:', token ? '✅' : '❌');
     
     const params = new URLSearchParams({
       chatId,
       ...options,
     });
 
-    const response = await fetch(`${BACKEND_URL}/api/telegram/messages?${params}`, {
+    const url = `${BACKEND_URL}/api/telegram/messages?${params}`;
+    console.log('[TelegramService] Fetching:', url);
+
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -417,14 +423,28 @@ export async function getMessages(chatId, options = {}) {
       credentials: 'include',
     });
 
+    console.log('[TelegramService] Response status:', response.status);
+
     if (!response.ok) {
-      const error = await response.json();
+      const errorText = await response.text();
+      console.error('[TelegramService] Error response:', errorText);
+      
+      let error;
+      try {
+        error = JSON.parse(errorText);
+      } catch (e) {
+        error = { message: errorText || 'Error al obtener mensajes' };
+      }
       throw new Error(error.message || 'Error al obtener mensajes');
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log('[TelegramService] ✅ Mensajes recibidos:', data?.length || 0, 'mensajes');
+    console.log('[TelegramService] Primer mensaje:', data?.[0]);
+    
+    return data;
   } catch (error) {
-    console.error('[TelegramService] Error en getMessages:', error);
+    console.error('[TelegramService] ❌ Error en getMessages:', error);
     throw error;
   }
 }

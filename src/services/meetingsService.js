@@ -159,38 +159,54 @@ export async function uploadMeeting(file, title) {
  */
 export async function startLiveMeeting(title) {
   try {
+    console.log('[MeetingsService] Iniciando reunión live...');
+    
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user?.id) throw new Error('No hay sesión activa');
 
+    console.log('[MeetingsService] Usuario autenticado:', session.user.id);
+    console.log('[MeetingsService] Backend URL:', BACKEND_URL);
+
     // ⚠️ CORE: Primero crear en backend, luego guardar en DB
+    const payload = {
+      title: title || `Reunión en vivo ${new Date().toLocaleTimeString('es-ES')}`,
+      mode: 'live',
+      auto_send_enabled: false,
+      send_email: false,
+      send_telegram: false,
+      participants: []
+    };
+    
+    console.log('[MeetingsService] Enviando payload:', payload);
+
     const response = await fetch(`${BACKEND_URL}/api/meetings/live/start`, {
       method: 'POST',
       headers: await authHeaders(),
-      body: JSON.stringify({
-        title: title || `Reunión en vivo ${new Date().toLocaleTimeString('es-ES')}`,
-        mode: 'live',
-        auto_send_enabled: false,
-        send_email: false,
-        send_telegram: false,
-        participants: []
-      })
+      body: JSON.stringify(payload)
     });
 
+    console.log('[MeetingsService] Response status:', response.status);
+
     if (!response.ok) {
-      let errorMsg = 'Error al iniciar reunión en backend';
+      let errorMsg = `Error ${response.status}: Failed to create meeting`;
       try {
         const errorData = await response.json();
+        console.error('[MeetingsService] Error response:', errorData);
         if (errorData?.error || errorData?.message) {
           errorMsg = errorData.error || errorData.message;
         }
       } catch (e) {
-        // Response no es JSON válido, usar mensaje genérico
-        console.warn('[MeetingsService] Error response not JSON:', e);
+        // Response no es JSON válido
+        const textError = await response.text();
+        console.error('[MeetingsService] Error response (text):', textError);
+        errorMsg = `Error ${response.status}: ${textError || 'Failed to create meeting'}`;
       }
       throw new Error(errorMsg);
     }
 
-    const { meetingId } = await response.json();
+    const responseData = await response.json();
+    console.log('[MeetingsService] ✅ Reunión creada:', responseData);
+    const { meetingId } = responseData;
 
     // Sincronizar con DB local (opcional, CORE ya lo maneja)
     const { data: meeting } = await supabase
@@ -199,9 +215,11 @@ export async function startLiveMeeting(title) {
       .eq('id', meetingId)
       .single();
 
+    console.log('[MeetingsService] ✅ Reunión sincronizada en DB local');
+
     return { id: meetingId, ...meeting };
   } catch (error) {
-    console.error('[MeetingsService] Error iniciando reunión live:', error);
+    console.error('[MeetingsService] ❌ Error iniciando reunión live:', error);
     throw error;
   }
 }

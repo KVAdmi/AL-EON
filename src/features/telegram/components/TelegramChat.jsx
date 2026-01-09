@@ -21,14 +21,22 @@ export default function TelegramChat({ chatId, chatName, botId, onMessageSent })
   }, [messages]);
 
   async function loadMessages() {
-    if (!chatId) return;
+    if (!chatId) {
+      console.warn('[TelegramChat] No chatId provided');
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log('[TelegramChat] Cargando mensajes para chatId:', chatId);
+      
       const data = await getMessages(chatId);
+      console.log('[TelegramChat] Mensajes recibidos:', data);
+      console.log('[TelegramChat] Cantidad de mensajes:', data?.length || 0);
+      
       setMessages(data || []);
     } catch (error) {
-      console.error('Error cargando mensajes:', error);
+      console.error('[TelegramChat] Error cargando mensajes:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
