@@ -79,12 +79,25 @@ export default function EmailModulePage() {
       
       setAccounts(data);
       
-      // Si hay cuentas y no hay una seleccionada, seleccionar la primera
-      if (data.length > 0 && !currentAccount) {
-        console.log('🔵 [EmailModulePage] Seleccionando primera cuenta:', data[0]);
-        setCurrentAccount(data[0]);
-      } else if (data.length === 0) {
+      // ✅ MEJORAR: Siempre seleccionar una cuenta si existe
+      if (data && data.length > 0) {
+        // Si no hay cuenta seleccionada, seleccionar la primera
+        if (!currentAccount) {
+          console.log('🔵 [EmailModulePage] Seleccionando primera cuenta:', data[0]);
+          setCurrentAccount(data[0]);
+        } else {
+          // Si hay cuenta seleccionada, verificar que aún existe
+          const stillExists = data.find(acc => acc.id === currentAccount.id);
+          if (!stillExists) {
+            console.log('🔵 [EmailModulePage] Cuenta anterior no existe, seleccionando primera');
+            setCurrentAccount(data[0]);
+          } else {
+            console.log('🔵 [EmailModulePage] Manteniendo cuenta actual:', currentAccount);
+          }
+        }
+      } else {
         console.log('⚠️ [EmailModulePage] NO se encontraron cuentas en Supabase');
+        setCurrentAccount(null);
       }
     } catch (error) {
       console.error('❌ [EmailModulePage] Error al cargar cuentas:', error);
@@ -116,27 +129,51 @@ export default function EmailModulePage() {
   };
 
   const handleCompose = () => {
+    console.log('📧 [EmailModulePage] handleCompose llamado');
+    console.log('📧 [EmailModulePage] currentAccount:', currentAccount);
+    console.log('📧 [EmailModulePage] accounts:', accounts);
+    
+    if (!currentAccount) {
+      console.warn('⚠️ [EmailModulePage] NO HAY CUENTA SELECCIONADA');
+      toast({
+        variant: 'destructive',
+        title: 'No hay cuenta seleccionada',
+        description: 'Por favor selecciona una cuenta de correo en la barra lateral'
+      });
+      return;
+    }
+    
     setComposerMode('new');
     setReplyToMessage(null);
     startCompose();
   };
 
   const handleReply = (message) => {
-    setComposerMode('reply');
+    console.log('📧 [EmailModulePage] handleReply llamado con:', message);
     setReplyToMessage(message);
-    startCompose();
+    setComposerMode('reply');
+    // Usar setTimeout para asegurar que el state se actualice
+    setTimeout(() => {
+      startCompose();
+    }, 50);
   };
 
   const handleReplyAll = (message) => {
-    setComposerMode('replyAll');
+    console.log('📧 [EmailModulePage] handleReplyAll llamado con:', message);
     setReplyToMessage(message);
-    startCompose();
+    setComposerMode('replyAll');
+    setTimeout(() => {
+      startCompose();
+    }, 50);
   };
 
   const handleForward = (message) => {
-    setComposerMode('forward');
+    console.log('📧 [EmailModulePage] handleForward llamado con:', message);
     setReplyToMessage(message);
-    startCompose();
+    setComposerMode('forward');
+    setTimeout(() => {
+      startCompose();
+    }, 50);
   };
 
   const handleCreateTask = (message) => {
