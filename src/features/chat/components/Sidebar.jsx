@@ -118,10 +118,14 @@ function Sidebar({
 
   const loadProjects = async () => {
     try {
+      console.log('[Sidebar] 🔍 Cargando proyectos...');
       const projectsList = await getProjects();
+      console.log('[Sidebar] ✅ Proyectos cargados:', projectsList?.length || 0);
+      console.log('[Sidebar] Proyectos:', projectsList);
       setProjects(projectsList || []);
     } catch (error) {
-      console.error('Error cargando proyectos:', error);
+      console.error('[Sidebar] ❌ Error cargando proyectos:', error);
+      setProjects([]); // Asegurar que projects sea array vacío en caso de error
     }
   };
 

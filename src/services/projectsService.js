@@ -11,12 +11,21 @@ import { supabase } from '@/lib/supabase';
  */
 export async function getProjects() {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    console.log('[ProjectsService] 🔍 Obteniendo proyectos...');
     
-    if (!user) {
-      console.warn('⚠️ No hay usuario autenticado');
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError) {
+      console.error('[ProjectsService] ❌ Error obteniendo usuario:', userError);
       return [];
     }
+    
+    if (!user) {
+      console.warn('[ProjectsService] ⚠️ No hay usuario autenticado');
+      return [];
+    }
+
+    console.log('[ProjectsService] ✅ Usuario autenticado:', user.id);
 
     // ✅ INCLUIR PROYECTOS COMPARTIDOS
     // Gracias a las RLS policies, esta query automáticamente incluye:
@@ -36,9 +45,11 @@ export async function getProjects() {
       .order('sort_order', { ascending: true });
 
     if (error) {
-      console.error('❌ Error obteniendo proyectos:', error);
+      console.error('[ProjectsService] ❌ Error obteniendo proyectos:', error);
       throw error;
     }
+
+    console.log('[ProjectsService] 📦 Datos recibidos:', data?.length || 0, 'proyectos');
 
     // Marcar cuáles son compartidos vs propios
     const projectsWithOwnership = (data || []).map(project => {
@@ -53,11 +64,11 @@ export async function getProjects() {
       };
     });
 
-    console.log(`✅ Cargados ${projectsWithOwnership.length} proyectos (${projectsWithOwnership.filter(p => p.isOwner).length} propios, ${projectsWithOwnership.filter(p => p.isShared).length} compartidos)`);
+    console.log(`[ProjectsService] ✅ Procesados ${projectsWithOwnership.length} proyectos (${projectsWithOwnership.filter(p => p.isOwner).length} propios, ${projectsWithOwnership.filter(p => p.isShared).length} compartidos)`);
     return projectsWithOwnership;
 
   } catch (error) {
-    console.error('❌ Error en getProjects:', error);
+    console.error('[ProjectsService] ❌ Error en getProjects:', error);
     throw error;
   }
 }
