@@ -10,6 +10,7 @@ import {
   migrateLocalStorageToSupabase,
   mergeConversations
 } from '@/services/conversationsService';
+import { supabase } from '@/lib/supabase';
 
 export function useConversations() {
   const [conversations, setConversations] = useState([]);
@@ -83,6 +84,107 @@ export function useConversations() {
     
     initConversations();
   }, []);
+
+  // 🔴 REALTIME: Escuchar cambios en user_conversations
+  useEffect(() => {
+    let channel;
+
+    const setupRealtime = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.log('⚠️ No hay usuario autenticado, saltando realtime');
+        return;
+      }
+
+      console.log('🔴 Iniciando listener de conversaciones en tiempo real para user:', user.id);
+
+      channel = supabase
+        .channel('conversations-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'user_conversations',
+            filter: `user_id=eq.${user.id}` // Solo escuchar mis conversaciones
+          },
+          (payload) => {
+            console.log('🗑️ Conversación eliminada detectada:', payload.old.id);
+            
+            // Eliminar del estado local
+            setConversations(prev => {
+              const updated = prev.filter(c => c.id !== payload.old.id);
+              
+              // Si era la conversación actual, cambiar a otra
+              if (currentConversationId === payload.old.id) {
+                const newCurrent = updated.length > 0 ? updated[0].id : null;
+                setCurrentConversationId(newCurrent);
+                storage.saveCurrentConversationId(newCurrent);
+              }
+              
+              // Actualizar localStorage
+              storage.saveConversations(updated);
+              
+              return updated;
+            });
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'user_conversations',
+            filter: `user_id=eq.${user.id}`
+          },
+          async (payload) => {
+            console.log('➕ Nueva conversación detectada:', payload.new.id);
+            
+            // Recargar conversaciones para obtener la nueva
+            const updated = await loadConversationsFromSupabase();
+            if (updated) {
+              setConversations(updated);
+              storage.saveConversations(updated);
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'user_conversations',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('✏️ Conversación actualizada:', payload.new.id);
+            
+            // Actualizar en el estado local
+            setConversations(prev => {
+              const updated = prev.map(c => 
+                c.id === payload.new.id 
+                  ? { ...c, ...payload.new } 
+                  : c
+              );
+              storage.saveConversations(updated);
+              return updated;
+            });
+          }
+        )
+        .subscribe();
+    };
+
+    setupRealtime();
+
+    // Cleanup
+    return () => {
+      if (channel) {
+        console.log('🔴 Desuscribiendo listener de conversaciones');
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [currentConversationId]); // Re-subscribe si cambia la conversación actual
 
   // 💾 SYNC: Save conversations to Supabase + localStorage whenever they change
   useEffect(() => {

@@ -41,6 +41,17 @@ export default function EmailComposer({
   const [attachments, setAttachments] = useState([]);
   const fileInputRef = useRef(null);
 
+  // 🔍 DEBUG: Verificar currentAccount
+  useEffect(() => {
+    console.log('[EmailComposer] 🔍 DEBUG currentAccount:', {
+      existe: !!currentAccount,
+      id: currentAccount?.id,
+      email: currentAccount?.email_address,
+      mode,
+      replyTo: !!replyTo
+    });
+  }, [currentAccount, mode, replyTo]);
+
   const [formData, setFormData] = useState({
     to: [],
     cc: [],
