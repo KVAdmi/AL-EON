@@ -163,9 +163,14 @@ export default function EmailComposer({
         description: "El correo se envió exitosamente",
       });
       
-      // ✅ Refrescar lista de mensajes
+      // ✅ Refrescar lista de mensajes (silenciar error si falla)
       if (triggerRefresh) {
-        setTimeout(() => triggerRefresh(), 500); // Pequeño delay para que el backend procese
+        setTimeout(() => {
+          triggerRefresh().catch(err => {
+            console.warn('[EmailComposer] ⚠️ Error al refrescar (silenciado, correo ya enviado):', err);
+            // NO mostrar error al usuario - el correo ya se envió exitosamente
+          });
+        }, 500); // Pequeño delay para que el backend procese
       }
       
       if (onSent) {

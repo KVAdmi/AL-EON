@@ -719,16 +719,57 @@ export async function getInbox(accountId, options = {}) {
   try {
     console.log('[EmailService] 📬 getInbox llamado con:', { accountId, options });
     
-    // 🔥 LEER DIRECTO DE SUPABASE con JOIN a email_folders
-    const { data: messages, error } = await supabase
+    // ✅ PASO 1: Si se especifica folder, obtener su folder_id
+    let targetFolderId = null;
+    if (options.folder) {
+      const folderTypeMap = {
+        'inbox': 'Inbox',
+        'sent': 'Sent',
+        'drafts': 'Drafts',
+        'spam': 'Spam',
+        'trash': 'Trash',
+        'starred': 'Starred',
+        'archive': 'Archive'
+      };
+      const folderType = folderTypeMap[options.folder] || options.folder;
+      
+      console.log(`[EmailService] 🔍 Buscando folder tipo "${folderType}" para filtrar...`);
+      
+      const { data: folderData, error: folderError } = await supabase
+        .from('email_folders')
+        .select('id')
+        .eq('account_id', accountId)
+        .eq('folder_type', folderType)
+        .single();
+      
+      if (folderError) {
+        console.warn(`[EmailService] ⚠️ No se encontró folder "${folderType}":`, folderError);
+      } else if (folderData?.id) {
+        targetFolderId = folderData.id;
+        console.log(`[EmailService] ✅ Folder encontrado: id=${targetFolderId}`);
+      }
+    }
+    
+    // ✅ PASO 2: Query con filtro opcional por folder_id
+    let query = supabase
       .from('email_messages')
       .select(`
         *,
         folder:email_folders!folder_id(id, folder_name, folder_type, imap_path)
       `)
-      .eq('account_id', accountId)
+      .eq('account_id', accountId);
+    
+    // Aplicar filtro por folder_id si se encontró
+    if (targetFolderId) {
+      query = query.eq('folder_id', targetFolderId);
+      console.log(`[EmailService] 🔍 Filtrando por folder_id: ${targetFolderId}`);
+    }
+    
+    query = query
       .order('date', { ascending: false })
       .limit(options.limit || 50);
+    
+    const { data: messages, error } = await query;
     
     if (error) {
       console.error('[EmailService] Error de Supabase:', error);

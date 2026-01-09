@@ -38,18 +38,9 @@ export default function EmailInbox({ accountId, folder, onSelectMessage }) {
       // Fallback: Leer directo de Supabase
       const { supabase } = await import('../../../lib/supabase');
       
-      let query = supabase
-        .from('email_messages')
-        .select(`
-          *,
-          folder:email_folders!folder_id(id, folder_name, folder_type, imap_path)
-        `)
-        .eq('account_id', accountId)
-        .order('sent_at', { ascending: false });
-      
-      // Filtrar por carpeta si se especifica
+      // ✅ PASO 1: Si hay filtro de folder, obtener su folder_id primero
+      let targetFolderId = null;
       if (folder) {
-        // Mapear nombres de carpetas de UI a nombres de folder_type en DB
         const folderTypeMap = {
           'inbox': 'Inbox',
           'sent': 'Sent',
@@ -62,12 +53,40 @@ export default function EmailInbox({ accountId, folder, onSelectMessage }) {
         const dbFolderType = folderTypeMap[folder] || folder;
         console.log(`[EmailInbox] 🔍 FILTRO APLICADO: folder UI="${folder}" → DB folder_type="${dbFolderType}"`);
         
-        // ✅ CORREGIDO: Filtrar por folder_type del JOIN
-        query = query.eq('folder.folder_type', dbFolderType);
-        console.log(`[EmailInbox] 🔍 Query después de filtro:`, query);
+        // Obtener folder_id del folder deseado
+        const { data: folderData, error: folderError } = await supabase
+          .from('email_folders')
+          .select('id')
+          .eq('account_id', accountId)
+          .eq('folder_type', dbFolderType)
+          .single();
+        
+        if (folderError) {
+          console.warn(`[EmailInbox] ⚠️ No se encontró folder tipo "${dbFolderType}":`, folderError);
+        } else if (folderData?.id) {
+          targetFolderId = folderData.id;
+          console.log(`[EmailInbox] ✅ Folder encontrado: id=${targetFolderId}`);
+        }
       } else {
         console.log('[EmailInbox] ⚠️ NO HAY FOLDER, trayendo TODOS los mensajes');
       }
+      
+      // ✅ PASO 2: Query con filtro directo por folder_id (NO por JOIN)
+      let query = supabase
+        .from('email_messages')
+        .select(`
+          *,
+          folder:email_folders!folder_id(id, folder_name, folder_type, imap_path)
+        `)
+        .eq('account_id', accountId);
+      
+      // Filtrar por folder_id si se encontró
+      if (targetFolderId) {
+        query = query.eq('folder_id', targetFolderId);
+        console.log(`[EmailInbox] 🔍 Filtrando por folder_id: ${targetFolderId}`);
+      }
+      
+      query = query.order('sent_at', { ascending: false });
       
       const { data: dbMessages, error } = await query;
       
