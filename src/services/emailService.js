@@ -722,6 +722,9 @@ export async function getInbox(accountId, options = {}) {
     // ✅ PASO 1: Si se especifica folder, obtener su folder_id
     let targetFolderId = null;
     if (options.folder) {
+      // Normalizar nombre de folder (puede venir "INBOX", "Inbox", "inbox", etc)
+      const folderNormalized = String(options.folder).toLowerCase().trim();
+      
       const folderTypeMap = {
         'inbox': 'Inbox',
         'sent': 'Sent',
@@ -729,24 +732,55 @@ export async function getInbox(accountId, options = {}) {
         'spam': 'Spam',
         'trash': 'Trash',
         'starred': 'Starred',
-        'archive': 'Archive'
+        'archive': 'Archive',
+        'junk': 'Spam',
+        // Mapeos adicionales para nombres IMAP comunes
+        'bandeja de entrada': 'Inbox',
+        'enviados': 'Sent',
+        'borradores': 'Drafts',
+        'papelera': 'Trash',
+        'destacados': 'Starred',
+        'archivados': 'Archive',
+        '[gmail]/sent mail': 'Sent',
+        '[gmail]/drafts': 'Drafts',
+        '[gmail]/spam': 'Spam',
+        '[gmail]/trash': 'Trash',
+        '[gmail]/starred': 'Starred',
       };
-      const folderType = folderTypeMap[options.folder] || options.folder;
       
-      console.log(`[EmailService] 🔍 Buscando folder tipo "${folderType}" para filtrar...`);
+      const folderType = folderTypeMap[folderNormalized] || options.folder;
       
-      const { data: folderData, error: folderError } = await supabase
+      console.log(`[EmailService] 🔍 Buscando folder: "${options.folder}" → tipo "${folderType}"`);
+      
+      // Intentar buscar por folder_type primero
+      let { data: folderData, error: folderError } = await supabase
         .from('email_folders')
-        .select('id')
+        .select('id, folder_name, folder_type')
         .eq('account_id', accountId)
         .eq('folder_type', folderType)
-        .single();
+        .maybeSingle();
+      
+      // Si no se encontró por folder_type, buscar por folder_name exacto
+      if (!folderData && !folderError) {
+        console.log(`[EmailService] ⚠️ No encontrado por folder_type, intentando por folder_name...`);
+        const result = await supabase
+          .from('email_folders')
+          .select('id, folder_name, folder_type')
+          .eq('account_id', accountId)
+          .eq('folder_name', options.folder)
+          .maybeSingle();
+        
+        folderData = result.data;
+        folderError = result.error;
+      }
       
       if (folderError) {
-        console.warn(`[EmailService] ⚠️ No se encontró folder "${folderType}":`, folderError);
+        console.warn(`[EmailService] ⚠️ Error buscando folder:`, folderError);
       } else if (folderData?.id) {
         targetFolderId = folderData.id;
-        console.log(`[EmailService] ✅ Folder encontrado: id=${targetFolderId}`);
+        console.log(`[EmailService] ✅ Folder encontrado:`, folderData);
+      } else {
+        console.warn(`[EmailService] ⚠️ No se encontró folder para: "${options.folder}"`);
       }
     }
     
@@ -759,10 +793,12 @@ export async function getInbox(accountId, options = {}) {
       `)
       .eq('account_id', accountId);
     
-    // Aplicar filtro por folder_id si se encontró
+    // ⚠️ CRÍTICO: Aplicar filtro por folder_id si se encontró
     if (targetFolderId) {
       query = query.eq('folder_id', targetFolderId);
-      console.log(`[EmailService] 🔍 Filtrando por folder_id: ${targetFolderId}`);
+      console.log(`[EmailService] 🔍 FILTRANDO por folder_id: ${targetFolderId}`);
+    } else if (options.folder) {
+      console.error(`[EmailService] ❌ FILTRO NO APLICADO - No se encontró folder_id para "${options.folder}"`);
     }
     
     query = query
