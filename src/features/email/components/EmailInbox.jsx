@@ -57,18 +57,35 @@ export default function EmailInbox({ accountId, folder, onSelectMessage }) {
           'trash': 'Trash'
         };
         const dbFolder = folderMap[folder] || folder;
-        console.log(`[EmailInbox] 🔍 FILTRO: folder UI="${folder}" → DB="${dbFolder}"`);
+        console.log(`[EmailInbox] 🔍 FILTRO APLICADO: folder UI="${folder}" → DB="${dbFolder}"`);
         query = query.eq('folder', dbFolder);
+        console.log(`[EmailInbox] 🔍 Query después de filtro:`, query);
       } else {
         console.log('[EmailInbox] ⚠️ NO HAY FOLDER, trayendo TODOS los mensajes');
       }
       
       const { data: dbMessages, error } = await query;
       
-      console.log(`[EmailInbox] 📊 Mensajes recibidos: ${dbMessages?.length || 0}`);
-      console.log(`[EmailInbox] 📋 Folders en mensajes:`, 
+      console.log(`[EmailInbox] 📊 RESULTADO: ${dbMessages?.length || 0} mensajes`);
+      console.log(`[EmailInbox] 📋 Folders únicos en resultado:`, 
         [...new Set((dbMessages || []).map(m => m.folder))].join(', ')
       );
+      
+      // ✅ VALIDAR: Si pedimos 'spam' pero recibimos 'inbox', el filtro NO funciona
+      if (folder && dbMessages && dbMessages.length > 0) {
+        const expectedFolder = folderMap[folder] || folder;
+        const receivedFolders = [...new Set(dbMessages.map(m => m.folder))];
+        const allMatch = receivedFolders.every(f => f === expectedFolder);
+        
+        if (!allMatch) {
+          console.error(`[EmailInbox] ❌ FILTRO NO FUNCIONA:`);
+          console.error(`  → Esperaba folder="${expectedFolder}"`);
+          console.error(`  → Recibí folders="${receivedFolders.join(', ')}"`);
+          console.error(`  → Supabase query .eq('folder', '${expectedFolder}') NO está filtrando`);
+        } else {
+          console.log(`[EmailInbox] ✅ FILTRO OK: Todos los mensajes son de "${expectedFolder}"`);
+        }
+      }
       
       if (error) {
         console.error('[EmailInbox] Error de Supabase:', error);
