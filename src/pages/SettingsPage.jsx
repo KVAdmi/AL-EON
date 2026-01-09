@@ -286,13 +286,23 @@ export default function SettingsPage() {
         .from('ale-avatars')
         .getPublicUrl(fileName);
 
-      // Actualizar estado y base de datos
+      console.log('[Avatar] URL pública generada:', publicUrl);
+
+      // Actualizar estado local primero
       setProfile({ ...profile, assistant_avatar_url: publicUrl });
       
-      await supabase
+      // Actualizar base de datos
+      const { error: updateError } = await supabase
         .from('user_profiles')
         .update({ assistant_avatar_url: publicUrl })
         .eq('user_id', session.user.id);
+
+      if (updateError) {
+        console.error('[Avatar] Error actualizando perfil:', updateError);
+        throw new Error(`Error guardando avatar: ${updateError.message}`);
+      }
+
+      console.log('[Avatar] Perfil actualizado exitosamente');
 
       // Refresh del perfil
       if (refreshProfile) {
