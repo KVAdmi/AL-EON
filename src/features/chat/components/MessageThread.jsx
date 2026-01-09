@@ -40,7 +40,7 @@ function ProcessingTimer({ startTime }) {
   );
 }
 
-function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggleHandsFree, onToggleSidebar, onStopResponse, onRegenerateResponse, currentUser, assistantName }) {
+function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggleHandsFree, onToggleSidebar, onStopResponse, onRegenerateResponse, currentUser, assistantName, assistantAvatar }) {
   const scrollRef = useRef(null);
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -171,7 +171,13 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
         ) : (
           <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto">
             {conversation.messages.map((message) => (
-              <Message key={message.id} message={message} currentUser={currentUser} assistantName={assistantName} />
+              <Message 
+                key={message.id} 
+                message={message} 
+                currentUser={currentUser} 
+                assistantName={assistantName}
+                assistantAvatar={assistantAvatar}
+              />
             ))}
             {isLoading && (
               <div className="space-y-3">
@@ -219,7 +225,7 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
   );
 }
 
-function Message({ message, currentUser, assistantName = 'Luma' }) {
+function Message({ message, currentUser, assistantName = 'Luma', assistantAvatar }) {
   const isUser = message.role === 'user';
   const isError = message.isError;
   const [copied, setCopied] = useState(false);
@@ -295,12 +301,23 @@ function Message({ message, currentUser, assistantName = 'Luma' }) {
       <div className={`flex gap-2 md:gap-4 ${isUser ? 'justify-end' : 'justify-start'} group`} style={{ maxWidth: '100%' }}>
         {!isUser && (
           <div 
-            className="w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: 'var(--color-accent)' }}
+            className="w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
+            style={{ 
+              backgroundColor: assistantAvatar ? 'transparent' : 'var(--color-accent)',
+              border: assistantAvatar ? '2px solid var(--color-accent)' : 'none'
+            }}
           >
-            <span className="text-xs md:text-sm font-semibold" style={{ color: '#FFFFFF' }}>
-              {getAssistantInitial()}
-            </span>
+            {assistantAvatar ? (
+              <img 
+                src={assistantAvatar} 
+                alt={assistantName}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-xs md:text-sm font-semibold" style={{ color: '#FFFFFF' }}>
+                {getAssistantInitial()}
+              </span>
+            )}
           </div>
         )}
       

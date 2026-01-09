@@ -136,6 +136,7 @@ function ChatPage() {
           onRegenerateResponse={handleRegenerateResponse}
           currentUser={userProfile?.display_name || user?.email || 'Usuario'}
           assistantName={userProfile?.assistant_name || 'Luma'}
+          assistantAvatar={userProfile?.assistant_avatar_url}
         />
         <MessageComposer
           onSendMessage={handleSendMessage}

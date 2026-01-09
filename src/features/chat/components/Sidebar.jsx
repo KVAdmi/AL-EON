@@ -4,7 +4,7 @@ import {
   Plus, MessageSquare, Trash2, Edit3, Check, X, Search,
   LogOut, User, Settings, ChevronDown, ChevronRight,
   Folder, FolderPlus, Calendar, Sparkles, Zap, Users, MoreVertical, Share2, FileText,
-  Mail, Send, Bell, Loader2, Mic, MicOff
+  Mail, Send, Bell, Loader2, Mic, MicOff, Camera
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils';
@@ -19,6 +19,7 @@ import { createProject, getProjects, deleteProject } from '@/services/projectsSe
 import { useToast } from '@/ui/use-toast';
 import { useCapability } from '@/components/CapabilitiesGate';
 import { useVoiceMode } from '@/features/chat/hooks/useVoiceMode';
+import { useAuth } from '@/contexts/AuthContext';
 
 function Sidebar({
   conversations,
@@ -34,6 +35,7 @@ function Sidebar({
   const scrollRef = useRef(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { userProfile } = useAuth();
   
   // 🔒 VERIFICAR CAPACIDADES
   const canSendEmail = useCapability('mail.send');
@@ -212,9 +214,80 @@ function Sidebar({
       >
         {/* Header con Logo y botón nuevo chat */}
         <div className="p-3 space-y-3">
-        <div className="flex items-center justify-between">
-          <Logo className="h-16 md:h-20 w-auto" />
-          <ThemeToggle />
+        
+        {/* Tarjeta cristal con avatar y efecto neón azul */}
+        <div className="relative">
+          {/* Tarjeta glassmorphism */}
+          <div 
+            className="relative p-4 rounded-2xl border backdrop-blur-xl overflow-hidden"
+            style={{
+              backgroundColor: 'rgba(0, 0, 0, 0.4)',
+              borderColor: 'rgba(99, 179, 237, 0.3)',
+              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
+            }}
+          >
+            <div className="flex items-center gap-3">
+              {/* Avatar con efecto neón azul */}
+              <div className="relative flex-shrink-0">
+                <div 
+                  className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border-2 relative"
+                  style={{
+                    borderColor: '#63B3ED',
+                    boxShadow: '0 0 20px rgba(99, 179, 237, 0.6), 0 0 40px rgba(99, 179, 237, 0.3)',
+                    backgroundColor: userProfile?.assistant_avatar_url ? 'transparent' : 'var(--color-accent)'
+                  }}
+                >
+                  {userProfile?.assistant_avatar_url ? (
+                    <img 
+                      src={userProfile.assistant_avatar_url} 
+                      alt={userProfile.assistant_name || 'AL-E'}
+                      className="w-full h-full object-cover"
+                      style={{
+                        filter: 'drop-shadow(0 0 10px rgba(99, 179, 237, 0.5))'
+                      }}
+                    />
+                  ) : (
+                    <Camera 
+                      size={24} 
+                      style={{ color: '#FFFFFF' }}
+                    />
+                  )}
+                </div>
+                {/* Efecto de pulso neón */}
+                <div 
+                  className="absolute inset-0 rounded-full animate-pulse"
+                  style={{
+                    boxShadow: '0 0 30px rgba(99, 179, 237, 0.4)',
+                    pointerEvents: 'none'
+                  }}
+                />
+              </div>
+              
+              {/* Información del asistente */}
+              <div className="flex-1 min-w-0">
+                <h3 
+                  className="font-semibold text-base truncate"
+                  style={{ 
+                    color: '#FFFFFF',
+                    textShadow: '0 0 10px rgba(99, 179, 237, 0.5)'
+                  }}
+                >
+                  {userProfile?.assistant_name || 'AL-E'}
+                </h3>
+                <p 
+                  className="text-xs truncate"
+                  style={{ 
+                    color: 'rgba(255, 255, 255, 0.7)'
+                  }}
+                >
+                  Tu asistente personal
+                </p>
+              </div>
+              
+              {/* Theme Toggle */}
+              <ThemeToggle />
+            </div>
+          </div>
         </div>
 
         {/* Botones: Nuevo Chat + Nuevo Proyecto + Voz + Notificaciones */}
