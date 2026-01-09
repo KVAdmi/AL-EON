@@ -43,6 +43,8 @@ export default function EmailPageOutlook() {
   const [view, setView] = useState('list'); // 'list' o 'detail' para mobile
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showComposer, setShowComposer] = useState(false);
+  const [composerMode, setComposerMode] = useState('new'); // 'new', 'reply', 'replyAll', 'forward'
+  const [replyToMessage, setReplyToMessage] = useState(null); // Mensaje al que se responde
   const [showContactsModal, setShowContactsModal] = useState(false);
   const [showContactForm, setShowContactForm] = useState(false);
   const [contacts, setContacts] = useState([]);
@@ -157,6 +159,28 @@ export default function EmailPageOutlook() {
     } finally {
       setLoadingEmails(false);
     }
+  }
+
+  // ✅ HANDLERS PARA REPLY/FORWARD
+  function handleReply(message) {
+    console.log('📧 Reply a:', message);
+    setReplyToMessage(message);
+    setComposerMode('reply');
+    setShowComposer(true);
+  }
+
+  function handleReplyAll(message) {
+    console.log('📧 Reply All a:', message);
+    setReplyToMessage(message);
+    setComposerMode('replyAll');
+    setShowComposer(true);
+  }
+
+  function handleForward(message) {
+    console.log('📧 Forward:', message);
+    setReplyToMessage(message);
+    setComposerMode('forward');
+    setShowComposer(true);
   }
 
   async function handleRefresh() {
@@ -738,6 +762,31 @@ export default function EmailPageOutlook() {
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                   <div className="flex items-center gap-2">
+                    {/* ✅ BOTONES REPLY/FORWARD */}
+                    <button 
+                      onClick={() => handleReply(selectedEmail)}
+                      className="px-3 py-2 rounded-xl hover:opacity-80 flex items-center gap-2"
+                      style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      <span className="hidden sm:inline">Responder</span>
+                    </button>
+                    <button 
+                      onClick={() => handleReplyAll(selectedEmail)}
+                      className="px-3 py-2 rounded-xl hover:opacity-80"
+                      style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)' }}
+                    >
+                      <span className="hidden sm:inline">Responder a todos</span>
+                      <span className="sm:hidden">Todos</span>
+                    </button>
+                    <button 
+                      onClick={() => handleForward(selectedEmail)}
+                      className="px-3 py-2 rounded-xl hover:opacity-80"
+                      style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)' }}
+                    >
+                      <span className="hidden sm:inline">Reenviar</span>
+                      <span className="sm:hidden">→</span>
+                    </button>
                     <button className="p-2 rounded-xl hover:opacity-80" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
                       <Archive className="w-4 h-4" style={{ color: 'var(--color-text-primary)' }} />
                     </button>
@@ -915,10 +964,17 @@ export default function EmailPageOutlook() {
       {/* Modal de Composer */}
       {showComposer && (
         <EmailComposer
-          mode="new"
-          onClose={() => setShowComposer(false)}
+          mode={composerMode}
+          replyTo={replyToMessage}
+          onClose={() => {
+            setShowComposer(false);
+            setComposerMode('new');
+            setReplyToMessage(null);
+          }}
           onSent={() => {
             setShowComposer(false);
+            setComposerMode('new');
+            setReplyToMessage(null);
             handleRefresh();
           }}
         />
