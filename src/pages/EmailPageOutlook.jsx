@@ -493,7 +493,7 @@ export default function EmailPageOutlook() {
           <div className="p-3 sm:p-4">
             <button
               className="w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 rounded-xl font-medium text-sm sm:text-base hover:opacity-90 transition-all shadow-lg"
-              style={{ backgroundColor: '#0078d4', color: '#fff' }}
+              style={{ backgroundColor: 'var(--color-primary)', color: '#fff' }}
               onClick={() => {
                 setShowSidebar(false);
                 setShowComposer(true);
@@ -697,8 +697,8 @@ export default function EmailPageOutlook() {
                     >
                       <div className="flex items-start gap-3">
                         <div 
-                          className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-white font-semibold text-sm" 
-                          style={{ backgroundColor: avatarColor }}
+                          className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-semibold text-sm" 
+                          style={{ backgroundColor: avatarColor, color: '#FFFFFF' }}
                         >
                           {avatar}
                         </div>
@@ -827,8 +827,8 @@ export default function EmailPageOutlook() {
                     return (
                       <>
                         <div 
-                          className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-full flex items-center justify-center text-white font-semibold text-base sm:text-lg" 
-                          style={{ backgroundColor: getAvatarColor(displayEmail || displayName) }}
+                          className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-full flex items-center justify-center font-semibold text-base sm:text-lg" 
+                          style={{ backgroundColor: getAvatarColor(displayEmail || displayName), color: '#FFFFFF' }}
                         >
                           {getInitials(displayName)}
                         </div>
@@ -1146,9 +1146,9 @@ function AccountFolderTree({
         }}
         className="w-full flex items-center gap-2 px-3 py-3 rounded-xl hover:opacity-90 transition-all shadow-sm"
         style={{
-          backgroundColor: isSelectedAccount ? '#0078d4' : 'var(--color-bg-tertiary)',
+          backgroundColor: isSelectedAccount ? 'var(--color-primary)' : 'var(--color-bg-tertiary)',
           color: isSelectedAccount ? '#fff' : 'var(--color-text-primary)',
-          border: `2px solid ${isSelectedAccount ? '#0078d4' : 'var(--color-border)'}`
+          border: `2px solid ${isSelectedAccount ? 'var(--color-primary)' : 'var(--color-border)'}`
         }}
       >
         <ChevronRight 
@@ -1174,7 +1174,7 @@ function AccountFolderTree({
 
       {/* Carpetas de la cuenta (MÁS INDENTADAS) */}
       {isExpanded && (
-        <div className="ml-6 mt-2 space-y-1 pl-2 border-l-2" style={{ borderColor: isSelectedAccount ? '#0078d4' : 'var(--color-border)' }}>
+        <div className="ml-6 mt-2 space-y-1 pl-2 border-l-2" style={{ borderColor: isSelectedAccount ? 'var(--color-primary)' : 'var(--color-border)' }}>
           {loading ? (
             <div className="px-3 py-2 text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
               Cargando...

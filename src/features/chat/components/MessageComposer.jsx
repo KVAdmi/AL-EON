@@ -8,6 +8,7 @@ function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sess
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState([]);
   const [showImagePrompt, setShowImagePrompt] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const { toast } = useToast();
@@ -81,10 +82,17 @@ function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sess
 
     const files = [];
     for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf('image') !== -1) {
-        const file = items[i].getAsFile();
+      const item = items[i];
+      
+      // ✅ Detectar imágenes (paste directo o screenshot)
+      if (item.type.indexOf('image') !== -1) {
+        e.preventDefault(); // Evitar que se pegue como texto
+        const file = item.getAsFile();
         if (file) {
-          files.push(file);
+          // Generar nombre descriptivo para screenshots
+          const fileName = file.name || `screenshot-${Date.now()}.png`;
+          const renamedFile = new File([file], fileName, { type: file.type });
+          files.push(renamedFile);
         }
       }
     }
@@ -93,8 +101,8 @@ function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sess
       console.log('📋 IMAGES PASTED:', files);
       setAttachments(prev => [...prev, ...files]);
       toast({
-        title: "Imágenes pegadas",
-        description: `${files.length} imagen(es) agregadas`
+        title: "✅ Imágenes pegadas",
+        description: `${files.length} imagen(es) agregadas. Listas para enviar.`
       });
     }
   };
@@ -110,6 +118,38 @@ function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sess
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+    }
+  };
+
+  // ✅ NUEVO: Drag & Drop de imágenes
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = Array.from(e.dataTransfer?.files || []).filter(file => 
+      file.type.startsWith('image/') || file.type.startsWith('application/pdf')
+    );
+
+    if (files.length > 0) {
+      console.log('📎 FILES DROPPED:', files);
+      setAttachments(prev => [...prev, ...files]);
+      toast({
+        title: "✅ Archivos agregados",
+        description: `${files.length} archivo(s) listos para enviar`
+      });
     }
   };
 
@@ -188,14 +228,20 @@ function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sess
             onChange={handleTextareaChange}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
-            placeholder={disabled ? "Nueva conversación..." : isUploading ? "Procesando..." : "Escribe tu mensaje..."}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            placeholder={disabled ? "Nueva conversación..." : isUploading ? "Procesando..." : "Escribe tu mensaje o arrastra imágenes..."}
             disabled={isLoading || isUploading || disabled}
             rows={1}
-            className="flex-1 bg-transparent resize-none outline-none px-1 md:px-2 py-2 text-sm md:text-base"
+            className={`flex-1 bg-transparent resize-none outline-none px-1 md:px-2 py-2 text-sm md:text-base transition-all ${
+              isDragging ? 'ring-2 ring-offset-2' : ''
+            }`}
             style={{
               color: 'var(--color-text-primary)',
               minHeight: '24px',
-              maxHeight: '120px'
+              maxHeight: '120px',
+              ringColor: isDragging ? 'var(--color-accent)' : 'transparent'
             }}
           />
 
