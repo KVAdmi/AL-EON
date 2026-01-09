@@ -11,6 +11,7 @@ const useEmailStore = create(
       // Estado de cuenta activa
       currentAccount: null,
       accounts: [],
+      selectedAccountId: null, // ✅ NUEVO: ID de cuenta seleccionada (se persiste)
       
       // Estado de inbox
       messages: [],
@@ -42,7 +43,10 @@ const useEmailStore = create(
       },
       
       // Actions - Cuentas
-      setCurrentAccount: (account) => set({ currentAccount: account }),
+      setCurrentAccount: (account) => set({ 
+        currentAccount: account,
+        selectedAccountId: account?.id || null // ✅ Persistir ID
+      }),
       setAccounts: (accounts) => set({ accounts }),
       addAccount: (account) => set((state) => ({
         accounts: [...state.accounts, account],
@@ -139,7 +143,7 @@ const useEmailStore = create(
     {
       name: 'email-storage',
       partialize: (state) => ({
-        currentAccount: state.currentAccount,
+        selectedAccountId: state.selectedAccountId, // ✅ PERSISTIR ID de cuenta
         currentFolder: state.currentFolder,
       }),
     }

@@ -49,62 +49,14 @@ export default function EmailComposer({
     console.log('[EmailComposer] 🔍 DEBUG currentAccount:', {
       existe: !!currentAccount,
       id: currentAccount?.id,
-      email: currentAccount?.from_email, // ✅ Corregido: from_email
+      email: currentAccount?.from_email,
       mode,
       replyTo: !!replyTo
     });
   }, [currentAccount, mode, replyTo]);
 
-  // ✅ Validación temprana si no hay cuenta
-  if (!currentAccount) {
-    return (
-      <div 
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-        onClick={onClose}
-      >
-        <div 
-          className="max-w-md w-full mx-4 p-6 rounded-2xl"
-          style={{ backgroundColor: 'var(--color-bg-primary)' }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="text-center">
-            <AlertCircle className="w-16 h-16 mx-auto mb-4" style={{ color: '#ef4444' }} />
-            <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
-              No hay cuenta de correo seleccionada
-            </h2>
-            <p className="mb-6" style={{ color: 'var(--color-text-secondary)' }}>
-              Por favor, selecciona una cuenta de correo en la barra lateral antes de redactar un mensaje.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={onClose}
-                className="flex-1 px-4 py-2 rounded-lg"
-                style={{
-                  backgroundColor: 'var(--color-bg-secondary)',
-                  color: 'var(--color-text-primary)'
-                }}
-              >
-                Cerrar
-              </button>
-              <button
-                onClick={() => {
-                  onClose();
-                  navigate('/settings/email');
-                }}
-                className="flex-1 px-4 py-2 rounded-lg"
-                style={{
-                  backgroundColor: 'var(--color-primary)',
-                  color: 'white'
-                }}
-              >
-                Configurar cuenta
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // ❌ ELIMINADO: El modal "No hay cuenta" no debe existir
+  // Si no hay cuenta, el botón "Nuevo correo" en EmailModulePage no debe llamar startCompose()
 
   const [formData, setFormData] = useState({
     to: [],

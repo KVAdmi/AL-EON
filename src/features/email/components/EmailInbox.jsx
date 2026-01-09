@@ -57,10 +57,18 @@ export default function EmailInbox({ accountId, folder, onSelectMessage }) {
           'trash': 'Trash'
         };
         const dbFolder = folderMap[folder] || folder;
+        console.log(`[EmailInbox] 🔍 FILTRO: folder UI="${folder}" → DB="${dbFolder}"`);
         query = query.eq('folder', dbFolder);
+      } else {
+        console.log('[EmailInbox] ⚠️ NO HAY FOLDER, trayendo TODOS los mensajes');
       }
       
       const { data: dbMessages, error } = await query;
+      
+      console.log(`[EmailInbox] 📊 Mensajes recibidos: ${dbMessages?.length || 0}`);
+      console.log(`[EmailInbox] 📋 Folders en mensajes:`, 
+        [...new Set((dbMessages || []).map(m => m.folder))].join(', ')
+      );
       
       if (error) {
         console.error('[EmailInbox] Error de Supabase:', error);

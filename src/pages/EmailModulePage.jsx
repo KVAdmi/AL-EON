@@ -39,6 +39,7 @@ export default function EmailModulePage() {
     selectedMessage,
     isComposing,
     currentFolder,
+    selectedAccountId, // ✅ NUEVO: ID persistido
     setCurrentAccount,
     setAccounts,
     setSelectedMessage,
@@ -77,26 +78,29 @@ export default function EmailModulePage() {
       console.log('🔵 [EmailModulePage] Cargando cuentas para user:', user?.id);
       const data = await getEmailAccounts(user.id, accessToken);
       console.log('🔵 [EmailModulePage] Cuentas recibidas:', data);
-      console.log('🔵 [EmailModulePage] Cantidad de cuentas:', data?.length);
+      console.log('🔵 [EmailModulePage] selectedAccountId from localStorage:', selectedAccountId);
       
       setAccounts(data);
       
-      // ✅ MEJORAR: Siempre seleccionar una cuenta si existe
+      // ✅ RESTAURAR cuenta desde selectedAccountId (persisted)
       if (data && data.length > 0) {
-        // Si no hay cuenta seleccionada, seleccionar la primera
-        if (!currentAccount) {
-          console.log('🔵 [EmailModulePage] Seleccionando primera cuenta:', data[0]);
-          setCurrentAccount(data[0]);
-        } else {
-          // Si hay cuenta seleccionada, verificar que aún existe
-          const stillExists = data.find(acc => acc.id === currentAccount.id);
-          if (!stillExists) {
-            console.log('🔵 [EmailModulePage] Cuenta anterior no existe, seleccionando primera');
-            setCurrentAccount(data[0]);
-          } else {
-            console.log('🔵 [EmailModulePage] Manteniendo cuenta actual:', currentAccount);
+        let accountToSelect = null;
+        
+        // Intentar restaurar la cuenta previamente seleccionada
+        if (selectedAccountId) {
+          accountToSelect = data.find(acc => acc.id === selectedAccountId);
+          if (accountToSelect) {
+            console.log('✅ [EmailModulePage] Restaurando cuenta desde localStorage:', accountToSelect);
           }
         }
+        
+        // Si no hay cuenta guardada o no existe, seleccionar la primera
+        if (!accountToSelect) {
+          accountToSelect = data[0];
+          console.log('🔵 [EmailModulePage] Seleccionando primera cuenta:', accountToSelect);
+        }
+        
+        setCurrentAccount(accountToSelect);
       } else {
         console.log('⚠️ [EmailModulePage] NO se encontraron cuentas en Supabase');
         setCurrentAccount(null);
