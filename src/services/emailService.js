@@ -698,34 +698,9 @@ export async function sendEmail(mailData, accessToken = null) {
     
     console.log('[EmailService] ✅ Email enviado:', data);
     
-    // ✅ Guardar mensaje en BD después de envío exitoso
-    try {
-      const { data: messageData, error: dbError } = await supabase
-        .from('email_messages')
-        .insert({
-          account_id: payload.accountId,
-          from_address: mailData.fromEmail || 'me',
-          to_addresses: payload.to,
-          cc_addresses: payload.cc || [],
-          bcc_addresses: payload.bcc || [],
-          subject: payload.subject,
-          body_text: typeof payload.body === 'string' ? payload.body : '',
-          body_html: typeof payload.body === 'string' ? payload.body : '',
-          sent_at: new Date().toISOString(),
-          is_read: true, // Mensajes enviados se marcan como leídos
-          folder: 'Sent',
-        });
-      
-      if (dbError) {
-        console.error('[EmailService] ⚠️ Error guardando mensaje en BD:', dbError);
-        // No fallar el envío por esto
-      } else {
-        console.log('[EmailService] ✅ Mensaje guardado en BD:', messageData);
-      }
-    } catch (dbSaveError) {
-      console.error('[EmailService] ⚠️ Error al intentar guardar en BD:', dbSaveError);
-      // No fallar el envío por esto
-    }
+    // ✅ NO guardar aquí - el BACKEND ya lo guarda en Sent folder
+    // ❌ ELIMINADO: insert a email_messages desde frontend
+    // El backend guarda automáticamente en folder_id correcto
     
     return data;
   } catch (error) {
@@ -742,12 +717,15 @@ export async function sendEmail(mailData, accessToken = null) {
  */
 export async function getInbox(accountId, options = {}) {
   try {
-    console.log('[EmailService] � getInbox llamado con:', { accountId, options });
+    console.log('[EmailService] 📬 getInbox llamado con:', { accountId, options });
     
-    // 🔥 LEER DIRECTO DE SUPABASE (más confiable)
+    // 🔥 LEER DIRECTO DE SUPABASE con JOIN a email_folders
     const { data: messages, error } = await supabase
       .from('email_messages')
-      .select('*')
+      .select(`
+        *,
+        folder:email_folders!folder_id(id, folder_name, folder_type, imap_path)
+      `)
       .eq('account_id', accountId)
       .order('date', { ascending: false })
       .limit(options.limit || 50);
@@ -777,7 +755,9 @@ export async function getInbox(accountId, options = {}) {
         is_starred: msg.is_starred,
         has_attachments: msg.has_attachments,
         account_id: msg.account_id,
-        folder: msg.folder,
+        folder: msg.folder?.folder_name || msg.folder?.folder_type || 'Unknown', // ✅ Usar folder del JOIN
+        folder_id: msg.folder_id,
+        folder_type: msg.folder?.folder_type,
       }))
     };
   } catch (error) {

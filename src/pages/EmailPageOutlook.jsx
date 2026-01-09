@@ -426,8 +426,8 @@ export default function EmailPageOutlook() {
             AL-E Mail
           </h1>
           {/* 🔥 MARCA TEMPORAL - Para verificar deploy */}
-          <div className="ml-2 px-2 py-1 bg-red-500 text-white text-xs font-mono rounded font-bold">
-            v14:09 🔥
+          <div className="ml-2 px-2 py-1 bg-purple-600 text-white text-xs font-mono rounded font-bold">
+            v14:31 ⚡
           </div>
         </div>
         

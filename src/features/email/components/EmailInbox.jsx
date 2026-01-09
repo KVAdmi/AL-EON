@@ -40,14 +40,17 @@ export default function EmailInbox({ accountId, folder, onSelectMessage }) {
       
       let query = supabase
         .from('email_messages')
-        .select('*')
+        .select(`
+          *,
+          folder:email_folders!folder_id(id, folder_name, folder_type, imap_path)
+        `)
         .eq('account_id', accountId)
         .order('sent_at', { ascending: false });
       
       // Filtrar por carpeta si se especifica
       if (folder) {
-        // Mapear nombres de carpetas de UI a DB
-        const folderMap = {
+        // Mapear nombres de carpetas de UI a nombres de folder_type en DB
+        const folderTypeMap = {
           'inbox': 'Inbox',
           'sent': 'Sent',
           'drafts': 'Drafts',
@@ -56,9 +59,11 @@ export default function EmailInbox({ accountId, folder, onSelectMessage }) {
           'archive': 'Archive',
           'trash': 'Trash'
         };
-        const dbFolder = folderMap[folder] || folder;
-        console.log(`[EmailInbox] 🔍 FILTRO APLICADO: folder UI="${folder}" → DB="${dbFolder}"`);
-        query = query.eq('folder', dbFolder);
+        const dbFolderType = folderTypeMap[folder] || folder;
+        console.log(`[EmailInbox] 🔍 FILTRO APLICADO: folder UI="${folder}" → DB folder_type="${dbFolderType}"`);
+        
+        // ✅ CORREGIDO: Filtrar por folder_type del JOIN
+        query = query.eq('folder.folder_type', dbFolderType);
         console.log(`[EmailInbox] 🔍 Query después de filtro:`, query);
       } else {
         console.log('[EmailInbox] ⚠️ NO HAY FOLDER, trayendo TODOS los mensajes');
@@ -68,22 +73,31 @@ export default function EmailInbox({ accountId, folder, onSelectMessage }) {
       
       console.log(`[EmailInbox] 📊 RESULTADO: ${dbMessages?.length || 0} mensajes`);
       console.log(`[EmailInbox] 📋 Folders únicos en resultado:`, 
-        [...new Set((dbMessages || []).map(m => m.folder))].join(', ')
+        [...new Set((dbMessages || []).map(m => m.folder?.folder_name || m.folder?.folder_type || 'sin folder'))].join(', ')
       );
       
       // ✅ VALIDAR: Si pedimos 'spam' pero recibimos 'inbox', el filtro NO funciona
       if (folder && dbMessages && dbMessages.length > 0) {
-        const expectedFolder = folderMap[folder] || folder;
-        const receivedFolders = [...new Set(dbMessages.map(m => m.folder))];
-        const allMatch = receivedFolders.every(f => f === expectedFolder);
+        const folderTypeMap = {
+          'inbox': 'Inbox',
+          'sent': 'Sent',
+          'drafts': 'Drafts',
+          'starred': 'Starred',
+          'spam': 'Spam',
+          'archive': 'Archive',
+          'trash': 'Trash'
+        };
+        const expectedFolderType = folderTypeMap[folder] || folder;
+        const receivedFolderTypes = [...new Set(dbMessages.map(m => m.folder?.folder_type || 'sin folder'))];
+        const allMatch = receivedFolderTypes.every(f => f === expectedFolderType);
         
         if (!allMatch) {
           console.error(`[EmailInbox] ❌ FILTRO NO FUNCIONA:`);
-          console.error(`  → Esperaba folder="${expectedFolder}"`);
-          console.error(`  → Recibí folders="${receivedFolders.join(', ')}"`);
-          console.error(`  → Supabase query .eq('folder', '${expectedFolder}') NO está filtrando`);
+          console.error(`  → Esperaba folder_type="${expectedFolderType}"`);
+          console.error(`  → Recibí folder_types="${receivedFolderTypes.join(', ')}"`);
+          console.error(`  → Supabase query .eq('folder.folder_type', '${expectedFolderType}') NO está filtrando`);
         } else {
-          console.log(`[EmailInbox] ✅ FILTRO OK: Todos los mensajes son de "${expectedFolder}"`);
+          console.log(`[EmailInbox] ✅ FILTRO OK: Todos los mensajes son de "${expectedFolderType}"`);
         }
       }
       
