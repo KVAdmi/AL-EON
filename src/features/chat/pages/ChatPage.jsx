@@ -7,12 +7,16 @@ import { useChat } from '@/features/chat/hooks/useChat';
 import { useVoiceMode } from '@/hooks/useVoiceMode';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCapability } from '@/components/CapabilitiesGate';
+import { useEventNotifications } from '@/hooks/useEventNotifications';
 
 function ChatPage() {
   const { user, userProfile, accessToken, logout } = useAuth();
   const [handsFree, setHandsFree] = useState(false);
   
-  // � DEBUG: Ver qué datos tenemos del perfil
+  // 🔔 Sistema de notificaciones de eventos
+  useEventNotifications(user?.id);
+  
+  // 🔍 DEBUG: Ver qué datos tenemos del perfil
   console.log('🔍 [ChatPage] userProfile:', userProfile);
   console.log('🔍 [ChatPage] assistant_avatar_url:', userProfile?.assistant_avatar_url);
   console.log('🔍 [ChatPage] assistant_name:', userProfile?.assistant_name);

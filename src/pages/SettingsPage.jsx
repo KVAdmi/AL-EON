@@ -8,6 +8,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import IntegrationModal from '../components/IntegrationModal';
+import { requestNotificationPermission, getNotificationPermission, showNotification } from '../lib/notifications';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -1560,42 +1561,63 @@ function TabContent({
                     Notificaciones push
                   </h3>
                   <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                    Recibe alertas en tiempo real
+                    Recibe alertas de citas y eventos
                   </p>
                 </div>
               </div>
               <button
                 onClick={async () => {
-                  if ('Notification' in window) {
-                    const permission = await Notification.requestPermission();
-                    if (permission === 'granted') {
-                      handleToggleNotif('push_enabled', true);
-                      alert('✅ Notificaciones activadas correctamente');
-                    } else {
-                      alert('❌ Necesitas dar permisos en tu navegador para recibir notificaciones');
-                    }
-                  } else {
+                  const permission = getNotificationPermission();
+                  
+                  if (permission === 'unsupported') {
                     alert('⚠️ Tu navegador no soporta notificaciones push');
+                    return;
+                  }
+                  
+                  if (permission === 'denied') {
+                    alert('❌ Las notificaciones están bloqueadas. Ve a Configuración del navegador → Permisos → Notificaciones y permite este sitio.');
+                    return;
+                  }
+                  
+                  if (permission === 'granted') {
+                    // Ya están activadas, mostrar notificación de prueba
+                    showNotification({
+                      title: '🎉 ¡Notificaciones activas!',
+                      body: 'Recibirás alertas de tus eventos y citas próximas',
+                      requireInteraction: false,
+                      vibrate: [200, 100, 200]
+                    });
+                    alert('✅ Notificaciones ya están activadas. Se mostró una prueba.');
+                    return;
+                  }
+                  
+                  // Solicitar permiso
+                  const granted = await requestNotificationPermission();
+                  if (granted) {
+                    handleToggleNotif('push_enabled', true);
                   }
                 }}
                 className="px-4 py-2 rounded-2xl text-sm font-medium"
                 style={{
-                  backgroundColor: notifSettings.push_enabled ? '#10b981' : 'var(--color-accent)',
+                  backgroundColor: getNotificationPermission() === 'granted' ? '#10b981' : 'var(--color-accent)',
                   color: 'white'
                 }}
               >
-                {notifSettings.push_enabled ? 'Activado' : 'Activar'}
+                {getNotificationPermission() === 'granted' ? '✅ Activado' : '🔔 Activar'}
               </button>
             </div>
           </div>
         </div>
 
         <div className="p-4 rounded-xl border" style={{ 
-          backgroundColor: 'rgba(59, 130, 246, 0.1)', 
-          borderColor: 'rgba(59, 130, 246, 0.3)' 
+          backgroundColor: 'rgba(239, 68, 68, 0.1)', 
+          borderColor: 'rgba(239, 68, 68, 0.3)' 
         }}>
+          <p className="text-sm font-medium mb-2" style={{ color: '#ef4444' }}>
+            🚨 <strong>Notificaciones URGENTES</strong>
+          </p>
           <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            💡 <strong>Tip:</strong> Las notificaciones te mantienen informado sobre la actividad de tu asistente IA.
+            Los eventos próximos (5-15 min) mostrarán alertas con vibración y sonido para que no los pierdas.
           </p>
         </div>
       </div>
