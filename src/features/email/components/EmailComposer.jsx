@@ -293,6 +293,7 @@ export default function EmailComposer({
         height: '600px',
         maxHeight: '80vh',
         borderTop: '3px solid var(--color-primary)',
+        zIndex: 9999, // ✅ ASEGURAR que esté sobre TODOS los overlays
       }}
     >
       {/* Header */}
