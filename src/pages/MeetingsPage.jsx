@@ -231,21 +231,6 @@ export default function MeetingsPage() {
       alert(`❌ ${errorMessage}`);
     }
   }
-      
-      // Mensaje de error específico según la fase que falló
-      let errorMsg = 'Error al iniciar la grabación';
-      
-      if (error.message && error.message.includes('Permission denied')) {
-        errorMsg = 'Permiso denegado para acceder al micrófono. Por favor, permite el acceso al micrófono en la configuración de tu navegador.';
-      } else if (error.message && error.message.includes('Failed to create')) {
-        errorMsg = `Error del servidor: ${error.message}\n\nVerifica que el backend esté funcionando:\n- URL: ${import.meta.env.VITE_ALE_CORE_BASE || 'https://api.al-eon.com'}\n- Endpoint: /api/meetings/live/start`;
-      } else if (error.message) {
-        errorMsg = error.message;
-      }
-      
-      alert(`❌ ${errorMsg}`);
-    }
-  }
 
   function handlePauseLive() {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
@@ -609,3 +594,4 @@ export default function MeetingsPage() {
     </div>
   );
 }
+
