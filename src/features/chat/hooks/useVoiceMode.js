@@ -120,8 +120,28 @@ export function useVoiceMode() {
     }
 
     try {
+      // 🆕 VERIFICAR PERMISO ACTUAL
+      try {
+        const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
+        console.log('🎤 [VoiceMode] Permiso de micrófono:', permissionStatus.state);
+
+        if (permissionStatus.state === 'denied') {
+          toast({
+            variant: 'destructive',
+            title: 'Permiso denegado',
+            description: 'Ve a Configuración del navegador → Privacidad → Micrófono y permite el acceso a este sitio.',
+            duration: 8000,
+          });
+          return;
+        }
+      } catch (permError) {
+        console.warn('⚠️ No se pudo verificar permiso de micrófono:', permError);
+      }
+
       // Solicitar permiso del micrófono explícitamente
+      console.log('[VoiceMode] Solicitando acceso al micrófono...');
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('✅ [VoiceMode] Micrófono accedido correctamente');
       
       // Detener el stream inmediatamente (solo queríamos el permiso)
       stream.getTracks().forEach(track => track.stop());
@@ -140,7 +160,7 @@ export function useVoiceMode() {
         });
       }
     } catch (error) {
-      console.error('Error solicitando permiso de micrófono:', error);
+      console.error('❌ [VoiceMode] Error solicitando permiso de micrófono:', error);
       
       let errorMessage = 'No se pudo acceder al micrófono';
       
@@ -148,12 +168,15 @@ export function useVoiceMode() {
         errorMessage = 'Permiso denegado. Por favor permite el acceso al micrófono en la configuración de tu navegador.';
       } else if (error.name === 'NotFoundError') {
         errorMessage = 'No se encontró ningún micrófono. Verifica que esté conectado.';
+      } else if (error.name === 'NotReadableError') {
+        errorMessage = 'El micrófono está siendo usado por otra aplicación. Cierra otras apps que puedan estar usándolo.';
       }
       
       toast({
         variant: 'destructive',
         title: 'Error de micrófono',
         description: errorMessage,
+        duration: 8000,
       });
     }
   };

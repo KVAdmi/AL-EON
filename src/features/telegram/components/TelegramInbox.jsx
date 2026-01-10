@@ -118,7 +118,7 @@ export default function TelegramInbox({ botId, chats, onChatsUpdated }) {
       <div className="flex-1">
         {selectedChat ? (
           <TelegramChat
-            chatId={selectedChat.id}
+            chatId={selectedChat.chatId}  // ✅ Telegram chat ID numérico
             chatName={selectedChat.name || selectedChat.username}
             botId={botId}
             onMessageSent={onChatsUpdated}

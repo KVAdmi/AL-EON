@@ -126,8 +126,29 @@ export default function MeetingsPage() {
     let stream = null;
     
     try {
+      // 🆕 VERIFICAR PERMISO ANTES
+      try {
+        const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
+        console.log('[Meetings] Permiso de micrófono:', permissionStatus.state);
+
+        if (permissionStatus.state === 'denied') {
+          alert('❌ Permiso de micrófono denegado. Ve a Configuración del navegador → Privacidad → Micrófono y permite el acceso a este sitio.');
+          return;
+        }
+      } catch (e) {
+        console.warn('[Meetings] No se pudo verificar permiso:', e);
+      }
+
       // Solicitar permiso de micrófono
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('[Meetings] Solicitando acceso al micrófono...');
+      stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        } 
+      });
+      console.log('[Meetings] ✅ Micrófono accedido correctamente');
       audioStreamRef.current = stream;
 
       const title = prompt(
@@ -145,10 +166,25 @@ export default function MeetingsPage() {
       console.log('[Meetings] ✅ Reunión creada:', meeting);
       setCurrentMeetingId(meeting.id);
       
+      // 🆕 DETECTAR MIME TYPE SOPORTADO
+      let mimeType = 'audio/webm;codecs=opus'; // Default Chrome/Edge
+      
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        console.warn('[Meetings] ⚠️ audio/webm NO soportado, intentando audio/mp4...');
+        mimeType = 'audio/mp4';
+        
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          console.warn('[Meetings] ⚠️ audio/mp4 NO soportado, usando default del navegador');
+          mimeType = ''; // Dejar que el navegador elija
+        }
+      }
+      
+      console.log('[Meetings] MIME type seleccionado:', mimeType || 'auto');
+      
       // Configurar MediaRecorder
-      const recorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
+      const recorderOptions = mimeType ? { mimeType } : {};
+      const recorder = new MediaRecorder(stream, recorderOptions);
+      console.log('[Meetings] MediaRecorder creado con opciones:', recorderOptions);
       
       mediaRecorderRef.current = recorder;
 
@@ -179,6 +215,22 @@ export default function MeetingsPage() {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
+      
+      let errorMessage = 'No se pudo iniciar la grabación';
+      
+      if (error.name === 'NotAllowedError') {
+        errorMessage = 'Permiso de micrófono denegado. Ve a Configuración del navegador y permite el acceso.';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = 'No se encontró micrófono. Verifica que esté conectado.';
+      } else if (error.name === 'NotReadableError') {
+        errorMessage = 'El micrófono está siendo usado por otra aplicación.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(`❌ ${errorMessage}`);
+    }
+  }
       
       // Mensaje de error específico según la fase que falló
       let errorMsg = 'Error al iniciar la grabación';
