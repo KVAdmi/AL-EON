@@ -112,12 +112,16 @@ export function useVoiceMode({
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
+          console.log(`📊 Chunk recibido: ${event.data.size} bytes`);
           audioChunksRef.current.push(event.data);
+        } else {
+          console.warn('⚠️ Chunk vacío recibido');
         }
       };
 
       mediaRecorder.onstop = async () => {
         console.log('🛑 Grabación detenida, procesando...');
+        console.log(`📦 Total chunks: ${audioChunksRef.current.length}`);
         
         // Detener stream
         if (streamRef.current) {
@@ -126,6 +130,7 @@ export function useVoiceMode({
         }
 
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        console.log(`🎵 Blob creado: ${audioBlob.size} bytes, tipo: ${audioBlob.type}`);
         audioChunksRef.current = [];
 
         if (audioBlob.size > 0) {
@@ -133,15 +138,20 @@ export function useVoiceMode({
         } else {
           console.warn('⚠️ Audio vacío, no se envía');
           setStatus('idle');
+          setError(new Error('No se capturó audio'));
+          onError?.(new Error('No se capturó audio. Verifica que tu micrófono esté funcionando.'));
         }
       };
 
-      mediaRecorder.start();
+      // 🔥 CRÍTICO: Capturar chunks cada 1 segundo (no esperar al stop)
+      mediaRecorder.start(1000);
       setStatus('recording');
       setError(null);
       setTranscript('');
       
-      console.log('✅ Grabación iniciada');
+      console.log('✅ Grabación iniciada con chunks cada 1 segundo');
+      console.log('🎤 Estado del recorder:', mediaRecorder.state);
+      console.log('🎙️ Tracks de audio:', stream.getAudioTracks().length);
       
     } catch (err) {
       console.error('❌ Error al iniciar grabación:', err);
