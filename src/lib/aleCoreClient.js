@@ -101,6 +101,7 @@ export async function sendToAleCore({ accessToken, message, sessionId, workspace
 
   console.log('📤 PAYLOAD (v2):', JSON.stringify(payloadData, null, 2));
 
+  // ✅ NO incluir signal en el body - solo en fetchOptions
   const fetchOptions = {
     method: "POST",
     headers: {
@@ -108,8 +109,12 @@ export async function sendToAleCore({ accessToken, message, sessionId, workspace
       "Authorization": `Bearer ${accessToken}`
     },
     body: JSON.stringify(payloadData),
-    signal
   };
+
+  // ✅ Agregar signal DESPUÉS, fuera del objeto que se serializa
+  if (signal) {
+    fetchOptions.signal = signal;
+  }
 
   try {
     const res = await fetchWithRetry(url, fetchOptions, 1);
