@@ -475,6 +475,8 @@ export default function EmailComposer({
         {/* Editor de texto */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <textarea
+            autoFocus={true}
+            disabled={false}
             value={formData.body_html}
             onChange={(e) => handleChange('body_html', e.target.value)}
             placeholder="Escribe tu mensaje aquí..."

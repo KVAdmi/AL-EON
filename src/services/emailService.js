@@ -719,6 +719,12 @@ export async function getInbox(accountId, options = {}) {
   try {
     console.log('[EmailService] 📬 getInbox llamado con:', { accountId, options });
     
+    // 🔥 CRÍTICO: Si NO se especifica folder, FORZAR Inbox por defecto
+    if (!options.folder) {
+      options.folder = 'Inbox';
+      console.log('[EmailService] ⚠️ NO se especificó folder, FORZANDO Inbox por defecto');
+    }
+    
     // ✅ PASO 1: Si se especifica folder, obtener su folder_id
     let targetFolderId = null;
     if (options.folder) {

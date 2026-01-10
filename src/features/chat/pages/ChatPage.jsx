@@ -53,15 +53,19 @@ function ChatPage() {
 
   // 🔒 Sistema de voz SOLO si está habilitado
   const voiceMode = canUseVoice ? useVoiceMode({
-    onMessage: async (text, meta) => {
-      if (!currentConversation) {
-        createConversation();
-      }
-      const response = await sendMessage(text, null, meta);
-      return response;
+    accessToken,                    // ✅ JWT token de Supabase (REQUERIDO)
+    sessionId: currentConversation?.session_id || currentConversation?.id, // ✅ ID de sesión (REQUERIDO)
+    workspaceId: 'core',           // ✅ Workspace ID
+    onResponse: (responseText) => { // ✅ Callback correcto - respuesta de AL-E
+      console.log('✅ [Voice] Respuesta de AL-E:', responseText.substring(0, 100));
+      // El mensaje ya se agregó al conversation por el backend
+      // Aquí solo actualizamos UI si es necesario
     },
-    language: 'es-MX',
-    handsFreeEnabled: handsFree
+    onError: (error) => {           // ✅ Manejo de errores
+      console.error('❌ [Voice] Error:', error);
+      alert(`Error de voz: ${error.message}`);
+    },
+    handsFreeEnabled: handsFree     // ✅ Modo manos libres
   }) : null;
 
   const handleNewConversation = (projectId = null) => {
