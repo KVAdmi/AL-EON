@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
+import { supabase } from '../lib/supabase';
 
 export default function SecurityPage() {
   const { user, signOut } = useAuth();
@@ -20,11 +21,30 @@ export default function SecurityPage() {
     }
 
     setChanging(true);
-    // TODO: Implementar cambio de contraseña con Supabase
-    alert('🔐 Cambio de contraseña (implementar con Supabase)');
-    setChanging(false);
-    setNewPassword('');
-    setConfirmPassword('');
+    
+    try {
+      // ✅ Cambiar contraseña con Supabase Auth
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        console.error('[SecurityPage] Error al cambiar contraseña:', error);
+        alert(`❌ Error: ${error.message}`);
+        return;
+      }
+
+      console.log('[SecurityPage] ✅ Contraseña cambiada exitosamente');
+      alert('✅ Contraseña actualizada correctamente');
+      
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      console.error('[SecurityPage] Error inesperado:', err);
+      alert(`❌ Error inesperado: ${err.message}`);
+    } finally {
+      setChanging(false);
+    }
   }
 
   async function handleSignOut() {

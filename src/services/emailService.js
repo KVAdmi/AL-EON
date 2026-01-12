@@ -35,6 +35,72 @@ async function getAuthToken() {
 
 /**
  * =====================================================
+ * HELPERS
+ * =====================================================
+ */
+
+/**
+ * Normaliza un folder name/type a un label estándar que Core entiende
+ * @param {string} folder - Nombre o tipo de folder
+ * @returns {string} Label estándar: INBOX | SENT | DRAFT | SPAM | TRASH
+ */
+function normalizeFolderToLabel(folder) {
+  if (!folder) return 'INBOX';
+  
+  const normalized = String(folder).toLowerCase().trim();
+  
+  // Mapeo de nombres comunes a labels estándar (UPPERCASE)
+  const labelMap = {
+    // Nombres estándar
+    'inbox': 'INBOX',
+    'sent': 'SENT',
+    'drafts': 'DRAFT',
+    'draft': 'DRAFT',
+    'spam': 'SPAM',
+    'junk': 'SPAM',
+    'trash': 'TRASH',
+    'deleted': 'TRASH',
+    
+    // Español
+    'bandeja de entrada': 'INBOX',
+    'enviados': 'SENT',
+    'borradores': 'DRAFT',
+    'papelera': 'TRASH',
+    'no deseado': 'SPAM',
+    
+    // Gmail
+    '[gmail]/sent mail': 'SENT',
+    '[gmail]/drafts': 'DRAFT',
+    '[gmail]/spam': 'SPAM',
+    '[gmail]/trash': 'TRASH',
+    
+    // Outlook
+    'sent items': 'SENT',
+    'deleted items': 'TRASH',
+    'junk email': 'SPAM',
+  };
+  
+  const label = labelMap[normalized];
+  
+  if (label) {
+    console.log(`[EmailService] 🔄 Normalizado "${folder}" → "${label}"`);
+    return label;
+  }
+  
+  // Si no está en el mapa, intentar detectar por substring
+  if (normalized.includes('inbox') || normalized.includes('entrada')) return 'INBOX';
+  if (normalized.includes('sent') || normalized.includes('enviados')) return 'SENT';
+  if (normalized.includes('draft') || normalized.includes('borrador')) return 'DRAFT';
+  if (normalized.includes('spam') || normalized.includes('junk')) return 'SPAM';
+  if (normalized.includes('trash') || normalized.includes('papelera') || normalized.includes('deleted')) return 'TRASH';
+  
+  // Por defecto, asumir INBOX
+  console.warn(`[EmailService] ⚠️ Folder "${folder}" no reconocido, asumiendo INBOX`);
+  return 'INBOX';
+}
+
+/**
+ * =====================================================
  * CUENTAS DE EMAIL
  * =====================================================
  */
@@ -719,13 +785,11 @@ export async function getInbox(accountId, options = {}) {
   try {
     console.log('[EmailService] 📬 getInbox llamado con:', { accountId, options });
     
-    // 🔥 CRÍTICO: Si NO se especifica folder, FORZAR Inbox por defecto
-    if (!options.folder) {
-      options.folder = 'Inbox';
-      console.log('[EmailService] ⚠️ NO se especificó folder, FORZANDO Inbox por defecto');
-    }
+    // ✅ PASO 1: Normalizar folder a label estándar (INBOX, SENT, DRAFT, SPAM, TRASH)
+    const label = normalizeFolderToLabel(options.folder);
+    console.log(`[EmailService] 🏷️ Label estándar: ${label}`);
     
-    // ✅ PASO 1: Si se especifica folder, obtener su folder_id
+    // ✅ PASO 2: Si se especifica folder, obtener su folder_id para query local
     let targetFolderId = null;
     if (options.folder) {
       // Normalizar nombre de folder (puede venir "INBOX", "Inbox", "inbox", etc)
@@ -822,6 +886,8 @@ export async function getInbox(accountId, options = {}) {
     
     // Transformar al formato esperado
     return {
+      label,  // ✅ CRÍTICO: Incluir label normalizado (INBOX, SENT, etc.)
+      count: messages?.length || 0,
       messages: (messages || []).map(msg => ({
         id: msg.id,
         message_id: msg.id,
@@ -838,9 +904,10 @@ export async function getInbox(accountId, options = {}) {
         is_starred: msg.is_starred,
         has_attachments: msg.has_attachments,
         account_id: msg.account_id,
-        folder: msg.folder?.folder_name || msg.folder?.folder_type || 'Unknown', // ✅ Usar folder del JOIN
+        folder: msg.folder?.folder_name || msg.folder?.folder_type || 'Unknown',
         folder_id: msg.folder_id,
         folder_type: msg.folder?.folder_type,
+        label,  // ✅ CRÍTICO: Cada mensaje sabe su label
       }))
     };
   } catch (error) {

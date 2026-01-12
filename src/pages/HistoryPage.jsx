@@ -1,12 +1,65 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
+import { useNavigate } from 'react-router-dom';
 
 export default function HistoryPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [conversations, setConversations] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // TODO: Integrar con backend para cargar conversaciones reales del usuario
-  // Por ahora, mostrar estado vacío profesional
-  const conversations = [];
+  useEffect(() => {
+    loadConversations();
+  }, [user]);
+
+  async function loadConversations() {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      console.log('[HistoryPage] 📚 Cargando conversaciones del usuario:', user.id);
+      
+      const { data, error } = await supabase
+        .from('user_conversations')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.error('[HistoryPage] ❌ Error al cargar conversaciones:', error);
+        throw error;
+      }
+
+      console.log(`[HistoryPage] ✅ ${data?.length || 0} conversaciones cargadas`);
+      setConversations(data || []);
+    } catch (err) {
+      console.error('[HistoryPage] Error inesperado:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleOpenConversation(conv) {
+    // Navegar al chat con la conversación seleccionada
+    navigate(`/chat?session=${conv.id}`);
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <h1 className="text-3xl font-bold mb-6" style={{ color: 'var(--color-text-primary)' }}>
+          Historial de Conversaciones
+        </h1>
+        <div className="text-center py-16">
+          <p style={{ color: 'var(--color-text-secondary)' }}>Cargando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-6">

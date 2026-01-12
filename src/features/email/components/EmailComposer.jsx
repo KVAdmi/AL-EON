@@ -158,9 +158,16 @@ export default function EmailComposer({
         cc: formData.cc,
         bcc: formData.bcc,
         subject: formData.subject,
-        body: formData.body_html || formData.body_text, // ✅ Backend espera "body"
+        body: formData.body_html || formData.body_text,
         attachments: attachments,
       };
+
+      // ✅ CRÍTICO: Si es reply, agregar threadId y messageId
+      if (mode === 'reply' && replyTo) {
+        emailData.threadId = replyTo.thread_id || replyTo.threadId;
+        emailData.messageId = replyTo.id || replyTo.message_id;
+        console.log('[EmailComposer] ↩️ Reply mode - threadId:', emailData.threadId, 'messageId:', emailData.messageId);
+      }
 
       const result = await sendEmail(emailData);
 
