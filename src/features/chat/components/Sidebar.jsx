@@ -18,7 +18,6 @@ import NotificationBell from '@/components/NotificationBell';
 import { createProject, getProjects, deleteProject } from '@/services/projectsService';
 import { useToast } from '@/ui/use-toast';
 import { useCapability } from '@/components/CapabilitiesGate';
-import { useVoiceMode } from '@/hooks/useVoiceMode';
 import { useAuth } from '@/contexts/AuthContext';
 
 function Sidebar({
@@ -39,9 +38,6 @@ function Sidebar({
   
   // 🔒 VERIFICAR CAPACIDADES
   const canSendEmail = useCapability('mail.send');
-  
-  // 🎤 Hook de modo de voz
-  const { isListening, transcript, startListening, stopListening, clearTranscript } = useVoiceMode();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
@@ -105,14 +101,6 @@ function Sidebar({
       }
     } catch (error) {
       console.error('Error solicitando permiso:', error);
-    }
-  };
-
-  const toggleVoiceMode = () => {
-    if (isListening) {
-      stopListening();
-    } else {
-      startListening();
     }
   };
 
@@ -309,19 +297,6 @@ function Sidebar({
           >
             <Plus size={18} strokeWidth={2.5} />
             <span className="font-medium" style={{ color: '#FFFFFF' }}>Nuevo chat</span>
-          </button>
-          
-          <button
-            onClick={toggleVoiceMode}
-            className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl transition-all duration-200"
-            style={{
-              backgroundColor: isListening ? 'var(--color-accent)' : 'var(--color-bg-secondary)',
-              border: '1px solid var(--color-border)',
-              color: isListening ? '#FFFFFF' : 'var(--color-text-primary)'
-            }}
-            title={isListening ? "Desactivar modo voz" : "Activar modo voz"}
-          >
-            {isListening ? <Mic size={18} className="animate-pulse" /> : <MicOff size={18} />}
           </button>
 
           {!notificationsEnabled && (
