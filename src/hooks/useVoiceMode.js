@@ -28,6 +28,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { generateRequestId, logRequest, logRequestError } from '../utils/requestId';
 
 const CORE_BASE_URL = import.meta.env.VITE_CORE_BASE_URL || 'https://api.al-entity.com';
 const VOICE_LOCAL_MODE = import.meta.env.VITE_VOICE_LOCAL === '1'; // Fallback DEV
@@ -215,6 +216,10 @@ export function useVoiceMode({
       // PASO 1: STT - Convertir audio a texto
       console.log('📤 Enviando audio a /api/voice/stt...');
       
+      // 🔥 GENERAR REQUEST-ID
+      const requestId = generateRequestId();
+      console.log(`[REQ-VOICE] 📤 STT - id=${requestId} sessionId=${sessionId}`);
+      
       const formData = new FormData();
       formData.append('file', audioBlob, 'voice.webm');
       formData.append('sessionId', sessionId);
@@ -228,7 +233,8 @@ export function useVoiceMode({
       const sttResponse = await fetch(`${CORE_BASE_URL}/api/voice/stt`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`
+          'Authorization': `Bearer ${accessToken}`,
+          'x-request-id': requestId, // 🔥 REQUEST-ID
         },
         body: formData,
         signal: abortControllerRef.current.signal
@@ -236,6 +242,11 @@ export function useVoiceMode({
 
       if (!sttResponse.ok) {
         const errorData = await sttResponse.json().catch(() => ({}));
+        logRequestError(requestId, '/api/voice/stt', {
+          status: sttResponse.status,
+          error: errorData.error,
+          sessionId
+        });
         throw new Error(errorData.error || `STT Error: ${sttResponse.status}`);
       }
 
@@ -243,20 +254,30 @@ export function useVoiceMode({
       const userText = sttData.text || sttData.transcript || '';
 
       if (!userText.trim()) {
+        logRequestError(requestId, '/api/voice/stt', { error: 'No voice detected', sessionId });
         throw new Error('No se detectó voz en el audio');
       }
 
       console.log(`✅ STT: "${userText}"`);
+      logRequest(requestId, '/api/voice/stt', sttResponse.status, {
+        sessionId,
+        textLength: userText.length
+      });
       setTranscript(userText);
 
       // PASO 2: Chat - Enviar texto a AL-E Core
       console.log('💬 Enviando mensaje al chat...');
       
+      // 🔥 NUEVO REQUEST-ID para chat
+      const chatRequestId = generateRequestId();
+      console.log(`[REQ-VOICE] 📤 CHAT - id=${chatRequestId} sessionId=${sessionId}`);
+      
       const chatResponse = await fetch(`${CORE_BASE_URL}/api/ai/chat`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'x-request-id': chatRequestId, // 🔥 REQUEST-ID
         },
         body: JSON.stringify({
           message: userText,
@@ -273,6 +294,11 @@ export function useVoiceMode({
 
       if (!chatResponse.ok) {
         const errorData = await chatResponse.json().catch(() => ({}));
+        logRequestError(chatRequestId, '/api/ai/chat', {
+          status: chatResponse.status,
+          error: errorData.error,
+          sessionId
+        });
         throw new Error(errorData.error || `Chat Error: ${chatResponse.status}`);
       }
 
@@ -280,20 +306,30 @@ export function useVoiceMode({
       const assistantText = chatData.response || chatData.message || '';
 
       if (!assistantText.trim()) {
+        logRequestError(chatRequestId, '/api/ai/chat', { error: 'Empty response', sessionId });
         throw new Error('Respuesta vacía del asistente');
       }
 
       console.log(`✅ Respuesta: "${assistantText.substring(0, 100)}..."`);
+      logRequest(chatRequestId, '/api/ai/chat', chatResponse.status, {
+        sessionId,
+        responseLength: assistantText.length
+      });
       onResponse?.(assistantText);
 
       // PASO 3: TTS - Convertir respuesta a audio
       console.log('🔊 Solicitando audio con /api/voice/tts...');
       
+      // 🔥 NUEVO REQUEST-ID para TTS
+      const ttsRequestId = generateRequestId();
+      console.log(`[REQ-VOICE] 📤 TTS - id=${ttsRequestId} sessionId=${sessionId}`);
+      
       const ttsResponse = await fetch(`${CORE_BASE_URL}/api/voice/tts`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'x-request-id': ttsRequestId, // 🔥 REQUEST-ID
         },
         body: JSON.stringify({
           text: assistantText,
@@ -305,10 +341,20 @@ export function useVoiceMode({
 
       if (!ttsResponse.ok) {
         const errorData = await ttsResponse.json().catch(() => ({}));
+        logRequestError(ttsRequestId, '/api/voice/tts', {
+          status: ttsResponse.status,
+          error: errorData.error,
+          sessionId
+        });
         throw new Error(errorData.error || `TTS Error: ${ttsResponse.status}`);
       }
 
       const audioBlob = await ttsResponse.blob();
+      
+      logRequest(ttsRequestId, '/api/voice/tts', ttsResponse.status, {
+        sessionId,
+        audioBlobSize: audioBlob.size
+      });
       
       // PASO 4: Reproducir audio
       console.log('🎵 Reproduciendo respuesta...');

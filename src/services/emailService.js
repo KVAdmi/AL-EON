@@ -5,6 +5,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { generateRequestId, logRequest, logRequestError } from '../utils/requestId';
 
 const BACKEND_URL = 'https://api.al-eon.com';
 
@@ -30,6 +31,51 @@ async function getAuthToken() {
   } catch (error) {
     console.error('[EmailService] ❌ Error en getAuthToken:', error);
     return null;
+  }
+}
+
+/**
+ * 🆔 Wrapper de fetch con Request-ID automático
+ * @param {string} url - URL completa del endpoint
+ * @param {Object} options - Opciones de fetch (method, headers, body, etc)
+ * @param {Object} logContext - Contexto para logging (userId, accountId, etc)
+ * @returns {Promise<Response>} Response del fetch
+ */
+async function fetchWithRequestId(url, options = {}, logContext = {}) {
+  const requestId = generateRequestId();
+  const endpoint = url.replace(BACKEND_URL, ''); // Extract path from URL
+  
+  console.log(`[REQ] 📤 ${options.method || 'GET'} ${endpoint} - id=${requestId}`);
+  
+  try {
+    // Inject Request-ID header
+    const headers = {
+      ...options.headers,
+      'x-request-id': requestId,
+    };
+    
+    const response = await fetch(url, { ...options, headers });
+    const data = await response.json().catch(() => null);
+    
+    if (!response.ok) {
+      logRequestError(requestId, endpoint, {
+        status: response.status,
+        message: data?.message || response.statusText,
+        ...logContext
+      });
+    } else {
+      logRequest(requestId, endpoint, response.status, logContext);
+    }
+    
+    // Return both response and data for convenience
+    response.data = data;
+    return response;
+  } catch (error) {
+    logRequestError(requestId, endpoint, {
+      error: error.message,
+      ...logContext
+    });
+    throw error;
   }
 }
 
@@ -745,21 +791,26 @@ export async function sendEmail(mailData, accessToken = null) {
     
     console.log('[EmailService] 📦 Payload transformado:', payload);
     
-    const response = await fetch(`${BACKEND_URL}/api/mail/send`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+    // 🔥 USE REQUEST-ID WRAPPER
+    const response = await fetchWithRequestId(
+      `${BACKEND_URL}/api/mail/send`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
       },
-      credentials: 'include',
-      body: JSON.stringify(payload),
-    });
+      { userId, accountId: mailData.accountId, to: toList.join(',') }
+    );
 
-    const data = await response.json();
+    const data = response.data;
 
     if (!response.ok) {
       console.error('[EmailService] ❌ Error del servidor:', response.status, data);
-      throw new Error(data.message || 'Error al enviar email');
+      throw new Error(data?.message || 'Error al enviar email');
     }
     
     console.log('[EmailService] ✅ Email enviado:', data);
@@ -1102,25 +1153,27 @@ export async function toggleStar(accountId, messageId) {
  */
 export async function moveToFolder(accountId, messageId, folderName) {
   try {
-    // 🔐 Obtener token JWT
     const token = await getAuthToken();
     
-    const response = await fetch(`${BACKEND_URL}/api/mail/messages/${messageId}/move`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`, // ✅ Token incluido
+    const response = await fetchWithRequestId(
+      `${BACKEND_URL}/api/mail/messages/${messageId}/move`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify({ accountId, folder: folderName }),
       },
-      credentials: 'include',
-      body: JSON.stringify({ accountId, folder: folderName }),
-    });
+      { accountId, messageId, folderName }
+    );
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error al mover mensaje');
+      throw new Error(response.data?.message || 'Error al mover mensaje');
     }
 
-    return await response.json();
+    return response.data;
   } catch (error) {
     console.error('[EmailService] Error en moveToFolder:', error);
     throw error;
@@ -1136,20 +1189,23 @@ export async function syncEmailAccount(accountId) {
   try {
     console.log('[EmailService] 🔄 Iniciando sincronización para cuenta:', accountId);
     
-    // 🔐 Obtener token JWT usando helper
     const token = await getAuthToken();
     
-    const response = await fetch(`${BACKEND_URL}/api/email/accounts/${accountId}/sync`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`, // ✅ Token incluido
+    const response = await fetchWithRequestId(
+      `${BACKEND_URL}/api/email/accounts/${accountId}/sync`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
       },
-      credentials: 'include',
-    });
+      { accountId }
+    );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Error desconocido' }));
+      const errorData = response.data || { message: 'Error desconocido' };
       
       console.error('[EmailService] ❌ Error del servidor:', {
         status: response.status,
@@ -1167,9 +1223,8 @@ export async function syncEmailAccount(accountId) {
       }
     }
 
-    const result = await response.json();
-    console.log('[EmailService] ✅ Sincronización exitosa:', result);
-    return result;
+    console.log('[EmailService] ✅ Sincronización exitosa:', response.data);
+    return response.data;
     
   } catch (error) {
     console.error('[EmailService] ❌ Error en syncEmailAccount:', error);
