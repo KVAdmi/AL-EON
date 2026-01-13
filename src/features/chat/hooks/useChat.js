@@ -3,6 +3,7 @@ import { sendToAleCore, extractReply } from '@/lib/aleCoreClient';
 import { generateId } from '@/lib/utils';
 import { uploadFiles } from '@/lib/fileUpload';
 import { supabase } from '@/lib/supabase';
+import { speak, stopSpeaking } from '@/utils/tts';
 
 export function useChat({ currentConversation, addMessage, updateConversation, accessToken, userId }) {
   const [isLoading, setIsLoading] = useState(false);
@@ -10,15 +11,33 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
   const [error, setError] = useState(null);
   const [userEmail, setUserEmail] = useState(null);
   const [userDisplayName, setUserDisplayName] = useState(null);
+  const [ttsSettings, setTtsSettings] = useState({ enabled: false, gender: 'female', voice_name: null, lang: 'es-MX' });
   const abortControllerRef = useRef(null); // ✅ Para cancelar requests
 
-  // ✅ Obtener info del usuario al montar
+  // ✅ Obtener info del usuario + settings de TTS al montar
   useEffect(() => {
     const loadUserInfo = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserEmail(user.email);
         setUserDisplayName(user.user_metadata?.display_name || user.email?.split('@')[0]);
+
+        // Cargar preferencias de TTS
+        const { data: settings } = await supabase
+          .from('user_settings')
+          .select('tts_enabled, tts_gender, tts_voice_name, tts_lang')
+          .eq('user_id', user.id)
+          .single();
+
+        if (settings) {
+          setTtsSettings({
+            enabled: settings.tts_enabled ?? false,
+            gender: settings.tts_gender || 'female',
+            voice_name: settings.tts_voice_name || null,
+            lang: settings.tts_lang || 'es-MX',
+          });
+          console.log('[TTS] Preferencias cargadas:', settings);
+        }
       }
     };
     loadUserInfo();
@@ -199,6 +218,19 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
 
       addMessage(currentConversation.id, assistantMessage);
 
+      // ✅ TTS: Hablar respuesta si está habilitado
+      if (ttsSettings.enabled && response.should_speak !== false) {
+        console.log('[TTS] 🔊 Hablando respuesta del asistente...');
+        
+        speak(replyText, {
+          lang: ttsSettings.lang,
+          voiceName: ttsSettings.voice_name,
+          gender: ttsSettings.gender,
+        }).catch(err => {
+          console.error('[TTS] ❌ Error al hablar:', err);
+        });
+      }
+
       return replyText;
     } catch (err) {
       console.error('❌ Error enviando mensaje:', err);
@@ -225,6 +257,9 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
   };
 
   const stopResponse = () => {
+    // Detener TTS si está hablando
+    stopSpeaking();
+    
     if (abortControllerRef.current) {
       console.log('🛑 Cancelando request...');
       abortControllerRef.current.abort();
