@@ -85,13 +85,13 @@ DROP POLICY IF EXISTS "projects_select_policy" ON user_projects;
 DROP POLICY IF EXISTS "Users can view own projects" ON user_projects;
 DROP POLICY IF EXISTS "Enable project access" ON user_projects;
 
--- CREAR policy CORRECTA para ver proyectos propios Y compartidos
+-- ✅ CREAR policy CORRECTA usando USER_ID (confirmado en estructura)
 CREATE POLICY "users_view_own_and_shared_projects" ON user_projects
   FOR SELECT 
   TO authenticated
   USING (
     -- Ver proyectos donde SOY OWNER
-    owner_user_id = auth.uid()
+    user_id = auth.uid()
     OR
     -- Ver proyectos donde SOY MIEMBRO (en project_members)
     id IN (
@@ -105,18 +105,18 @@ CREATE POLICY "users_view_own_and_shared_projects" ON user_projects
 CREATE POLICY "users_insert_own_projects" ON user_projects
   FOR INSERT 
   TO authenticated
-  WITH CHECK (owner_user_id = auth.uid());
+  WITH CHECK (user_id = auth.uid());
 
 CREATE POLICY "users_update_own_projects" ON user_projects
   FOR UPDATE 
   TO authenticated
-  USING (owner_user_id = auth.uid())
-  WITH CHECK (owner_user_id = auth.uid());
+  USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
 
 CREATE POLICY "users_delete_own_projects" ON user_projects
   FOR DELETE 
   TO authenticated
-  USING (owner_user_id = auth.uid());
+  USING (user_id = auth.uid());
 
 -- Verificar RLS
 ALTER TABLE user_projects ENABLE ROW LEVEL SECURITY;
@@ -144,7 +144,7 @@ CREATE POLICY "users_view_members_of_accessible_projects" ON project_members
   USING (
     -- Ver miembros de proyectos donde SOY OWNER
     project_id IN (
-      SELECT id FROM user_projects WHERE owner_user_id = auth.uid()
+      SELECT id FROM user_projects WHERE user_id = auth.uid()
     )
     OR
     -- Ver miembros de proyectos donde SOY MIEMBRO
@@ -158,12 +158,12 @@ CREATE POLICY "project_owners_manage_members" ON project_members
   TO authenticated
   USING (
     project_id IN (
-      SELECT id FROM user_projects WHERE owner_user_id = auth.uid()
+      SELECT id FROM user_projects WHERE user_id = auth.uid()
     )
   )
   WITH CHECK (
     project_id IN (
-      SELECT id FROM user_projects WHERE owner_user_id = auth.uid()
+      SELECT id FROM user_projects WHERE user_id = auth.uid()
     )
   );
 
@@ -278,9 +278,9 @@ LIMIT 5;
 SELECT 
   p.id,
   p.name,
-  p.owner_user_id,
+  p.user_id,
   auth.uid() as mi_user_id,
-  (p.owner_user_id = auth.uid()) as "soy_owner",
+  (p.user_id = auth.uid()) as "soy_owner",
   EXISTS(
     SELECT 1 FROM project_members pm 
     WHERE pm.project_id = p.id AND pm.user_id = auth.uid()
