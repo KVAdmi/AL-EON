@@ -60,6 +60,16 @@ ALTER TABLE user_conversations ENABLE ROW LEVEL SECURITY;
 -- 2. FIX PROYECTOS (user_projects + project_members)
 -- ============================================
 
+-- 🔍 VERIFICAR ESTRUCTURA DE user_projects
+SELECT 
+  column_name,
+  data_type,
+  is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'user_projects'
+ORDER BY ordinal_position;
+
 -- Ver estado actual de user_projects
 SELECT 
   tablename,
