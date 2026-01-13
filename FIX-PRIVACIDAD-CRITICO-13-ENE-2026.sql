@@ -162,7 +162,16 @@ ALTER TABLE project_members ENABLE ROW LEVEL SECURITY;
 -- ============================================
 -- 4. FIX CALENDARIO (calendar_events)
 -- ============================================
--- ✅ CONFIRMADO: Tabla 'calendar_events' existe con columna 'owner_user_id'
+
+-- 🔍 PRIMERO: Verificar estructura REAL de la tabla
+SELECT 
+  column_name,
+  data_type,
+  is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'calendar_events'
+ORDER BY ordinal_position;
 
 -- Ver estado actual de policies
 SELECT 
@@ -174,13 +183,6 @@ SELECT
 FROM pg_policies
 WHERE tablename = 'calendar_events'
 ORDER BY policyname;
-
--- Verificar si hay eventos sin owner_user_id
-SELECT 
-  COUNT(*) as total_eventos,
-  COUNT(owner_user_id) as con_owner_user_id,
-  COUNT(CASE WHEN owner_user_id IS NULL THEN 1 END) as sin_owner_user_id
-FROM calendar_events;
 
 -- DESHABILITAR RLS temporalmente
 ALTER TABLE calendar_events DISABLE ROW LEVEL SECURITY;
@@ -197,27 +199,29 @@ DROP POLICY IF EXISTS "calendar_select_policy" ON calendar_events;
 -- RE-HABILITAR RLS
 ALTER TABLE calendar_events ENABLE ROW LEVEL SECURITY;
 
--- CREAR policies limpias y correctas
+-- 🚨 CREAR policies usando la columna CORRECTA (user_id, NO owner_user_id)
+-- ⚠️ Si la tabla usa otra columna, ajusta aquí después de ver resultado del SELECT arriba
+
 CREATE POLICY "users_view_own_calendar_events" ON calendar_events
   FOR SELECT 
   TO authenticated
-  USING (owner_user_id = auth.uid());
+  USING (user_id = auth.uid());  -- 🔥 CAMBIAR si la columna es diferente
 
 CREATE POLICY "users_insert_own_calendar_events" ON calendar_events
   FOR INSERT 
   TO authenticated
-  WITH CHECK (owner_user_id = auth.uid());
+  WITH CHECK (user_id = auth.uid());  -- 🔥 CAMBIAR si la columna es diferente
 
 CREATE POLICY "users_update_own_calendar_events" ON calendar_events
   FOR UPDATE 
   TO authenticated
-  USING (owner_user_id = auth.uid())
-  WITH CHECK (owner_user_id = auth.uid());
+  USING (user_id = auth.uid())  -- 🔥 CAMBIAR si la columna es diferente
+  WITH CHECK (user_id = auth.uid());  -- 🔥 CAMBIAR si la columna es diferente
 
 CREATE POLICY "users_delete_own_calendar_events" ON calendar_events
   FOR DELETE 
   TO authenticated
-  USING (owner_user_id = auth.uid());
+  USING (user_id = auth.uid());  -- 🔥 CAMBIAR si la columna es diferente
 
 -- ============================================
 -- 5. VERIFICACIÓN FINAL
@@ -277,13 +281,14 @@ ORDER BY p.created_at DESC
 LIMIT 5;
 
 -- Test 3: Calendario (debe retornar solo MIS eventos)
+-- ⚠️ AJUSTAR columna según resultado del SELECT de estructura (Sección 4)
 SELECT 
   id,
   title,
-  owner_user_id,
+  user_id,  -- 🔥 Cambiar si la columna tiene otro nombre
   start_at,
   auth.uid() as mi_user_id,
-  (owner_user_id = auth.uid()) as "es_mio"
+  (user_id = auth.uid()) as "es_mio"  -- 🔥 Cambiar si la columna tiene otro nombre
 FROM calendar_events
 ORDER BY start_at DESC
 LIMIT 5;
