@@ -18,7 +18,7 @@ import NotificationBell from '@/components/NotificationBell';
 import { createProject, getProjects, deleteProject } from '@/services/projectsService';
 import { useToast } from '@/ui/use-toast';
 import { useCapability } from '@/components/CapabilitiesGate';
-import { useVoiceMode } from '@/features/chat/hooks/useVoiceMode';
+import { useVoiceMode } from '@/hooks/useVoiceMode';
 import { useAuth } from '@/contexts/AuthContext';
 
 function Sidebar({
