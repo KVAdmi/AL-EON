@@ -30,6 +30,10 @@ ORDER BY policyname;
 DROP POLICY IF EXISTS "Enable read access for all users" ON user_conversations;
 DROP POLICY IF EXISTS "Users can view all conversations" ON user_conversations;
 DROP POLICY IF EXISTS "Public conversations" ON user_conversations;
+DROP POLICY IF EXISTS "Usuarios ven solo sus conversaciones" ON user_conversations;
+DROP POLICY IF EXISTS "Usuarios borran solo sus conversaciones" ON user_conversations;
+DROP POLICY IF EXISTS "Usuarios insertan solo sus conversaciones" ON user_conversations;
+DROP POLICY IF EXISTS "Usuarios actualizan solo sus conversaciones" ON user_conversations;
 
 -- CREAR policies CORRECTAS (solo ver propias conversaciones)
 CREATE POLICY "users_view_own_conversations" ON user_conversations
@@ -84,6 +88,10 @@ ORDER BY policyname;
 DROP POLICY IF EXISTS "projects_select_policy" ON user_projects;
 DROP POLICY IF EXISTS "Users can view own projects" ON user_projects;
 DROP POLICY IF EXISTS "Enable project access" ON user_projects;
+DROP POLICY IF EXISTS "users_view_own_and_shared_projects" ON user_projects;
+DROP POLICY IF EXISTS "users_insert_own_projects" ON user_projects;
+DROP POLICY IF EXISTS "users_update_own_projects" ON user_projects;
+DROP POLICY IF EXISTS "users_delete_own_projects" ON user_projects;
 
 -- ✅ CREAR policy CORRECTA usando USER_ID (confirmado en estructura)
 CREATE POLICY "users_view_own_and_shared_projects" ON user_projects
@@ -141,6 +149,10 @@ ALTER TABLE project_members DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Enable access to project members" ON project_members;
 DROP POLICY IF EXISTS "users_view_members_of_accessible_projects" ON project_members;
 DROP POLICY IF EXISTS "project_owners_manage_members" ON project_members;
+DROP POLICY IF EXISTS "users_view_own_memberships" ON project_members;
+DROP POLICY IF EXISTS "project_owners_can_add_members" ON project_members;
+DROP POLICY IF EXISTS "users_can_update_own_membership" ON project_members;
+DROP POLICY IF EXISTS "project_owners_can_remove_members" ON project_members;
 
 -- RE-HABILITAR RLS
 ALTER TABLE project_members ENABLE ROW LEVEL SECURITY;
