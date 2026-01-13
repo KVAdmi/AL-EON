@@ -86,9 +86,10 @@ export function useVoiceMode({
     }
 
     try {
-      console.log('🎤 Iniciando grabación...');
+      console.log('🎤 [P0-2] Iniciando grabación...');
       
-      // Solicitar permiso de micrófono
+      // 🔥 P0-2: Solicitar permiso de micrófono EXPLÍCITAMENTE
+      console.log('🎤 [P0-2] Solicitando permisos de micrófono...');
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -97,6 +98,12 @@ export function useVoiceMode({
         } 
       });
       
+      // 🔥 P0-2: VERIFICAR que el stream tiene audio tracks
+      if (!stream || stream.getAudioTracks().length === 0) {
+        throw new Error('No se pudo acceder al micrófono. Verifica permisos.');
+      }
+      
+      console.log('✅ [P0-2] Permisos concedidos, tracks activos:', stream.getAudioTracks().length);
       streamRef.current = stream;
 
       // Determinar formato soportado
@@ -112,16 +119,16 @@ export function useVoiceMode({
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          console.log(`📊 Chunk recibido: ${event.data.size} bytes`);
+          console.log(`📊 [P0-2] Chunk recibido: ${event.data.size} bytes`);
           audioChunksRef.current.push(event.data);
         } else {
-          console.warn('⚠️ Chunk vacío recibido');
+          console.warn('⚠️ [P0-2] Chunk vacío recibido');
         }
       };
 
       mediaRecorder.onstop = async () => {
-        console.log('🛑 Grabación detenida, procesando...');
-        console.log(`📦 Total chunks: ${audioChunksRef.current.length}`);
+        console.log('🛑 [P0-2] Grabación detenida, procesando...');
+        console.log(`📦 [P0-2] Total chunks: ${audioChunksRef.current.length}`);
         
         // Detener stream
         if (streamRef.current) {
@@ -130,17 +137,26 @@ export function useVoiceMode({
         }
 
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-        console.log(`🎵 Blob creado: ${audioBlob.size} bytes, tipo: ${audioBlob.type}`);
+        const bytesGrabados = audioBlob.size;
+        console.log(`🎵 [P0-2] Blob creado: ${bytesGrabados} bytes, tipo: ${audioBlob.type}`);
+        
+        // 🔥 P0-2: MOSTRAR BYTES GRABADOS (debug UI)
+        console.log(`✅ [P0-2] BYTES GRABADOS: ${bytesGrabados} bytes (${audioChunksRef.current.length} chunks)`);
+        
         audioChunksRef.current = [];
 
-        if (audioBlob.size > 0) {
-          await sendAudioToBackend(audioBlob);
-        } else {
-          console.warn('⚠️ Audio vacío, no se envía');
+        // 🔥 P0-2: SI BYTES = 0, NO MANDAR REQUEST
+        if (bytesGrabados === 0) {
+          const errorMsg = `⚠️ [P0-2] NO SE GRABÓ AUDIO (bytes: 0)`;
+          console.error(errorMsg);
           setStatus('idle');
           setError(new Error('No se capturó audio'));
-          onError?.(new Error('No se capturó audio. Verifica que tu micrófono esté funcionando.'));
+          onError?.(new Error('No se capturó audio (0 bytes). Verifica que tu micrófono esté funcionando y habla más tiempo.'));
+          return; // 🔥 NO ENVIAR REQUEST
         }
+
+        console.log(`✅ [P0-2] Audio válido: ${bytesGrabados} bytes - Enviando al backend...`);
+        await sendAudioToBackend(audioBlob);
       };
 
       // 🔥 CRÍTICO: Capturar chunks cada 1 segundo (no esperar al stop)
@@ -149,15 +165,28 @@ export function useVoiceMode({
       setError(null);
       setTranscript('');
       
-      console.log('✅ Grabación iniciada con chunks cada 1 segundo');
-      console.log('🎤 Estado del recorder:', mediaRecorder.state);
-      console.log('🎙️ Tracks de audio:', stream.getAudioTracks().length);
+      console.log('✅ [P0-2] Grabación iniciada con chunks cada 1 segundo');
+      console.log('🎤 [P0-2] Estado del recorder:', mediaRecorder.state);
+      console.log('🎙️ [P0-2] Tracks de audio:', stream.getAudioTracks().length);
       
     } catch (err) {
-      console.error('❌ Error al iniciar grabación:', err);
-      setError(err);
+      console.error('❌ [P0-2] Error al iniciar grabación:', err);
+      
+      // 🔥 P0-2: MENSAJE DE ERROR ESPECÍFICO PARA PERMISOS
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        const permisosError = new Error('Debes permitir el acceso al micrófono en la configuración de tu navegador.');
+        setError(permisosError);
+        onError?.(permisosError);
+      } else if (err.name === 'NotFoundError') {
+        const noMicError = new Error('No se encontró ningún micrófono. Conecta uno e intenta de nuevo.');
+        setError(noMicError);
+        onError?.(noMicError);
+      } else {
+        setError(err);
+        onError?.(err);
+      }
+      
       setStatus('idle');
-      onError?.(err);
     }
   }, [isSending, accessToken, onError]);
 

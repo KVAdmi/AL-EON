@@ -162,8 +162,9 @@ ALTER TABLE project_members ENABLE ROW LEVEL SECURITY;
 -- ============================================
 -- 4. FIX CALENDARIO (calendar_events)
 -- ============================================
+-- ✅ CONFIRMADO: Tabla 'calendar_events' existe con columna 'owner_user_id'
 
--- Ver estado actual
+-- Ver estado actual de policies
 SELECT 
   tablename,
   policyname,
@@ -174,35 +175,29 @@ FROM pg_policies
 WHERE tablename = 'calendar_events'
 ORDER BY policyname;
 
--- IMPORTANTE: Primero verificar si owner_user_id tiene valores NULL
+-- Verificar si hay eventos sin owner_user_id
 SELECT 
   COUNT(*) as total_eventos,
-  COUNT(owner_user_id) as con_owner,
-  COUNT(*) - COUNT(owner_user_id) as sin_owner
+  COUNT(owner_user_id) as con_owner_user_id,
+  COUNT(CASE WHEN owner_user_id IS NULL THEN 1 END) as sin_owner_user_id
 FROM calendar_events;
 
--- Si hay eventos sin owner_user_id, asignarlos
--- (SOLO ejecutar si la query anterior muestra sin_owner > 0)
-/*
-UPDATE calendar_events
-SET owner_user_id = user_id
-WHERE owner_user_id IS NULL 
-  AND user_id IS NOT NULL;
-*/
-
--- ELIMINAR policies conflictivas
-DROP POLICY IF EXISTS "calendar_events_owner_policy" ON calendar_events;
-DROP POLICY IF EXISTS "calendar_events_select_all" ON calendar_events;
-DROP POLICY IF EXISTS "Users can view own events" ON calendar_events;
-DROP POLICY IF EXISTS "Enable calendar access" ON calendar_events;
-
--- DESHABILITAR RLS temporalmente para limpiar
+-- DESHABILITAR RLS temporalmente
 ALTER TABLE calendar_events DISABLE ROW LEVEL SECURITY;
+
+-- ELIMINAR TODAS las policies conflictivas
+DROP POLICY IF EXISTS "calendar_events_owner_policy" ON calendar_events;
+DROP POLICY IF EXISTS "Users can view own events" ON calendar_events;
+DROP POLICY IF EXISTS "Users can create own events" ON calendar_events;
+DROP POLICY IF EXISTS "Users can update own events" ON calendar_events;
+DROP POLICY IF EXISTS "Users can delete own events" ON calendar_events;
+DROP POLICY IF EXISTS "Enable calendar access" ON calendar_events;
+DROP POLICY IF EXISTS "calendar_select_policy" ON calendar_events;
 
 -- RE-HABILITAR RLS
 ALTER TABLE calendar_events ENABLE ROW LEVEL SECURITY;
 
--- CREAR policies limpias
+-- CREAR policies limpias y correctas
 CREATE POLICY "users_view_own_calendar_events" ON calendar_events
   FOR SELECT 
   TO authenticated
@@ -297,12 +292,18 @@ LIMIT 5;
 -- 🚨 NOTAS CRÍTICAS
 -- ============================================
 /*
-1. EJECUTAR TODO EL SCRIPT DE UNA VEZ (no por partes)
-2. Si hay errores de "policy already exists", ignorar y continuar
+1. EJECUTAR TODO EN ORDEN (Secciones 1-4)
+
+2. Si hay errores de "policy already exists", ignorar
+
 3. Después de ejecutar, hacer LOGOUT y LOGIN en la app
+
 4. Verificar que:
-   - Solo ves TUS conversaciones
-   - Ves TUS proyectos + proyectos donde te invitaron
-   - Solo ves TUS eventos de calendario
-5. Si sigue sin funcionar, enviar resultado de las queries de VERIFICACIÓN FINAL
+   ✅ Solo ves TUS conversaciones
+   ✅ Ves TUS proyectos + proyectos donde te invitaron
+   ✅ Solo ves TUS eventos de calendario
+
+5. Si sigue sin funcionar, enviar:
+   - Screenshot del error específico
+   - Resultado de las queries de VERIFICACIÓN FINAL (Sección 5)
 */

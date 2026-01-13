@@ -171,10 +171,20 @@ export default function EmailComposer({
 
       const result = await sendEmail(emailData);
 
-      toast({
-        title: "✓ Correo enviado",
-        description: "El correo se envió exitosamente",
-      });
+      // 🔥 P0-3: NO mostrar "respondido" si no hay messageId en la respuesta
+      if (mode === 'reply' && (!result || !result.messageId)) {
+        console.warn('[EmailComposer] ⚠️ [P0-3] Backend respondió sin messageId - NO confirmado');
+        toast({
+          variant: "destructive",
+          title: "⚠️ Error al responder",
+          description: "El backend no confirmó el envío. Verifica en 'Enviados' si llegó.",
+        });
+      } else {
+        toast({
+          title: "✓ Correo enviado",
+          description: "El correo se envió exitosamente",
+        });
+      }
       
       // ✅ Refrescar lista de mensajes (silenciar error si falla)
       if (triggerRefresh) {
@@ -192,11 +202,15 @@ export default function EmailComposer({
 
       handleClose();
     } catch (error) {
-      console.error('[EmailComposer] Error al enviar:', error);
+      console.error('[EmailComposer] ❌ [P0-3] Error al enviar:', error);
+      
+      // 🔥 P0-3: Mostrar error REAL del backend
+      const errorMsg = error.response?.data?.message || error.message || 'Error desconocido al enviar';
+      
       toast({
         variant: "destructive",
-        title: "Error al enviar",
-        description: error.message || "Revisa destinatario, asunto y contenido",
+        title: "❌ Error al enviar",
+        description: `${errorMsg}\n\nRevisa destinatario, asunto y contenido`,
       });
     } finally {
       setSending(false);
@@ -482,6 +496,7 @@ export default function EmailComposer({
 
         {/* Editor de texto */}
         <div className="flex-1 flex flex-col overflow-hidden">
+          {/* 🔥 P0-3: SIEMPRE editable, sin overlay invisible */}
           <textarea
             autoFocus={true}
             disabled={false}
@@ -492,6 +507,8 @@ export default function EmailComposer({
             style={{
               backgroundColor: 'var(--color-bg-primary)',
               color: 'var(--color-text-primary)',
+              pointerEvents: 'auto', // 🔥 P0-3: Forzar que sea editable
+              zIndex: 1, // 🔥 P0-3: Evitar overlays
             }}
           />
         </div>

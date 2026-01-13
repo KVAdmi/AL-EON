@@ -246,14 +246,14 @@ export function AuthProvider({ children }) {
   
   const logout = async () => {
     try {
-      console.log('[AUTH] logout attempt');
+      console.log('[AUTH] 🚪 LOGOUT: Limpiando TODO el estado del usuario');
       
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
       console.log('[AUTH] ✅ logout success');
       
-      // Limpiar estado
+      // 🔥 P0-1: LIMPIAR TODO (incluido sessionStorage para evitar mezcla de sesiones)
       setUser(null);
       setUserProfile(null);
       setAccessToken(null);
@@ -262,8 +262,11 @@ export function AuthProvider({ children }) {
       // 🔥 RESETEAR CAPABILITIES
       resetCapabilities();
       
-      // Limpiar localStorage
+      // 🔥 LIMPIAR STORAGE COMPLETO (localStorage + sessionStorage)
       localStorage.clear();
+      sessionStorage.clear();
+      
+      console.log('[AUTH] 🧹 Estado limpiado: user, profile, token, localStorage, sessionStorage');
       
       // ✅ Usar replace para evitar loops en history
       window.location.replace('/login');
@@ -277,6 +280,7 @@ export function AuthProvider({ children }) {
       setBootError(null);
       resetCapabilities();
       localStorage.clear();
+      sessionStorage.clear();
       window.location.replace('/login');
     } finally {
       // 🔥 GARANTIZADO: Apagar loading
