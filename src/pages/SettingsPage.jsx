@@ -38,8 +38,16 @@ export default function SettingsPage() {
     ai_model: 'gpt-4',
     ai_temperature: 0.7,
     context_persistent: true,
-    voice_enabled: false
+    voice_enabled: false,
+    tts_enabled: false,
+    tts_gender: 'female',
+    tts_voice_name: null,
+    tts_lang: 'es-MX',
   });
+
+  // Estado para voces disponibles (Web Speech API)
+  const [availableVoices, setAvailableVoices] = useState([]);
+  const [testingVoice, setTestingVoice] = useState(false);
 
   // Estado del modal de integraciones
   const [integrationModal, setIntegrationModal] = useState({
@@ -64,6 +72,53 @@ export default function SettingsPage() {
     const interval = setInterval(checkBackendHealth, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Cargar voces disponibles del dispositivo (Web Speech API)
+  useEffect(() => {
+    loadVoices();
+    
+    // Escuchar evento voiceschanged (Safari/iOS)
+    if (window.speechSynthesis) {
+      window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+    }
+    
+    return () => {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
+      }
+    };
+  }, []);
+
+  function loadVoices() {
+    if (!window.speechSynthesis) {
+      console.warn('[TTS] Web Speech API no disponible en este navegador');
+      return;
+    }
+
+    const voices = window.speechSynthesis.getVoices();
+    console.log('[TTS] Voces disponibles:', voices.length);
+    
+    // Filtrar voces en español (priorizar mexicanas)
+    const spanishVoices = voices.filter(v => 
+      v.lang.startsWith('es') || v.lang.startsWith('es-MX')
+    );
+    
+    setAvailableVoices(spanishVoices);
+    
+    // Auto-seleccionar voz mexicana si no hay ninguna guardada
+    if (!settings.tts_voice_name && spanishVoices.length > 0) {
+      const mexicanVoice = spanishVoices.find(v => 
+        v.lang === 'es-MX' || v.name.toLowerCase().includes('mexico')
+      );
+      
+      if (mexicanVoice) {
+        setSettings(prev => ({
+          ...prev,
+          tts_voice_name: mexicanVoice.name,
+        }));
+      }
+    }
+  }
 
   async function checkBackendHealth() {
     try {
@@ -168,7 +223,11 @@ export default function SettingsPage() {
         ai_model: settingsData?.ai_model || 'gpt-4',
         ai_temperature: settingsData?.ai_temperature || 0.7,
         context_persistent: settingsData?.context_persistent ?? true,
-        voice_enabled: settingsData?.voice_enabled ?? false
+        voice_enabled: settingsData?.voice_enabled ?? false,
+        tts_enabled: settingsData?.tts_enabled ?? false,
+        tts_gender: settingsData?.tts_gender || 'female',
+        tts_voice_name: settingsData?.tts_voice_name || null,
+        tts_lang: settingsData?.tts_lang || 'es-MX',
       });
     } catch (error) {
       console.error('Error cargando datos:', error);
@@ -1145,15 +1204,82 @@ function TabContent({
 
   // ===== VOZ =====
   if (activeTab === 'voice') {
+    const getMexicanVoices = () => {
+      return availableVoices.filter(v => 
+        v.lang === 'es-MX' || 
+        v.name.toLowerCase().includes('mexico') ||
+        v.name.toLowerCase().includes('mexican')
+      );
+    };
+
+    const getSpanishVoices = () => {
+      return availableVoices.filter(v => 
+        v.lang.startsWith('es') && !getMexicanVoices().includes(v)
+      );
+    };
+
+    const getMaleVoices = () => {
+      return availableVoices.filter(v => 
+        !v.name.toLowerCase().includes('female') &&
+        !v.name.toLowerCase().includes('mujer') &&
+        (v.name.toLowerCase().includes('male') || 
+         v.name.toLowerCase().includes('hombre') ||
+         v.name.toLowerCase().includes('diego') ||
+         v.name.toLowerCase().includes('jorge'))
+      );
+    };
+
+    const getFemaleVoices = () => {
+      return availableVoices.filter(v => 
+        v.name.toLowerCase().includes('female') ||
+        v.name.toLowerCase().includes('mujer') ||
+        v.name.toLowerCase().includes('paulina') ||
+        v.name.toLowerCase().includes('monica')
+      );
+    };
+
+    const testVoice = () => {
+      if (!window.speechSynthesis) {
+        alert('Tu navegador no soporta síntesis de voz');
+        return;
+      }
+
+      setTestingVoice(true);
+      
+      const utterance = new SpeechSynthesisUtterance(
+        'Hola, soy tu asistente. Así suena mi voz.'
+      );
+      
+      utterance.lang = settings.tts_lang;
+      
+      if (settings.tts_voice_name) {
+        const selectedVoice = availableVoices.find(v => v.name === settings.tts_voice_name);
+        if (selectedVoice) {
+          utterance.voice = selectedVoice;
+        }
+      }
+      
+      utterance.onend = () => setTestingVoice(false);
+      utterance.onerror = () => setTestingVoice(false);
+      
+      window.speechSynthesis.speak(utterance);
+      
+      console.log('[TTS] Probando voz:', settings.tts_voice_name);
+    };
+
+    const mexicanVoices = getMexicanVoices();
+    const spanishVoices = getSpanishVoices();
+
     return (
       <div className="space-y-6">
         <div>
           <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>Voz</h2>
           <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            Configura la síntesis y reconocimiento de voz
+            Configura cómo AL-E habla las respuestas usando las voces de tu dispositivo
           </p>
         </div>
         
+        {/* Toggle principal */}
         <div className="p-5 rounded-xl border flex items-center justify-between" style={{ 
           backgroundColor: 'var(--color-bg-tertiary)', 
           borderColor: 'var(--color-border)' 
@@ -1174,17 +1300,187 @@ function TabContent({
           <label className="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
-              checked={settings.voice_enabled}
-              onChange={(e) => setSettings({ ...settings, voice_enabled: e.target.checked })}
+              checked={settings.tts_enabled}
+              onChange={(e) => setSettings({ ...settings, tts_enabled: e.target.checked })}
               className="sr-only peer"
             />
             <div className="w-11 h-6 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all" 
               style={{ 
-                backgroundColor: settings.voice_enabled ? 'var(--color-accent)' : '#6b7280' 
+                backgroundColor: settings.tts_enabled ? 'var(--color-accent)' : '#6b7280' 
               }}
             />
           </label>
         </div>
+
+        {/* Selector de género (presets mexicanos) */}
+        {settings.tts_enabled && (
+          <>
+            <div className="p-5 rounded-xl border space-y-4" style={{ 
+              backgroundColor: 'var(--color-bg-tertiary)', 
+              borderColor: 'var(--color-border)' 
+            }}>
+              <div>
+                <h3 className="font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                  Género de voz
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => {
+                      const femaleVoice = mexicanVoices.find(v => 
+                        v.name.toLowerCase().includes('female') ||
+                        v.name.toLowerCase().includes('mujer') ||
+                        v.name.toLowerCase().includes('paulina') ||
+                        v.name.toLowerCase().includes('monica')
+                      ) || mexicanVoices.find(v => !v.name.toLowerCase().includes('male'));
+                      
+                      setSettings({
+                        ...settings,
+                        tts_gender: 'female',
+                        tts_voice_name: femaleVoice?.name || null,
+                      });
+                    }}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      settings.tts_gender === 'female' 
+                        ? 'border-[var(--color-accent)]' 
+                        : 'border-[var(--color-border)]'
+                    }`}
+                    style={{
+                      backgroundColor: settings.tts_gender === 'female' 
+                        ? 'var(--color-accent-light)' 
+                        : 'var(--color-bg-secondary)',
+                    }}
+                  >
+                    <div className="text-2xl mb-2">👩</div>
+                    <div className="font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                      Mujer
+                    </div>
+                    <div className="text-xs mt-1" style={{ color: 'var(--color-text-tertiary)' }}>
+                      Voz femenina mexicana
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const maleVoice = mexicanVoices.find(v => 
+                        v.name.toLowerCase().includes('male') ||
+                        v.name.toLowerCase().includes('hombre') ||
+                        v.name.toLowerCase().includes('diego') ||
+                        v.name.toLowerCase().includes('jorge')
+                      );
+                      
+                      setSettings({
+                        ...settings,
+                        tts_gender: 'male',
+                        tts_voice_name: maleVoice?.name || null,
+                      });
+                    }}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      settings.tts_gender === 'male' 
+                        ? 'border-[var(--color-accent)]' 
+                        : 'border-[var(--color-border)]'
+                    }`}
+                    style={{
+                      backgroundColor: settings.tts_gender === 'male' 
+                        ? 'var(--color-accent-light)' 
+                        : 'var(--color-bg-secondary)',
+                    }}
+                  >
+                    <div className="text-2xl mb-2">👨</div>
+                    <div className="font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                      Hombre
+                    </div>
+                    <div className="text-xs mt-1" style={{ color: 'var(--color-text-tertiary)' }}>
+                      Voz masculina mexicana
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Selector de voz específica (opcional) */}
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                  Voz específica (opcional)
+                </label>
+                <select
+                  value={settings.tts_voice_name || ''}
+                  onChange={(e) => setSettings({ ...settings, tts_voice_name: e.target.value || null })}
+                  className="w-full px-4 py-2 rounded-lg border"
+                  style={{
+                    backgroundColor: 'var(--color-bg-primary)',
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-text-primary)',
+                  }}
+                >
+                  <option value="">Automático (mejor disponible)</option>
+                  
+                  {mexicanVoices.length > 0 && (
+                    <optgroup label="Voces Mexicanas 🇲🇽">
+                      {mexicanVoices.map(voice => (
+                        <option key={voice.name} value={voice.name}>
+                          {voice.name} ({voice.lang})
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  
+                  {spanishVoices.length > 0 && (
+                    <optgroup label="Otras voces en Español">
+                      {spanishVoices.map(voice => (
+                        <option key={voice.name} value={voice.name}>
+                          {voice.name} ({voice.lang})
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  
+                  {availableVoices.length === 0 && (
+                    <option disabled>No hay voces disponibles</option>
+                  )}
+                </select>
+              </div>
+
+              {/* Botón de prueba */}
+              <button
+                onClick={testVoice}
+                disabled={testingVoice || availableVoices.length === 0}
+                className="w-full px-4 py-2 rounded-lg font-medium transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+                style={{
+                  backgroundColor: 'var(--color-accent)',
+                  color: '#FFFFFF',
+                }}
+              >
+                <Volume2 size={18} />
+                {testingVoice ? 'Reproduciendo...' : 'Probar voz'}
+              </button>
+            </div>
+
+            {/* Warning si no hay voces mexicanas */}
+            {mexicanVoices.length === 0 && (
+              <div className="p-4 rounded-xl border" style={{ 
+                backgroundColor: 'rgba(251, 191, 36, 0.1)', 
+                borderColor: 'rgba(251, 191, 36, 0.3)' 
+              }}>
+                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                  ⚠️ <strong>No se encontraron voces mexicanas en tu dispositivo.</strong><br />
+                  {spanishVoices.length > 0 
+                    ? 'Se usarán voces en español disponibles.'
+                    : 'Instala voces en español en la configuración de tu sistema operativo.'}
+                </p>
+              </div>
+            )}
+
+            {/* Info sobre Web Speech API */}
+            <div className="p-4 rounded-xl border" style={{ 
+              backgroundColor: 'var(--color-bg-tertiary)', 
+              borderColor: 'var(--color-border)' 
+            }}>
+              <p className="text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
+                💡 Las voces dependen de tu sistema operativo y navegador. 
+                Para mejores resultados, usa Chrome, Edge o Safari con voces instaladas en español mexicano.
+              </p>
+            </div>
+          </>
+        )}
       </div>
     );
   }
