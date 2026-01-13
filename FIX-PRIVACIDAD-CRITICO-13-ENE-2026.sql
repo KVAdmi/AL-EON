@@ -134,40 +134,49 @@ SELECT
 FROM pg_policies
 WHERE tablename = 'project_members';
 
--- ELIMINAR policies incorrectas
+-- 🚨 DESHABILITAR RLS PRIMERO (evitar recursión)
+ALTER TABLE project_members DISABLE ROW LEVEL SECURITY;
+
+-- ELIMINAR TODAS las policies
 DROP POLICY IF EXISTS "Enable access to project members" ON project_members;
+DROP POLICY IF EXISTS "users_view_members_of_accessible_projects" ON project_members;
+DROP POLICY IF EXISTS "project_owners_manage_members" ON project_members;
 
--- CREAR policies correctas
-CREATE POLICY "users_view_members_of_accessible_projects" ON project_members
-  FOR SELECT 
-  TO authenticated
-  USING (
-    -- Ver miembros de proyectos donde SOY OWNER
-    project_id IN (
-      SELECT id FROM user_projects WHERE user_id = auth.uid()
-    )
-    OR
-    -- Ver miembros de proyectos donde SOY MIEMBRO
-    project_id IN (
-      SELECT project_id FROM project_members WHERE user_id = auth.uid()
-    )
-  );
-
-CREATE POLICY "project_owners_manage_members" ON project_members
-  FOR ALL
-  TO authenticated
-  USING (
-    project_id IN (
-      SELECT id FROM user_projects WHERE user_id = auth.uid()
-    )
-  )
-  WITH CHECK (
-    project_id IN (
-      SELECT id FROM user_projects WHERE user_id = auth.uid()
-    )
-  );
-
+-- RE-HABILITAR RLS
 ALTER TABLE project_members ENABLE ROW LEVEL SECURITY;
+
+-- ✅ POLICY SIN RECURSIÓN: Ver solo registros donde YO estoy involucrado
+CREATE POLICY "users_view_own_memberships" ON project_members
+  FOR SELECT
+  TO authenticated
+  USING (
+    user_id = auth.uid()  -- Soy el miembro
+    OR 
+    invited_by = auth.uid()  -- Yo invité a alguien
+    OR
+    project_id IN (SELECT id FROM user_projects WHERE user_id = auth.uid())  -- Soy owner del proyecto
+  );
+
+-- POLICY para INSERT: Solo owners pueden agregar miembros
+CREATE POLICY "project_owners_can_add_members" ON project_members
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    project_id IN (SELECT id FROM user_projects WHERE user_id = auth.uid())
+  );
+
+-- POLICY para UPDATE: Actualizar membresías (aceptar invitaciones)
+CREATE POLICY "users_can_update_own_membership" ON project_members
+  FOR UPDATE
+  TO authenticated
+  USING (user_id = auth.uid() OR project_id IN (SELECT id FROM user_projects WHERE user_id = auth.uid()))
+  WITH CHECK (user_id = auth.uid() OR project_id IN (SELECT id FROM user_projects WHERE user_id = auth.uid()));
+
+-- POLICY para DELETE: Solo owners pueden remover
+CREATE POLICY "project_owners_can_remove_members" ON project_members
+  FOR DELETE
+  TO authenticated
+  USING (project_id IN (SELECT id FROM user_projects WHERE user_id = auth.uid()));
 
 -- ============================================
 -- 4. FIX CALENDARIO (calendar_events)
