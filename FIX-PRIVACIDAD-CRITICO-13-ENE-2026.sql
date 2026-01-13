@@ -199,29 +199,28 @@ DROP POLICY IF EXISTS "calendar_select_policy" ON calendar_events;
 -- RE-HABILITAR RLS
 ALTER TABLE calendar_events ENABLE ROW LEVEL SECURITY;
 
--- 🚨 CREAR policies usando la columna CORRECTA (user_id, NO owner_user_id)
--- ⚠️ Si la tabla usa otra columna, ajusta aquí después de ver resultado del SELECT arriba
+-- ✅ CREAR policies usando OWNER_USER_ID (confirmado en estructura)
 
 CREATE POLICY "users_view_own_calendar_events" ON calendar_events
   FOR SELECT 
   TO authenticated
-  USING (user_id = auth.uid());  -- 🔥 CAMBIAR si la columna es diferente
+  USING (owner_user_id = auth.uid());
 
 CREATE POLICY "users_insert_own_calendar_events" ON calendar_events
   FOR INSERT 
   TO authenticated
-  WITH CHECK (user_id = auth.uid());  -- 🔥 CAMBIAR si la columna es diferente
+  WITH CHECK (owner_user_id = auth.uid());
 
 CREATE POLICY "users_update_own_calendar_events" ON calendar_events
   FOR UPDATE 
   TO authenticated
-  USING (user_id = auth.uid())  -- 🔥 CAMBIAR si la columna es diferente
-  WITH CHECK (user_id = auth.uid());  -- 🔥 CAMBIAR si la columna es diferente
+  USING (owner_user_id = auth.uid())
+  WITH CHECK (owner_user_id = auth.uid());
 
 CREATE POLICY "users_delete_own_calendar_events" ON calendar_events
   FOR DELETE 
   TO authenticated
-  USING (user_id = auth.uid());  -- 🔥 CAMBIAR si la columna es diferente
+  USING (owner_user_id = auth.uid());
 
 -- ============================================
 -- 5. VERIFICACIÓN FINAL
@@ -281,14 +280,13 @@ ORDER BY p.created_at DESC
 LIMIT 5;
 
 -- Test 3: Calendario (debe retornar solo MIS eventos)
--- ⚠️ AJUSTAR columna según resultado del SELECT de estructura (Sección 4)
 SELECT 
   id,
   title,
-  user_id,  -- 🔥 Cambiar si la columna tiene otro nombre
+  owner_user_id,
   start_at,
   auth.uid() as mi_user_id,
-  (user_id = auth.uid()) as "es_mio"  -- 🔥 Cambiar si la columna tiene otro nombre
+  (owner_user_id = auth.uid()) as "es_mio"
 FROM calendar_events
 ORDER BY start_at DESC
 LIMIT 5;
