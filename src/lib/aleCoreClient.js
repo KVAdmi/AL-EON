@@ -62,10 +62,10 @@ export async function sendToAleCore({ accessToken, message, sessionId, workspace
     throw new Error("❌ Missing VITE_ALE_CORE_BASE");
   }
 
-  // ✅ USAR ENDPOINT /api/ai/chat/v2 - Recupera historial automáticamente desde BD
-  const url = `${BASE_URL}/api/ai/chat/v2`;
+  // ✅ USAR ENDPOINT /api/ai/truth-chat - Truth Layer con Governor
+  const url = `${BASE_URL}/api/ai/truth-chat`;
   
-  console.log("✅ ALE CORE URL (v2) =>", url);
+  console.log("✅ ALE CORE URL (truth-chat) =>", url);
 
   if (!accessToken) {
     throw new Error("❌ Missing accessToken");
@@ -75,15 +75,21 @@ export async function sendToAleCore({ accessToken, message, sessionId, workspace
     throw new Error("❌ Message is required");
   }
 
-  // ✅ PAYLOAD PARA /api/ai/chat/v2 - Solo enviar mensaje actual
+  // ✅ PAYLOAD PARA /api/ai/truth-chat - Formato con messages array
   const payloadData = {
-    message: message.trim(),  // ← String simple, no array
+    messages: [
+      {
+        role: 'user',
+        content: message.trim()
+      }
+    ],
+    userId: accessToken, // Token para identificar usuario
     sessionId: sessionId || undefined,
     workspaceId: workspaceId || 'core',
     projectId: projectId || undefined, // ✅ ID del proyecto para RAG
-    userId: accessToken, // Token para identificar usuario
     userEmail: userEmail || undefined, // ✅ COLABORACIÓN
     userDisplayName: userDisplayName || undefined, // ✅ COLABORACIÓN
+    userConfirmed: false, // Usuario no ha confirmado acción
     mode: 'universal',
     meta: meta || {
       platform: "AL-EON",
