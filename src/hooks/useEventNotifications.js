@@ -33,9 +33,9 @@ export function useEventNotifications(userId) {
           .from('calendar_events')
           .select('*')
           .eq('owner_user_id', userId)
-          .gte('start_time', now.toISOString())
-          .lte('start_time', in30Minutes.toISOString())
-          .order('start_time', { ascending: true });
+          .gte('start_at', now.toISOString())
+          .lte('start_at', in30Minutes.toISOString())
+          .order('start_at', { ascending: true });
 
         if (error) {
           console.error('Error obteniendo eventos:', error);
@@ -50,11 +50,11 @@ export function useEventNotifications(userId) {
 
         // Notificar eventos que no hemos notificado
         for (const event of events) {
-          const eventKey = `${event.id}-${event.start_time}`;
+          const eventKey = `${event.id}-${event.start_at}`;
           
           if (!notifiedEventsRef.current.has(eventKey)) {
             const minutesUntil = Math.floor(
-              (new Date(event.start_time) - now) / 60000
+              (new Date(event.start_at) - now) / 60000
             );
 
             // Notificar si está a 30, 15, 5 minutos o menos

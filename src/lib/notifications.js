@@ -169,7 +169,7 @@ function playNotificationSound() {
  * @param {Object} event - Datos del evento
  */
 export function notifyUpcomingEvent(event) {
-  const minutesUntil = Math.floor((new Date(event.start_time) - new Date()) / 60000);
+  const minutesUntil = Math.floor((new Date(event.start_at) - new Date()) / 60000);
   
   let body = '';
   let requireInteraction = true;
