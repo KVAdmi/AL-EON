@@ -232,6 +232,13 @@ export async function startLiveMeeting(title) {
  */
 export async function uploadLiveChunk(meetingId, audioBlob, chunkIndex, startedAtMs) {
   try {
+    console.log(`[MeetingsService] 📤 Subiendo chunk ${chunkIndex}:`, {
+      meetingId,
+      blobSize: audioBlob.size,
+      blobType: audioBlob.type,
+      startedAtMs
+    });
+
     const formData = new FormData();
     formData.append('chunk', audioBlob, `chunk-${chunkIndex}-${Date.now()}.webm`);
     formData.append('chunkIndex', chunkIndex.toString());
@@ -240,26 +247,39 @@ export async function uploadLiveChunk(meetingId, audioBlob, chunkIndex, startedA
     }
 
     const headers = await authHeaders(false);
-    const response = await fetch(`${BACKEND_URL}/api/meetings/live/${meetingId}/chunk`, {
+    const url = `${BACKEND_URL}/api/meetings/live/${meetingId}/chunk`;
+    console.log(`[MeetingsService] 📡 POST ${url}`);
+
+    const response = await fetch(url, {
       method: 'POST',
       headers,
       body: formData
     });
 
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: formData
+    });
+
+    console.log(`[MeetingsService] Response status: ${response.status}`);
+
     if (!response.ok) {
       let errorMsg = `Error ${response.status} enviando chunk`;
       try {
         const errorData = await response.json();
+        console.error(`[MeetingsService] ❌ Error data:`, errorData);
         errorMsg = errorData?.error || errorData?.message || errorMsg;
       } catch (e) {
         const textError = await response.text();
+        console.error(`[MeetingsService] ❌ Error text:`, textError);
         errorMsg = textError || errorMsg;
       }
       throw new Error(errorMsg);
     }
 
     const result = await response.json();
-    console.log(`[MeetingsService] Chunk ${chunkIndex} enviado correctamente`);
+    console.log(`[MeetingsService] ✅ Chunk ${chunkIndex} enviado correctamente`);
     return result;
   } catch (error) {
     console.error(`[MeetingsService] Error enviando chunk ${chunkIndex}:`, error);
