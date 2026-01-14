@@ -48,6 +48,9 @@ export function useVoiceMode({
   const [error, setError] = useState(null);
   const [transcript, setTranscript] = useState('');
   
+  // 🔥 DEBUG: Log inicial
+  console.log('🎤 [useVoiceMode] HOOK INICIALIZADO - enabled:', enabled, 'accessToken:', !!accessToken, 'sessionId:', sessionId);
+  
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const audioPlayerRef = useRef(null);

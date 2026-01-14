@@ -134,10 +134,16 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
                 {voiceMode.mode === 'voice' && (
                   <button
                     onClick={() => {
-                      console.log('[VoiceUI] click mic, voiceMode:', !!voiceMode, 'mode:', voiceMode?.mode, 'isListening:', voiceMode?.isListening);
+                      console.log('🔥🔥🔥 [MessageThread] CLICK EN MICRÓFONO');
+                      console.log('[VoiceUI] voiceMode:', voiceMode);
+                      console.log('[VoiceUI] voiceMode.startListening existe?', typeof voiceMode.startListening);
+                      console.log('[VoiceUI] isListening:', voiceMode?.isListening);
+                      
                       if (voiceMode.isListening) {
+                        console.log('🛑 Deteniendo grabación...');
                         voiceMode.stopAll();
                       } else {
+                        console.log('🎤 Iniciando grabación...');
                         voiceMode.startListening();
                       }
                     }}
