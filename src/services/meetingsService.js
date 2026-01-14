@@ -227,10 +227,14 @@ export async function startLiveMeeting(title) {
 /**
  * Enviar chunk de audio durante reunión live
  */
-export async function sendLiveChunk(meetingId, audioBlob) {
+export async function uploadLiveChunk(meetingId, audioBlob, chunkIndex, startedAtMs) {
   try {
     const formData = new FormData();
-    formData.append('chunk', audioBlob, `chunk-${Date.now()}.webm`); // ⚠️ "chunk" no "audio"
+    formData.append('chunk', audioBlob, `chunk-${chunkIndex}-${Date.now()}.webm`);
+    formData.append('chunkIndex', chunkIndex.toString());
+    if (startedAtMs) {
+      formData.append('startedAt', startedAtMs.toString());
+    }
 
     const headers = await authHeaders(false);
     const response = await fetch(`${BACKEND_URL}/api/meetings/live/${meetingId}/chunk`, {
@@ -240,24 +244,31 @@ export async function sendLiveChunk(meetingId, audioBlob) {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[MeetingsService] Error enviando chunk:', errorText);
-      throw new Error('Error enviando chunk');
+      let errorMsg = `Error ${response.status} enviando chunk`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData?.error || errorData?.message || errorMsg;
+      } catch (e) {
+        const textError = await response.text();
+        errorMsg = textError || errorMsg;
+      }
+      throw new Error(errorMsg);
     }
 
-    // Actualizar contador de chunks
-    await supabase
-      .from('meetings')
-      .update({ 
-        live_chunks_count: supabase.sql`live_chunks_count + 1` 
-      })
-      .eq('id', meetingId);
-
-    return await response.json();
+    const result = await response.json();
+    console.log(`[MeetingsService] Chunk ${chunkIndex} enviado correctamente`);
+    return result;
   } catch (error) {
-    console.error('[MeetingsService] Error enviando chunk:', error);
+    console.error(`[MeetingsService] Error enviando chunk ${chunkIndex}:`, error);
     throw error;
   }
+}
+
+/**
+ * Alias para compatibilidad con código existente
+ */
+export async function sendLiveChunk(meetingId, audioBlob) {
+  return uploadLiveChunk(meetingId, audioBlob, Date.now(), Date.now());
 }
 
 /**
@@ -265,29 +276,84 @@ export async function sendLiveChunk(meetingId, audioBlob) {
  */
 export async function stopLiveMeeting(meetingId) {
   try {
-    // 1. Notificar al backend
     const response = await fetch(`${BACKEND_URL}/api/meetings/live/${meetingId}/stop`, {
       method: 'POST',
       headers: await authHeaders()
     });
 
     if (!response.ok) {
-      throw new Error('Error al finalizar reunión');
+      let errorMsg = `Error ${response.status} finalizando reunión`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData?.error || errorData?.message || errorMsg;
+      } catch (e) {
+        const textError = await response.text();
+        errorMsg = textError || errorMsg;
+      }
+      throw new Error(errorMsg);
     }
 
-    // 2. Actualizar en DB
-    await supabase
-      .from('meetings')
-      .update({
-        is_live: false,
-        live_ended_at: new Date().toISOString(),
-        status: 'processing'
-      })
-      .eq('id', meetingId);
+    const result = await response.json();
+    console.log('[MeetingsService] Reunión finalizada correctamente');
+    return result;
+  } catch (error) {
+    console.error('[MeetingsService] Error finalizando reunión:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtener estado en vivo de la reunión (transcripción parcial)
+ */
+export async function getLiveStatus(meetingId) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/meetings/live/${meetingId}/status`, {
+      headers: await authHeaders()
+    });
+
+    if (!response.ok) {
+      let errorMsg = `Error ${response.status} obteniendo estado`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData?.error || errorData?.message || errorMsg;
+      } catch (e) {
+        const textError = await response.text();
+        errorMsg = textError || errorMsg;
+      }
+      throw new Error(errorMsg);
+    }
 
     return await response.json();
   } catch (error) {
-    console.error('[MeetingsService] Error finalizando reunión live:', error);
+    console.error('[MeetingsService] Error obteniendo estado:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtener resultado final de la reunión (transcripción + minuta)
+ */
+export async function getMeetingResult(meetingId) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/meetings/${meetingId}/result`, {
+      headers: await authHeaders()
+    });
+
+    if (!response.ok) {
+      let errorMsg = `Error ${response.status} obteniendo resultado`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData?.error || errorData?.message || errorMsg;
+      } catch (e) {
+        const textError = await response.text();
+        errorMsg = textError || errorMsg;
+      }
+      throw new Error(errorMsg);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[MeetingsService] Error obteniendo resultado:', error);
     throw error;
   }
 }
@@ -346,19 +412,28 @@ export async function pollMeetingStatus(meetingId, onUpdate, maxAttempts = 60) {
 /**
  * Enviar minuta por correo
  */
-export async function sendMinutesByEmail(meetingId, recipients) {
+export async function sendMeetingSummary(meetingId, payload = {}) {
   try {
     const response = await fetch(`${BACKEND_URL}/api/meetings/${meetingId}/send`, {
       method: 'POST',
       headers: await authHeaders(),
       body: JSON.stringify({
-        email: true,
-        recipients
+        email: payload.email !== false,
+        telegram: payload.telegram || false,
+        recipients: payload.recipients || []
       })
     });
 
     if (!response.ok) {
-      throw new Error('Error al enviar minuta por correo');
+      let errorMsg = `Error ${response.status} enviando minuta`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData?.error || errorData?.message || errorMsg;
+      } catch (e) {
+        const textError = await response.text();
+        errorMsg = textError || errorMsg;
+      }
+      throw new Error(errorMsg);
     }
 
     return await response.json();
@@ -366,6 +441,13 @@ export async function sendMinutesByEmail(meetingId, recipients) {
     console.error('[MeetingsService] Error enviando minuta:', error);
     throw error;
   }
+}
+
+/**
+ * Alias para compatibilidad
+ */
+export async function sendMinutesByEmail(meetingId, recipients) {
+  return sendMeetingSummary(meetingId, { email: true, recipients });
 }
 
 /**
@@ -407,15 +489,24 @@ export async function sendMinutes(meetingId, channel) {
 /**
  * Crear eventos de calendario desde acuerdos
  */
-export async function createCalendarEvents(meetingId) {
+export async function addMeetingToCalendar(meetingId, payload = {}) {
   try {
     const response = await fetch(`${BACKEND_URL}/api/meetings/${meetingId}/calendar`, {
       method: 'POST',
-      headers: await authHeaders()
+      headers: await authHeaders(),
+      body: JSON.stringify(payload)
     });
 
     if (!response.ok) {
-      throw new Error('Error al crear eventos');
+      let errorMsg = `Error ${response.status} creando eventos de calendario`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData?.error || errorData?.message || errorMsg;
+      } catch (e) {
+        const textError = await response.text();
+        errorMsg = textError || errorMsg;
+      }
+      throw new Error(errorMsg);
     }
 
     return await response.json();
@@ -423,6 +514,13 @@ export async function createCalendarEvents(meetingId) {
     console.error('[MeetingsService] Error creando eventos:', error);
     throw error;
   }
+}
+
+/**
+ * Alias para compatibilidad
+ */
+export async function createCalendarEvents(meetingId) {
+  return addMeetingToCalendar(meetingId);
 }
 
 /**
