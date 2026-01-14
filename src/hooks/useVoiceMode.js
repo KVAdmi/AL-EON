@@ -166,6 +166,7 @@ export function useVoiceMode({
         }
 
         console.log(`✅ [P0-2] Audio válido: ${bytesGrabados} bytes - Enviando al backend...`);
+        console.log(`🔥🔥🔥 LLAMANDO sendAudioToBackend con blob de ${bytesGrabados} bytes`);
         await sendAudioToBackend(audioBlob);
       };
 
@@ -212,8 +213,12 @@ export function useVoiceMode({
 
   /**
    * Enviar audio al backend: STT → Chat → TTS → reproducir
-   */
   const sendAudioToBackend = useCallback(async (audioBlob) => {
+    console.log('🔥🔥🔥 sendAudioToBackend EJECUTADO - blob:', audioBlob.size, 'bytes');
+    console.log('🔥 accessToken:', !!accessToken);
+    console.log('🔥 sessionId:', sessionId);
+    console.log('🔥 CORE_BASE_URL:', CORE_BASE_URL);
+    
     setIsSending(true);
     setStatus('processing');
     
@@ -222,53 +227,60 @@ export function useVoiceMode({
     const timeoutId = setTimeout(() => abortControllerRef.current?.abort(), 60000); // 60s
 
     try {
-      // PASO 1: STT - Convertir audio a texto
-      console.log('📤 Enviando audio a /api/voice/stt...');
+      // PASO 1: TRANSCRIBE - Convertir audio a texto
+      const endpoint = `${CORE_BASE_URL}/api/voice/transcribe`;
+      console.log('📤🔥🔥🔥 POST:', endpoint);
+      console.log('📤 Enviando audio a /api/voice/transcribe...');
       
       // 🔥 GENERAR REQUEST-ID
       const requestId = generateRequestId();
-      console.log(`[REQ-VOICE] 📤 STT - id=${requestId} sessionId=${sessionId}`);
+      console.log(`[REQ-VOICE] 📤 TRANSCRIBE - id=${requestId} sessionId=${sessionId}`);
       
       const formData = new FormData();
-      formData.append('file', audioBlob, 'voice.webm');
-      formData.append('sessionId', sessionId);
-      if (workspaceId) formData.append('workspaceId', workspaceId);
-      formData.append('meta', JSON.stringify({
-        platform: 'web',
-        version: '1.0',
-        timestamp: new Date().toISOString()
-      }));
+      formData.append('audio', audioBlob, 'voice-message.webm'); // ✅ Cambiado de 'file' a 'audio'
+      
+      console.log('📤 FormData:', {
+        audioSize: audioBlob.size,
+        audioType: audioBlob.type,
+        sessionId,
+        endpoint
+      });
 
-      const sttResponse = await fetch(`${CORE_BASE_URL}/api/voice/stt`, {
+      const sttResponse = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'x-request-id': requestId, // 🔥 REQUEST-ID
+          'x-request-id': requestId,
         },
         body: formData,
         signal: abortControllerRef.current.signal
       });
+      
+      console.log('📥 Response status:', sttResponse.status);
 
       if (!sttResponse.ok) {
         const errorData = await sttResponse.json().catch(() => ({}));
-        logRequestError(requestId, '/api/voice/stt', {
+        console.error('❌ Transcribe error:', errorData);
+        logRequestError(requestId, '/api/voice/transcribe', {
           status: sttResponse.status,
-          error: errorData.error,
+          error: errorData.error || errorData.message,
           sessionId
         });
-        throw new Error(errorData.error || `STT Error: ${sttResponse.status}`);
+        throw new Error(errorData.error || errorData.message || `Transcribe Error: ${sttResponse.status}`);
       }
 
       const sttData = await sttResponse.json();
+      console.log('✅ Transcribe response:', sttData);
+      
       const userText = sttData.text || sttData.transcript || '';
 
       if (!userText.trim()) {
-        logRequestError(requestId, '/api/voice/stt', { error: 'No voice detected', sessionId });
+        logRequestError(requestId, '/api/voice/transcribe', { error: 'No voice detected', sessionId });
         throw new Error('No se detectó voz en el audio');
       }
 
-      console.log(`✅ STT: "${userText}"`);
-      logRequest(requestId, '/api/voice/stt', sttResponse.status, {
+      console.log(`✅ TRANSCRIPCIÓN: "${userText}"`);
+      logRequest(requestId, '/api/voice/transcribe', sttResponse.status, {
         sessionId,
         textLength: userText.length
       });
