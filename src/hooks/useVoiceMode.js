@@ -62,36 +62,24 @@ export function useVoiceMode({
 
   // Cleanup al desmontar
   useEffect(() => {
+    if (!enabled) return; // Skip cleanup si disabled
     return () => {
-      stopRecording();
-      stopAudio();
+      if (typeof stopRecording === 'function') stopRecording();
+      if (typeof stopAudio === 'function') stopAudio();
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
     };
-  }, []);
-
-  // 🔒 Si no está habilitado, retornar versión deshabilitada (DESPUÉS de hooks)
-  if (!enabled) {
-    return {
-      mode: 'text',
-      status: 'idle',
-      isListening: false,
-      isSending: false,
-      error: null,
-      transcript: '',
-      setMode: () => {},
-      startListening: () => {},
-      stopRecording: () => {},
-      stopAudio: () => {},
-      stopAll: () => {}
-    };
-  }
+  }, [enabled]);
 
   /**
    * Iniciar grabación de audio
    */
   const startRecording = useCallback(async () => {
+    if (!enabled) {
+      console.warn('⚠️ Voice mode disabled');
+      return;
+    }
     if (isSending) {
       console.warn('⚠️ Ya hay un proceso en curso, esperando...');
       return;
