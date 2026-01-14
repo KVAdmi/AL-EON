@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔍 Test de TTS - AL-E</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+    }
+    h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+      color: #333;
+      text-align: center;
+    }
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    .section {
+      background: #f5f5f5;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .section h2 {
+      font-size: 18px;
+      margin-bottom: 15px;
+      color: #444;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #555;
+      font-size: 14px;
+    }
+    select, input, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 15px;
+      font-family: inherit;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    select:focus, input:focus, textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 14px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .stop-btn {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      margin-top: 10px;
+    }
+    .info {
+      background: #e0e7ff;
+      border: 2px solid #667eea;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 20px;
+    }
+    .info h3 {
+      color: #667eea;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 13px;
+      color: #555;
+      border-bottom: 1px solid #c7d2fe;
+    }
+    .info-item:last-child { border-bottom: none; }
+    .info-item strong { color: #333; }
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status.success { background: #dcfce7; color: #16a34a; }
+    .status.error { background: #fee2e2; color: #dc2626; }
+    .status.warning { background: #fef3c7; color: #ca8a04; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔊 Test de TTS</h1>
+    <p class="subtitle">Prueba de Text-to-Speech con Web Speech API</p>
+
+    <div class="section">
+      <h2>⚙️ Configuración</h2>
+      
+      <label for="voiceSelect">🎤 Seleccionar voz:</label>
+      <select id="voiceSelect">
+        <option value="">Cargando voces...</option>
+      </select>
+
+      <label for="textInput">✍️ Texto a hablar:</label>
+      <textarea id="textInput" placeholder="Escribe algo para probar...">Hola, soy AL-E. Esta es una prueba de voz en español de México. ¿Puedes escucharme claramente?</textarea>
+
+      <label for="rateInput">⚡ Velocidad: <span id="rateValue">1.0</span></label>
+      <input type="range" id="rateInput" min="0.5" max="2" step="0.1" value="1">
+
+      <label for="pitchInput">🎵 Tono: <span id="pitchValue">1.0</span></label>
+      <input type="range" id="pitchInput" min="0" max="2" step="0.1" value="1">
+    </div>
+
+    <button id="speakBtn">
+      <span>▶️</span>
+      <span>Hablar</span>
+    </button>
+
+    <button id="stopBtn" class="stop-btn" style="display: none;">
+      <span>⏹️</span>
+      <span>Detener</span>
+    </button>
+
+    <div class="info">
+      <h3>📊 Estado del Sistema</h3>
+      <div class="info-item">
+        <span>Soporte TTS:</span>
+        <strong id="ttsSupport">-</strong>
+      </div>
+      <div class="info-item">
+        <span>Voces disponibles:</span>
+        <strong id="voicesCount">-</strong>
+      </div>
+      <div class="info-item">
+        <span>Voces mexicanas (es-MX):</span>
+        <strong id="mexicanVoices">-</strong>
+      </div>
+      <div class="info-item">
+        <span>Estado actual:</span>
+        <strong id="currentStatus"><span class="status warning">Esperando</span></strong>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let voices = [];
+    let utterance = null;
+
+    // Cargar voces
+    function loadVoices() {
+      voices = speechSynthesis.getVoices();
+      console.log('🎤 Voces cargadas:', voices.length);
+      
+      const select = document.getElementById('voiceSelect');
+      select.innerHTML = '';
+      
+      // Filtrar voces mexicanas primero
+      const mexicanVoices = voices.filter(v => v.lang === 'es-MX');
+      const spanishVoices = voices.filter(v => v.lang.startsWith('es-') && v.lang !== 'es-MX');
+      const otherVoices = voices.filter(v => !v.lang.startsWith('es-'));
+
+      // Agregar mexicanas
+      if (mexicanVoices.length > 0) {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = '🇲🇽 Voces Mexicanas';
+        mexicanVoices.forEach(voice => {
+          const option = document.createElement('option');
+          option.value = voice.name;
+          option.textContent = `${voice.name} (${voice.lang})`;
+          optgroup.appendChild(option);
+        });
+        select.appendChild(optgroup);
+      }
+
+      // Agregar españolas
+      if (spanishVoices.length > 0) {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = '🇪🇸 Voces en Español';
+        spanishVoices.forEach(voice => {
+          const option = document.createElement('option');
+          option.value = voice.name;
+          option.textContent = `${voice.name} (${voice.lang})`;
+          optgroup.appendChild(option);
+        });
+        select.appendChild(optgroup);
+      }
+
+      // Agregar otras
+      if (otherVoices.length > 0) {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = '🌍 Otros idiomas';
+        otherVoices.forEach(voice => {
+          const option = document.createElement('option');
+          option.value = voice.name;
+          option.textContent = `${voice.name} (${voice.lang})`;
+          optgroup.appendChild(option);
+        });
+        select.appendChild(optgroup);
+      }
+
+      // Seleccionar primera mexicana por defecto
+      if (mexicanVoices.length > 0) {
+        select.value = mexicanVoices[0].name;
+      }
+
+      // Actualizar stats
+      document.getElementById('voicesCount').textContent = voices.length;
+      document.getElementById('mexicanVoices').textContent = mexicanVoices.length;
+    }
+
+    // Event listeners para cargar voces
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = loadVoices;
+    }
+    loadVoices();
+
+    // Verificar soporte
+    const hasSupport = 'speechSynthesis' in window;
+    document.getElementById('ttsSupport').innerHTML = hasSupport 
+      ? '<span class="status success">✅ Soportado</span>'
+      : '<span class="status error">❌ No soportado</span>';
+
+    // Sliders
+    document.getElementById('rateInput').addEventListener('input', (e) => {
+      document.getElementById('rateValue').textContent = e.target.value;
+    });
+
+    document.getElementById('pitchInput').addEventListener('input', (e) => {
+      document.getElementById('pitchValue').textContent = e.target.value;
+    });
+
+    // Botón hablar
+    document.getElementById('speakBtn').addEventListener('click', () => {
+      const text = document.getElementById('textInput').value;
+      const voiceName = document.getElementById('voiceSelect').value;
+      const rate = parseFloat(document.getElementById('rateInput').value);
+      const pitch = parseFloat(document.getElementById('pitchInput').value);
+
+      if (!text) {
+        alert('⚠️ Escribe algo primero');
+        return;
+      }
+
+      // Detener cualquier speech anterior
+      speechSynthesis.cancel();
+
+      utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = rate;
+      utterance.pitch = pitch;
+      utterance.volume = 1.0;
+
+      // Seleccionar voz
+      const voice = voices.find(v => v.name === voiceName);
+      if (voice) {
+        utterance.voice = voice;
+        utterance.lang = voice.lang;
+      }
+
+      // Events
+      utterance.onstart = () => {
+        console.log('🎤 Hablando...');
+        document.getElementById('currentStatus').innerHTML = '<span class="status success">🎤 Hablando</span>';
+        document.getElementById('speakBtn').disabled = true;
+        document.getElementById('stopBtn').style.display = 'block';
+      };
+
+      utterance.onend = () => {
+        console.log('✅ Finalizado');
+        document.getElementById('currentStatus').innerHTML = '<span class="status warning">Esperando</span>';
+        document.getElementById('speakBtn').disabled = false;
+        document.getElementById('stopBtn').style.display = 'none';
+      };
+
+      utterance.onerror = (e) => {
+        console.error('❌ Error:', e);
+        document.getElementById('currentStatus').innerHTML = '<span class="status error">❌ Error</span>';
+        document.getElementById('speakBtn').disabled = false;
+        document.getElementById('stopBtn').style.display = 'none';
+      };
+
+      // Hablar
+      speechSynthesis.speak(utterance);
+    });
+
+    // Botón detener
+    document.getElementById('stopBtn').addEventListener('click', () => {
+      speechSynthesis.cancel();
+      document.getElementById('currentStatus').innerHTML = '<span class="status warning">Detenido</span>';
+      document.getElementById('speakBtn').disabled = false;
+      document.getElementById('stopBtn').style.display = 'none';
+    });
+
+    console.log('🔍 Test de TTS cargado');
+    console.log('📋 Para probar:');
+    console.log('1. Selecciona una voz mexicana (es-MX)');
+    console.log('2. Ajusta velocidad y tono si quieres');
+    console.log('3. Click en "Hablar"');
+    console.log('4. Deberías escuchar el texto');
+  </script>
+</body>
+</html>
