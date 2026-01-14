@@ -256,12 +256,6 @@ export async function uploadLiveChunk(meetingId, audioBlob, chunkIndex, startedA
       body: formData
     });
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: formData
-    });
-
     console.log(`[MeetingsService] Response status: ${response.status}`);
 
     if (!response.ok) {
