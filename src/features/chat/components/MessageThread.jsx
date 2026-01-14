@@ -100,8 +100,7 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
         {voiceMode && (
           <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
             {/* Voice controls - SOLO SI voiceMode existe */}
-            {voiceMode && (
-              <>
+            <>
                 {/* Estado actual */}
                 {voiceMode.status !== 'idle' && (
                   <div className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-full text-xs font-medium ${
@@ -134,7 +133,14 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
                 {/* Botón micrófono en modo voz */}
                 {voiceMode.mode === 'voice' && (
                   <button
-                    onClick={voiceMode.isListening ? voiceMode.stopAll : voiceMode.startListening}
+                    onClick={() => {
+                      console.log('[VoiceUI] click mic, voiceMode:', !!voiceMode, 'mode:', voiceMode?.mode, 'isListening:', voiceMode?.isListening);
+                      if (voiceMode.isListening) {
+                        voiceMode.stopAll();
+                      } else {
+                        voiceMode.startListening();
+                      }
+                    }}
                     className={`p-2 rounded-full transition-all ${
                       voiceMode.isListening
                         ? 'bg-red-600 text-white animate-pulse'
@@ -161,7 +167,6 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
                   </button>
                 )}
               </>
-            )}
           </div>
         )}
       </div>
