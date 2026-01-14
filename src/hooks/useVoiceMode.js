@@ -63,12 +63,184 @@ export function useVoiceMode({
     handsFreeRef.current = handsFreeEnabled;
   }, [handsFreeEnabled]);
 
+  /**
+   * Reproducir audio
+   */
+  const playAudio = useCallback((audioBlob) => {
+    return new Promise((resolve, reject) => {
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audioPlayerRef.current = audio;
+
+      audio.onended = () => {
+        console.log('✅ Audio reproducido completamente');
+        URL.revokeObjectURL(audioUrl);
+        setStatus('idle');
+        resolve();
+      };
+
+      audio.onerror = (err) => {
+        console.error('❌ Error al reproducir audio:', err);
+        URL.revokeObjectURL(audioUrl);
+        setStatus('idle');
+        reject(err);
+      };
+
+      setStatus('speaking');
+      audio.play().catch(reject);
+    });
+  }, []);
+
+  /**
+   * Enviar audio al backend: TRANSCRIBE → Chat → TTS → reproducir
+   */
+  const sendAudioToBackend = useCallback(async (audioBlob) => {
+    console.log('🔥🔥🔥 sendAudioToBackend EJECUTADO - blob:', audioBlob.size, 'bytes');
+    console.log('🔥 accessToken:', !!accessToken);
+    console.log('🔥 sessionId:', sessionId);
+    console.log('🔥 CORE_BASE_URL:', CORE_BASE_URL);
+    
+    setIsSending(true);
+    setStatus('processing');
+    
+    // Crear AbortController para timeout
+    abortControllerRef.current = new AbortController();
+    const timeoutId = setTimeout(() => abortControllerRef.current?.abort(), 60000); // 60s
+
+    try {
+      // PASO 1: TRANSCRIBE - Convertir audio a texto
+      const endpoint = `${CORE_BASE_URL}/api/voice/transcribe`;
+      console.log('📤🔥🔥🔥 POST:', endpoint);
+      console.log('📤 Enviando audio a /api/voice/transcribe...');
+      
+      // 🔥 GENERAR REQUEST-ID
+      const requestId = generateRequestId();
+      console.log(`[REQ-VOICE] 📤 TRANSCRIBE - id=${requestId} sessionId=${sessionId}`);
+      
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'voice-message.webm');
+      
+      console.log('📤 FormData:', {
+        audioSize: audioBlob.size,
+        audioType: audioBlob.type,
+        sessionId,
+        endpoint
+      });
+
+      const sttResponse = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'x-request-id': requestId,
+        },
+        body: formData,
+        signal: abortControllerRef.current.signal
+      });
+      
+      console.log('📥 Response status:', sttResponse.status);
+
+      if (!sttResponse.ok) {
+        const errorData = await sttResponse.json().catch(() => ({}));
+        console.error('❌ Transcribe error:', errorData);
+        throw new Error(errorData.error || errorData.message || `Transcribe Error: ${sttResponse.status}`);
+      }
+
+      const sttData = await sttResponse.json();
+      console.log('✅ Transcribe response:', sttData);
+      
+      const userText = sttData.text || sttData.transcript || '';
+
+      if (!userText.trim()) {
+        throw new Error('No se detectó voz en el audio');
+      }
+
+      console.log(`✅ TRANSCRIPCIÓN: "${userText}"`);
+      setTranscript(userText);
+
+      // PASO 2: Chat - Enviar texto a AL-E Core
+      console.log('💬 Enviando mensaje al chat...');
+      
+      const chatResponse = await fetch(`${CORE_BASE_URL}/api/ai/chat`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userText,
+          sessionId,
+          workspaceId,
+          meta: {
+            inputMode: 'voice',
+            platform: 'web',
+            handsFree: handsFreeRef.current
+          }
+        }),
+        signal: abortControllerRef.current.signal
+      });
+
+      if (!chatResponse.ok) {
+        const errorData = await chatResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || `Chat Error: ${chatResponse.status}`);
+      }
+
+      const chatData = await chatResponse.json();
+      const assistantText = chatData.response || chatData.message || '';
+
+      if (!assistantText.trim()) {
+        throw new Error('Respuesta vacía del asistente');
+      }
+
+      console.log(`✅ Respuesta: "${assistantText.substring(0, 100)}..."`);
+      onResponse?.(assistantText);
+
+      // PASO 3: TTS - Convertir respuesta a audio
+      console.log('🔊 Solicitando audio con /api/voice/tts...');
+      
+      const ttsResponse = await fetch(`${CORE_BASE_URL}/api/voice/tts`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: assistantText,
+          voice: 'mx_female_default',
+          format: 'mp3'
+        }),
+        signal: abortControllerRef.current.signal
+      });
+
+      if (!ttsResponse.ok) {
+        const errorData = await ttsResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || `TTS Error: ${ttsResponse.status}`);
+      }
+
+      const audioBlob = await ttsResponse.blob();
+      
+      // PASO 4: Reproducir audio
+      console.log('🎵 Reproduciendo respuesta...');
+      await playAudio(audioBlob);
+
+      console.log('✅ Ciclo de voz completado');
+      setStatus('idle');
+
+    } catch (err) {
+      console.error('❌ Error en ciclo de voz:', err);
+      setError(err);
+      onError?.(err);
+      setStatus('idle');
+    } finally {
+      clearTimeout(timeoutId);
+      setIsSending(false);
+      abortControllerRef.current = null;
+    }
+  }, [accessToken, sessionId, workspaceId, onResponse, onError, playAudio]);
+
   // Cleanup al desmontar
   useEffect(() => {
-    if (!enabled) return; // Skip cleanup si disabled
+    if (!enabled) return;
     return () => {
-      if (typeof stopRecording === 'function') stopRecording();
-      if (typeof stopAudio === 'function') stopAudio();
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
@@ -199,7 +371,7 @@ export function useVoiceMode({
       
       setStatus('idle');
     }
-  }, [isSending, accessToken, onError]);
+  }, [isSending, accessToken, onError, sendAudioToBackend]);
 
   /**
    * Detener grabación
@@ -212,8 +384,9 @@ export function useVoiceMode({
   }, []);
 
   /**
-   * Enviar audio al backend: STT → Chat → TTS → reproducir
-  const sendAudioToBackend = useCallback(async (audioBlob) => {
+   * Detener audio
+   */
+  const stopAudio = useCallback(() => {
     console.log('🔥🔥🔥 sendAudioToBackend EJECUTADO - blob:', audioBlob.size, 'bytes');
     console.log('🔥 accessToken:', !!accessToken);
     console.log('🔥 sessionId:', sessionId);
@@ -413,12 +586,12 @@ export function useVoiceMode({
       setIsSending(false);
       abortControllerRef.current = null;
     }
-  }, [accessToken, sessionId, workspaceId, mode, onResponse, onError, startRecording]);
+  }, [accessToken, sessionId, workspaceId, onResponse, onError, playAudio]);
 
   /**
-   * Reproducir audio
+   * Detener audio
    */
-  const playAudio = useCallback((audioBlob) => {
+  const stopAudio = useCallback(() => {
     return new Promise((resolve, reject) => {
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
