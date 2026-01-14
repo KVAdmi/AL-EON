@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import MessageThread from '@/features/chat/components/MessageThread';
 import MessageComposer from '@/features/chat/components/MessageComposer';
 import Sidebar from '@/features/chat/components/Sidebar';
@@ -11,7 +12,11 @@ import { useEventNotifications } from '@/hooks/useEventNotifications';
 
 function ChatPage() {
   const { user, userProfile, accessToken, logout } = useAuth();
+  const [searchParams] = useSearchParams();
   const [handsFree, setHandsFree] = useState(false);
+  
+  // 🎤 Detectar si se activó modo voz desde URL
+  const voiceModeFromURL = searchParams.get('mode') === 'voice';
   
   // 🔔 Sistema de notificaciones de eventos
   useEventNotifications(user?.id);
@@ -67,6 +72,14 @@ function ChatPage() {
     },
     handsFreeEnabled: handsFree     // ✅ Modo manos libres
   }) : null;
+
+  // 🎤 Activar modo voz automáticamente si viene desde URL
+  useEffect(() => {
+    if (voiceModeFromURL && voiceMode && voiceMode.mode !== 'voice') {
+      console.log('🎤 Activando modo voz desde URL...');
+      voiceMode.setMode('voice');
+    }
+  }, [voiceModeFromURL, voiceMode]);
 
   const handleNewConversation = (projectId = null) => {
     createConversation(projectId);
