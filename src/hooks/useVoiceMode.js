@@ -37,6 +37,7 @@ export function useVoiceMode({
   accessToken, // JWT token de Supabase (REQUERIDO)
   sessionId, // ID de sesión (REQUERIDO)
   workspaceId = 'core', // ID de workspace
+  enabled = true, // Flag para activar/desactivar (NUEVO)
   onResponse, // Callback con respuesta de AL-E: (text) => void
   onError, // Callback de error: (error) => void
   handsFreeEnabled = false
@@ -69,6 +70,23 @@ export function useVoiceMode({
       }
     };
   }, []);
+
+  // 🔒 Si no está habilitado, retornar versión deshabilitada (DESPUÉS de hooks)
+  if (!enabled) {
+    return {
+      mode: 'text',
+      status: 'idle',
+      isListening: false,
+      isSending: false,
+      error: null,
+      transcript: '',
+      setMode: () => {},
+      startListening: () => {},
+      stopRecording: () => {},
+      stopAudio: () => {},
+      stopAll: () => {}
+    };
+  }
 
   /**
    * Iniciar grabación de audio

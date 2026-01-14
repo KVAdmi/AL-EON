@@ -56,11 +56,12 @@ function ChatPage() {
     userId: user?.id // ✅ Pasar userId para subir archivos
   });
 
-  // 🔒 Sistema de voz SOLO si está habilitado
-  const voiceMode = canUseVoice ? useVoiceMode({
+  // 🔒 Sistema de voz - SIEMPRE ejecutar hook (no condicional)
+  const voiceMode = useVoiceMode({
     accessToken,                    // ✅ JWT token de Supabase (REQUERIDO)
     sessionId: currentConversation?.session_id || currentConversation?.id, // ✅ ID de sesión (REQUERIDO)
     workspaceId: 'core',           // ✅ Workspace ID
+    enabled: canUseVoice,          // ✅ Flag para activar/desactivar
     onResponse: (responseText) => { // ✅ Callback correcto - respuesta de AL-E
       console.log('✅ [Voice] Respuesta de AL-E:', responseText.substring(0, 100));
       // El mensaje ya se agregó al conversation por el backend
@@ -71,7 +72,7 @@ function ChatPage() {
       alert(`Error de voz: ${error.message}`);
     },
     handsFreeEnabled: handsFree     // ✅ Modo manos libres
-  }) : null;
+  });
 
   // 🎤 Activar modo voz automáticamente si viene desde URL
   useEffect(() => {
