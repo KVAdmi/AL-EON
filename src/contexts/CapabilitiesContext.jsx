@@ -76,14 +76,14 @@ export function CapabilitiesProvider({ children }) {
       console.error('[CAPABILITIES] ❌ Error cargando:', err);
       setError(err.message);
       
-      // ⚠️ Si hay error, asumir capabilities básicas (solo chat)
+      // ⚠️ Si hay error, asumir capabilities básicas habilitadas
       setCapabilities({
         chat: true,
-        voice: false,
+        voice: true,  // ✅ VOZ HABILITADA POR DEFAULT
         integrations: false,
         collaboration: false,
         actions: false,
-        memory: false,
+        memory: true,  // ✅ MEMORIA HABILITADA
         'mail.send': false,
         'calendar.create': false,
         'calendar.list': false
