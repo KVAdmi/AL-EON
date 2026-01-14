@@ -144,6 +144,22 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
                     <Mic size={14} md:size={16} />
                   </button>
                 )}
+
+                {/* Botón Manos Libres */}
+                {voiceMode.mode === 'voice' && (
+                  <button
+                    onClick={onToggleHandsFree}
+                    className={`flex items-center gap-1.5 px-2 md:px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                      handsFree
+                        ? 'bg-blue-600 text-white border border-blue-500'
+                        : 'bg-transparent text-gray-400 hover:bg-gray-800 border border-gray-700'
+                    }`}
+                    title={handsFree ? 'Desactivar manos libres' : 'Activar manos libres'}
+                  >
+                    <Waves size={12} md:size={14} />
+                    <span className="hidden sm:inline">Manos Libres</span>
+                  </button>
+                )}
               </>
             )}
           </div>
