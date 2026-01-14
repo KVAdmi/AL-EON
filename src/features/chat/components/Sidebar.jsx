@@ -285,7 +285,7 @@ function Sidebar({
           </div>
         </div>
 
-        {/* Botones: Nuevo Chat + Nuevo Proyecto + Voz + Notificaciones */}
+        {/* Botones: Nuevo Chat + Voz + Nuevo Proyecto + Notificaciones */}
         <div className="flex gap-2">
           <button
             onClick={onNewConversation}
@@ -297,6 +297,19 @@ function Sidebar({
           >
             <Plus size={18} strokeWidth={2.5} />
             <span className="font-medium" style={{ color: '#FFFFFF' }}>Nuevo chat</span>
+          </button>
+
+          <button
+            onClick={() => navigate('/chat?mode=voice')}
+            className="flex items-center justify-center py-2.5 px-3 rounded-2xl transition-all duration-200 hover:opacity-80"
+            style={{
+              backgroundColor: 'var(--color-bg-secondary)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-primary)'
+            }}
+            title="Modo voz (micrófono)"
+          >
+            <Mic size={18} />
           </button>
 
           {!notificationsEnabled && (
@@ -398,9 +411,9 @@ function Sidebar({
               border: '1px solid var(--color-border)',
               color: 'var(--color-text-primary)'
             }}
-            title="Reuniones"
+            title="Reuniones (Meetings)"
           >
-            <Mic size={22} />
+            <Users size={22} />
           </button>
         </div>
       </div>
