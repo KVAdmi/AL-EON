@@ -55,7 +55,7 @@ async function fetchWithRetry(url, options, retries = 1) {
  * @param {AbortSignal} params.signal - Señal para cancelar request (opcional)
  * @returns {Promise<Object>} Respuesta de AL-E Core con session_id
  */
-export async function sendToAleCore({ accessToken, message, sessionId, workspaceId, projectId, userEmail, userDisplayName, meta, files, signal }) {
+export async function sendToAleCore({ accessToken, userId, message, sessionId, workspaceId, projectId, userEmail, userDisplayName, meta, files, signal }) {
   const BASE_URL = import.meta.env.VITE_ALE_CORE_BASE || import.meta.env.VITE_ALE_CORE_URL?.replace('/api/ai/chat', '');
   
   if (!BASE_URL) {
@@ -83,7 +83,7 @@ export async function sendToAleCore({ accessToken, message, sessionId, workspace
         content: message.trim()
       }
     ],
-    userId: accessToken, // Token para identificar usuario
+    userId: userId || accessToken, // ✅ Usar userId real o fallback a token
     sessionId: sessionId || undefined,
     workspaceId: workspaceId || 'core',
     projectId: projectId || undefined, // ✅ ID del proyecto para RAG

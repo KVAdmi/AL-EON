@@ -168,6 +168,7 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
       // ✅ P0: ENVIAR SOLO EL MENSAJE ACTUAL, SIN HISTORIAL
       const response = await sendToAleCore({
         accessToken, // JWT de Supabase
+        userId, // ✅ USER ID real (UUID)
         message: content.trim(), // ✅ SOLO mensaje actual
         sessionId: finalSessionId,
         workspaceId,

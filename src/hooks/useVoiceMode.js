@@ -486,11 +486,13 @@ export function useVoiceMode({
     
     // Acciones
     setMode: setVoiceMode,
+    startListening: startRecording, // ✅ Alias para compatibilidad
     startRecording,
     stopRecording,
     stopAll,
     
     // Info
+    isListening: status === 'recording', // ✅ Alias
     isRecording: status === 'recording',
     isProcessing: status === 'processing',
     isSpeaking: status === 'speaking',
