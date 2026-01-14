@@ -168,13 +168,16 @@ export async function startLiveMeeting(title) {
     console.log('[MeetingsService] Backend URL:', BACKEND_URL);
 
     // ⚠️ CORE: Primero crear en backend, luego guardar en DB
+    const now = new Date().toISOString();
     const payload = {
       title: title || `Reunión en vivo ${new Date().toLocaleTimeString('es-ES')}`,
       mode: 'live',
       auto_send_enabled: false,
       send_email: false,
       send_telegram: false,
-      participants: []
+      participants: [],
+      happened_at: now,
+      scheduled_at: now
     };
     
     console.log('[MeetingsService] Enviando payload:', payload);
