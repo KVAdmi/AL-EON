@@ -92,18 +92,12 @@ export function useVoiceMode({
    * Iniciar grabación de audio
    */
   const startRecording = useCallback(async () => {
-    console.log('🔥🔥🔥 [VOICE] startRecording EJECUTADO');
-    console.log('🔥 isSending:', isSending);
-    console.log('🔥 accessToken:', !!accessToken);
-    console.log('🔥 enabled:', enabled);
-    
     if (isSending) {
       console.warn('⚠️ Ya hay un proceso en curso, esperando...');
       return;
     }
 
     if (!accessToken) {
-      console.error('❌ NO HAY ACCESS TOKEN');
       const err = new Error('No hay sesión activa');
       setError(err);
       onError?.(err);
@@ -174,15 +168,8 @@ export function useVoiceMode({
         if (bytesGrabados === 0) {
           const errorMsg = `⚠️ [P0-2] NO SE GRABÓ AUDIO (bytes: 0)`;
           console.error(errorMsg);
-        console.log(`✅ [P0-2] Audio válido: ${bytesGrabados} bytes - Enviando al backend...`);
-        console.log('🔥🔥🔥 [VOICE] Llamando a sendAudioToBackend...');
-        try {
-          await sendAudioToBackend(audioBlob);
-          console.log('✅ [VOICE] sendAudioToBackend completado');
-        } catch (err) {
-          console.error('❌ [VOICE] Error en sendAudioToBackend:', err);
-          throw err;
-        }audio'));
+          setStatus('idle');
+          setError(new Error('No se capturó audio'));
           onError?.(new Error('No se capturó audio (0 bytes). Verifica que tu micrófono esté funcionando y habla más tiempo.'));
           return; // 🔥 NO ENVIAR REQUEST
         }
