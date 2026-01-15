@@ -223,6 +223,11 @@ export function useVoiceMode({
    * Enviar audio al backend: STT → Chat → TTS → reproducir
    */
   const sendAudioToBackend = useCallback(async (audioBlob) => {
+    console.log('🔥🔥🔥🔥🔥 sendAudioToBackend LLAMADO - blob:', audioBlob.size, 'bytes');
+    console.log('🔥 accessToken:', !!accessToken);
+    console.log('🔥 sessionId:', sessionId);
+    console.log('🔥 CORE_BASE_URL:', CORE_BASE_URL);
+    
     setIsSending(true);
     setStatus('processing');
     
@@ -240,12 +245,21 @@ export function useVoiceMode({
       
       const formData = new FormData();
       formData.append('audio', audioBlob, 'voice-message.webm');
+      
+      console.log('📤 FormData:', {
+        audioSize: audioBlob.size,
+        audioType: audioBlob.type,
+        endpoint: `${CORE_BASE_URL}/api/voice/transcribe`
+      });
 
-      const sttResponse = await fetch(`${CORE_BASE_URL}/api/voice/transcribe`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'x-request-id': requestId, // 🔥 REQUEST-ID
+        body: formData,
+        signal: abortControllerRef.current.signal
+      });
+      
+      console.log('📥 Response status:', sttResponse.status);
+      console.log('📥 Response ok:', sttResponse.ok);
+
+      if (!sttResponse.ok) {questId, // 🔥 REQUEST-ID
         },
         body: formData,
         signal: abortControllerRef.current.signal
@@ -494,6 +508,10 @@ export function useVoiceMode({
     startRecording,
     stopRecording,
     stopAll,
+    
+    // 🔥 ALIASES para compatibilidad con UI
+    startListening: startRecording,
+    isListening: status === 'recording',
     
     // Info
     isRecording: status === 'recording',
