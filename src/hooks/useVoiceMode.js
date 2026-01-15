@@ -9,7 +9,7 @@
  * 1. Modo Texto: usuario escribe, AL-E responde texto
  * 2. Modo Voz Manos Libres (ON):
  *    a) Captura audio (push-to-talk)
- *    b) POST /api/voice/stt → { text }
+ *    b) POST /api/voice/transcribe → { text }
  *    c) POST /api/ai/chat → { response }
  *    d) POST /api/voice/tts → audio MP3
  *    e) Reproduce audio
@@ -223,11 +223,6 @@ export function useVoiceMode({
    * Enviar audio al backend: STT → Chat → TTS → reproducir
    */
   const sendAudioToBackend = useCallback(async (audioBlob) => {
-    console.log('🔥🔥🔥🔥🔥 sendAudioToBackend LLAMADO - blob:', audioBlob.size, 'bytes');
-    console.log('🔥 accessToken:', !!accessToken);
-    console.log('🔥 sessionId:', sessionId);
-    console.log('🔥 CORE_BASE_URL:', CORE_BASE_URL);
-    
     setIsSending(true);
     setStatus('processing');
     
@@ -236,30 +231,28 @@ export function useVoiceMode({
     const timeoutId = setTimeout(() => abortControllerRef.current?.abort(), 60000); // 60s
 
     try {
-      // PASO 1: TRANSCRIBE - Convertir audio a texto
+      // PASO 1: STT - Convertir audio a texto
       console.log('📤 Enviando audio a /api/voice/transcribe...');
       
       // 🔥 GENERAR REQUEST-ID
       const requestId = generateRequestId();
-      console.log(`[REQ-VOICE] 📤 TRANSCRIBE - id=${requestId} sessionId=${sessionId}`);
+      console.log(`[REQ-VOICE] 📤 STT - id=${requestId} sessionId=${sessionId}`);
       
       const formData = new FormData();
       formData.append('audio', audioBlob, 'voice-message.webm');
-      
-      console.log('📤 FormData:', {
-        audioSize: audioBlob.size,
-        audioType: audioBlob.type,
-        endpoint: `${CORE_BASE_URL}/api/voice/transcribe`
-      });
+      formData.append('sessionId', sessionId);
+      if (workspaceId) formData.append('workspaceId', workspaceId);
+      formData.append('meta', JSON.stringify({
+        platform: 'web',
+        version: '1.0',
+        timestamp: new Date().toISOString()
+      }));
 
-        body: formData,
-        signal: abortControllerRef.current.signal
-      });
-      
-      console.log('📥 Response status:', sttResponse.status);
-      console.log('📥 Response ok:', sttResponse.ok);
-
-      if (!sttResponse.ok) {questId, // 🔥 REQUEST-ID
+      const sttResponse = await fetch(`${CORE_BASE_URL}/api/voice/transcribe`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'x-request-id': requestId, // 🔥 REQUEST-ID
         },
         body: formData,
         signal: abortControllerRef.current.signal
@@ -272,7 +265,7 @@ export function useVoiceMode({
           error: errorData.error,
           sessionId
         });
-        throw new Error(errorData.error || `Transcribe Error: ${sttResponse.status}`);
+        throw new Error(errorData.error || `STT Error: ${sttResponse.status}`);
       }
 
       const sttData = await sttResponse.json();
@@ -508,10 +501,6 @@ export function useVoiceMode({
     startRecording,
     stopRecording,
     stopAll,
-    
-    // 🔥 ALIASES para compatibilidad con UI
-    startListening: startRecording,
-    isListening: status === 'recording',
     
     // Info
     isRecording: status === 'recording',
