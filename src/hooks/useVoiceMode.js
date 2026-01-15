@@ -502,6 +502,10 @@ export function useVoiceMode({
     stopRecording,
     stopAll,
     
+    // 🔥 ALIASES para compatibilidad con UI
+    startListening: startRecording,
+    isListening: status === 'recording',
+    
     // Info
     isRecording: status === 'recording',
     isProcessing: status === 'processing',
