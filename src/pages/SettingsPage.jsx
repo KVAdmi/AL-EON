@@ -1204,18 +1204,18 @@ function TabContent({
 
   // ===== VOZ =====
   if (activeTab === 'voice') {
-    // Funciones de filtro de voces
-    const mexicanVoices = availableVoices.filter(v => 
+    // Funciones de filtro de voces (con validación)
+    const mexicanVoices = (availableVoices || []).filter(v => 
       v.lang === 'es-MX' || 
       v.name.toLowerCase().includes('mexico') ||
       v.name.toLowerCase().includes('mexican')
     );
 
-    const spanishVoices = availableVoices.filter(v => 
+    const spanishVoices = (availableVoices || []).filter(v => 
       v.lang.startsWith('es') && !mexicanVoices.some(mv => mv.name === v.name)
     );
 
-    const maleVoices = availableVoices.filter(v => 
+    const maleVoices = (availableVoices || []).filter(v => 
       !v.name.toLowerCase().includes('female') &&
       !v.name.toLowerCase().includes('mujer') &&
       (v.name.toLowerCase().includes('male') || 
@@ -1224,7 +1224,7 @@ function TabContent({
        v.name.toLowerCase().includes('jorge'))
     );
 
-    const femaleVoices = availableVoices.filter(v => 
+    const femaleVoices = (availableVoices || []).filter(v => 
       v.name.toLowerCase().includes('female') ||
       v.name.toLowerCase().includes('mujer') ||
       v.name.toLowerCase().includes('paulina') ||
