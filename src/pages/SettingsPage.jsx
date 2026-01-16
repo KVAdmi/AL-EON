@@ -1245,7 +1245,7 @@ function TabContent({
       
       utterance.lang = settings.tts_lang;
       
-      if (settings.tts_voice_name) {
+      if (settings.tts_voice_name && availableVoices && availableVoices.length > 0) {
         const selectedVoice = availableVoices.find(v => v.name === settings.tts_voice_name);
         if (selectedVoice) {
           utterance.voice = selectedVoice;

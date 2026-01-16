@@ -68,7 +68,7 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
     try {
       // 0. Obtener documentos del proyecto si existe
       let projectDocuments = [];
-      if (currentConversation.project_id && userId) {
+      if (currentConversation?.project_id && userId) {
         console.log('📁 Buscando documentos del proyecto:', currentConversation.project_id);
         try {
           const projectPath = `${userId}/projects/${currentConversation.project_id}/`;
@@ -106,6 +106,9 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
       // 1. Subir archivos adjuntos si existen
       let uploadedFiles = [];
       if (attachments && attachments.length > 0) {
+        if (!userId) {
+          throw new Error('Usuario no autenticado. No se pueden subir archivos.');
+        }
         setIsUploading(true);
         console.log('📤 Subiendo archivos adjuntos:', attachments.map(f => f.name));
         uploadedFiles = await uploadFiles(attachments, userId);
