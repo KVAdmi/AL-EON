@@ -1204,39 +1204,32 @@ function TabContent({
 
   // ===== VOZ =====
   if (activeTab === 'voice') {
-    const getMexicanVoices = () => {
-      return availableVoices.filter(v => 
-        v.lang === 'es-MX' || 
-        v.name.toLowerCase().includes('mexico') ||
-        v.name.toLowerCase().includes('mexican')
-      );
-    };
+    // Funciones de filtro de voces
+    const mexicanVoices = availableVoices.filter(v => 
+      v.lang === 'es-MX' || 
+      v.name.toLowerCase().includes('mexico') ||
+      v.name.toLowerCase().includes('mexican')
+    );
 
-    const getSpanishVoices = () => {
-      return availableVoices.filter(v => 
-        v.lang.startsWith('es') && !getMexicanVoices().includes(v)
-      );
-    };
+    const spanishVoices = availableVoices.filter(v => 
+      v.lang.startsWith('es') && !mexicanVoices.some(mv => mv.name === v.name)
+    );
 
-    const getMaleVoices = () => {
-      return availableVoices.filter(v => 
-        !v.name.toLowerCase().includes('female') &&
-        !v.name.toLowerCase().includes('mujer') &&
-        (v.name.toLowerCase().includes('male') || 
-         v.name.toLowerCase().includes('hombre') ||
-         v.name.toLowerCase().includes('diego') ||
-         v.name.toLowerCase().includes('jorge'))
-      );
-    };
+    const maleVoices = availableVoices.filter(v => 
+      !v.name.toLowerCase().includes('female') &&
+      !v.name.toLowerCase().includes('mujer') &&
+      (v.name.toLowerCase().includes('male') || 
+       v.name.toLowerCase().includes('hombre') ||
+       v.name.toLowerCase().includes('diego') ||
+       v.name.toLowerCase().includes('jorge'))
+    );
 
-    const getFemaleVoices = () => {
-      return availableVoices.filter(v => 
-        v.name.toLowerCase().includes('female') ||
-        v.name.toLowerCase().includes('mujer') ||
-        v.name.toLowerCase().includes('paulina') ||
-        v.name.toLowerCase().includes('monica')
-      );
-    };
+    const femaleVoices = availableVoices.filter(v => 
+      v.name.toLowerCase().includes('female') ||
+      v.name.toLowerCase().includes('mujer') ||
+      v.name.toLowerCase().includes('paulina') ||
+      v.name.toLowerCase().includes('monica')
+    );
 
     const testVoice = () => {
       if (!window.speechSynthesis) {
@@ -1266,9 +1259,6 @@ function TabContent({
       
       console.log('[TTS] Probando voz:', settings.tts_voice_name);
     };
-
-    const mexicanVoices = getMexicanVoices();
-    const spanishVoices = getSpanishVoices();
 
     return (
       <div className="space-y-6">

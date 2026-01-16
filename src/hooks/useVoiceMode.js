@@ -60,6 +60,31 @@ export function useVoiceMode({
     handsFreeRef.current = handsFreeEnabled;
   }, [handsFreeEnabled]);
 
+  /**
+   * Detener grabación
+   */
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      console.log('🛑 Deteniendo grabación...');
+      mediaRecorderRef.current.stop();
+    }
+  }, []);
+
+  /**
+   * Detener audio que está reproduciéndose
+   */
+  const stopAudio = useCallback(() => {
+    if (audioPlayerRef.current) {
+      console.log('🔇 Deteniendo audio...');
+      audioPlayerRef.current.pause();
+      audioPlayerRef.current.currentTime = 0;
+      audioPlayerRef.current = null;
+    }
+    if (status === 'speaking') {
+      setStatus('idle');
+    }
+  }, [status]);
+
   // Cleanup al desmontar
   useEffect(() => {
     return () => {
@@ -69,7 +94,7 @@ export function useVoiceMode({
         streamRef.current.getTracks().forEach(track => track.stop());
       }
     };
-  }, []);
+  }, [stopRecording, stopAudio]);
 
   // 🔒 Si no está habilitado, retornar versión deshabilitada (DESPUÉS de hooks)
   if (!enabled) {
@@ -208,16 +233,6 @@ export function useVoiceMode({
       setStatus('idle');
     }
   }, [isSending, accessToken, onError]);
-
-  /**
-   * Detener grabación
-   */
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      console.log('🛑 Deteniendo grabación...');
-      mediaRecorderRef.current.stop();
-    }
-  }, []);
 
   /**
    * Enviar audio al backend: STT → Chat → TTS → reproducir
@@ -438,18 +453,6 @@ export function useVoiceMode({
       setStatus('speaking');
       audio.play().catch(reject);
     });
-  }, []);
-
-  /**
-   * Detener audio
-   */
-  const stopAudio = useCallback(() => {
-    if (audioPlayerRef.current) {
-      console.log('🛑 Deteniendo audio...');
-      audioPlayerRef.current.pause();
-      audioPlayerRef.current.currentTime = 0;
-      audioPlayerRef.current = null;
-    }
   }, []);
 
   /**

@@ -104,6 +104,7 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
         {voiceMode && (
           <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
             {/* Voice controls - SOLO SI voiceMode existe */}
+            {voiceMode && (
             <>
                 {/* Estado actual */}
                 {voiceMode.status !== 'idle' && (
@@ -120,7 +121,20 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
 
                 {/* Selector de modo */}
                 <button
-                  onClick={() => voiceMode.setMode(voiceMode.mode === 'text' ? 'voice' : 'text')}
+                  onClick={() => {
+                    console.log('🎯 [MessageThread] Click en botón modo voz/texto');
+                    console.log('🎯 voiceMode:', voiceMode);
+                    console.log('🎯 voiceMode.mode:', voiceMode?.mode);
+                    console.log('🎯 voiceMode.setMode:', typeof voiceMode?.setMode);
+                    
+                    if (voiceMode?.setMode) {
+                      const newMode = voiceMode.mode === 'text' ? 'voice' : 'text';
+                      console.log('🎯 Cambiando a modo:', newMode);
+                      voiceMode.setMode(newMode);
+                    } else {
+                      console.error('❌ voiceMode.setMode no está disponible');
+                    }
+                  }}
                   className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     voiceMode.mode === 'voice'
                       ? 'bg-gray-700 text-white border border-gray-600'
@@ -177,6 +191,7 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
                   </button>
                 )}
               </>
+            )}
           </div>
         )}
       </div>

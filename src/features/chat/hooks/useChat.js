@@ -68,7 +68,7 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
     try {
       // 0. Obtener documentos del proyecto si existe
       let projectDocuments = [];
-      if (currentConversation.project_id) {
+      if (currentConversation.project_id && userId) {
         console.log('📁 Buscando documentos del proyecto:', currentConversation.project_id);
         try {
           const projectPath = `${userId}/projects/${currentConversation.project_id}/`;
