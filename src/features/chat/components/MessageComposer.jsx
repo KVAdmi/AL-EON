@@ -1,8 +1,8 @@
-
 import React, { useState, useRef } from 'react';
 import { Send, Paperclip, X, Image as ImageIcon, Globe } from 'lucide-react';
 import { Button } from '@/ui/button';
 import { useToast } from '@/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sessionId, onWebToggle, webEnabled }) {
   const [message, setMessage] = useState('');
@@ -12,6 +12,7 @@ function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sess
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const { toast } = useToast();
+  const { user } = useAuth(); // 🔒 Validar sesión
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -67,6 +68,19 @@ function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sess
   };
 
   const handleFileSelect = (e) => {
+    // 🔒 VALIDACIÓN P0: Bloquear si no hay usuario
+    if (!user?.id) {
+      toast({
+        title: "Error de sesión",
+        description: "No se pueden subir archivos. Por favor recarga la página e inicia sesión nuevamente.",
+        variant: "destructive"
+      });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
     const files = Array.from(e.target.files || []);
     console.log('📎 FILES SELECTED:', files);
     setAttachments(prev => [...prev, ...files]);
