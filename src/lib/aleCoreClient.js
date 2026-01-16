@@ -210,3 +210,43 @@ export function extractReply(data) {
   
   return 'Error: respuesta inválida del servidor';
 }
+
+/**
+ * 🔥 NUEVA FUNCIÓN: Extrae respuesta completa con metadata
+ * 
+ * Retorna un objeto con:
+ * - answer: texto de la respuesta
+ * - toolsUsed: array de tools ejecutados
+ * - executionTime: tiempo de ejecución en ms
+ * - metadata: objeto con request_id, timestamp, model, etc
+ * - debug: objeto con detalles de tools ejecutados
+ * 
+ * @param {Object} data - Respuesta del backend
+ * @returns {Object} { answer, toolsUsed, executionTime, metadata, debug }
+ */
+export function extractFullResponse(data) {
+  console.log('📥 Extrayendo respuesta completa con metadata:', data);
+  
+  // Extraer el texto de la respuesta usando la función existente
+  const answer = extractReply(data);
+  
+  // Extraer campos adicionales del backend
+  const fullResponse = {
+    answer,
+    toolsUsed: data.toolsUsed || [],
+    executionTime: data.executionTime || 0,
+    metadata: data.metadata || null,
+    debug: data.debug || null
+  };
+  
+  console.log('✅ Respuesta completa extraída:', {
+    answer: answer.substring(0, 100) + '...',
+    toolsUsed: fullResponse.toolsUsed,
+    executionTime: fullResponse.executionTime,
+    hasMetadata: !!fullResponse.metadata,
+    hasDebug: !!fullResponse.debug
+  });
+  
+  return fullResponse;
+}
+

@@ -8,6 +8,10 @@ import { saveMemory } from '@/services/memoryService';
 import { useToast } from '@/ui/use-toast';
 import { SourcesList, NoSourcesBadge } from './SourcesList';
 import { AttachmentsList } from './AttachmentStatus';
+import ToolsBadge from './ToolsBadge';
+import MessageMetadata from './MessageMetadata';
+import ErrorAlert from './ErrorAlert';
+import DebugInfo from './DebugInfo';
 
 // ✅ P1: Componente para mostrar tiempo de procesamiento
 function ProcessingTimer({ startTime }) {
@@ -261,7 +265,12 @@ function Message({ message, currentUser, assistantName = 'Luma', assistantAvatar
   const [memoryType, setMemoryType] = useState(null);
   const { toast } = useToast();
   
-  // 🐛 DEBUG: Ver si llega el avatar
+  // � NUEVO: Leer configuración de debug mode desde localStorage
+  const [debugMode, setDebugMode] = useState(() => {
+    return localStorage.getItem('ale-debug-mode') === 'true';
+  });
+  
+  // �🐛 DEBUG: Ver si llega el avatar
   console.log('🔍 [Message] assistantAvatar:', assistantAvatar);
   console.log('🔍 [Message] userAvatar:', userAvatar);
   console.log('🔍 [Message] assistantName:', assistantName);
@@ -384,28 +393,45 @@ function Message({ message, currentUser, assistantName = 'Luma', assistantAvatar
           </button>
 
           {isError && (
-            <div className="flex items-center gap-2 mb-2 text-red-400">
-              <AlertCircle size={14} md:size={16} />
-              <span className="text-xs md:text-sm font-medium">Error</span>
-            </div>
+            <ErrorAlert error={message.error} message={message.content} />
           )}
           
-          {message.attachments && message.attachments.length > 0 && (
+          {!isError && message.attachments && message.attachments.length > 0 && (
             <AttachmentsList attachments={message.attachments} />
           )}
           
-          <div className="text-sm md:text-base">
-            <MarkdownRenderer content={message.content} />
-          </div>
+          {!isError && (
+            <div className="text-sm md:text-base">
+              <MarkdownRenderer content={message.content} />
+            </div>
+          )}
+
+          {/* 🔥 NUEVO: Badges de tools ejecutados (solo para AL-E) */}
+          {!isUser && !isError && message.toolsUsed && (
+            <ToolsBadge toolsUsed={message.toolsUsed} />
+          )}
+
+          {/* 🔥 NUEVO: Metadata (modelo + latencia) */}
+          {!isUser && !isError && (message.metadata || message.executionTime) && (
+            <MessageMetadata 
+              metadata={message.metadata} 
+              executionTime={message.executionTime} 
+            />
+          )}
 
           {/* ✅ Mostrar fuentes si existen */}
-          {!isUser && message.sources && message.sources.length > 0 && (
+          {!isUser && !isError && message.sources && message.sources.length > 0 && (
             <SourcesList sources={message.sources} />
           )}
           
           {/* ✅ Badge "sin evidencia" si backend respondió sin fuentes */}
           {!isUser && !isError && message.noSources === true && (
             <NoSourcesBadge />
+          )}
+
+          {/* 🔥 NUEVO: Debug info (solo si debug mode está activo) */}
+          {!isUser && !isError && debugMode && (
+            <DebugInfo message={message} />
           )}
         </div>
         

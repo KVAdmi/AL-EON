@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { sendToAleCore, extractReply } from '@/lib/aleCoreClient';
+import { sendToAleCore, extractReply, extractFullResponse } from '@/lib/aleCoreClient';
 import { generateId } from '@/lib/utils';
 import { uploadFiles } from '@/lib/fileUpload';
 import { supabase } from '@/lib/supabase';
@@ -201,20 +201,25 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
         localStorage.setItem(`sessionId:${currentConversation.id}`, response.session_id);
       }
 
-      // Extract reply text
-      const replyText = extractReply(response);
+      // 🔥 NUEVO: Extraer respuesta completa con metadata
+      const fullResponse = extractFullResponse(response);
       
-      if (!replyText || typeof replyText !== 'string') {
+      if (!fullResponse.answer || typeof fullResponse.answer !== 'string') {
         console.error('❌ Respuesta inválida del asistente');
         throw new Error('Respuesta inválida del asistente');
       }
 
-      // Add AL-E response
+      // 🔥 NUEVO: Add AL-E response con metadata completa
       const assistantMessage = {
         id: generateId(),
         role: 'assistant',
-        content: replyText,
-        timestamp: Date.now()
+        content: fullResponse.answer,
+        timestamp: Date.now(),
+        // Nuevos campos de metadata
+        toolsUsed: fullResponse.toolsUsed,
+        executionTime: fullResponse.executionTime,
+        metadata: fullResponse.metadata,
+        debug: fullResponse.debug
       };
 
       addMessage(currentConversation.id, assistantMessage);
@@ -223,7 +228,7 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
       if (ttsSettings.enabled && response.should_speak !== false) {
         console.log('[TTS] 🔊 Hablando respuesta del asistente...');
         
-        speak(replyText, {
+        speak(fullResponse.answer, {
           lang: ttsSettings.lang,
           voiceName: ttsSettings.voice_name,
           gender: ttsSettings.gender,
@@ -232,7 +237,7 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
         });
       }
 
-      return replyText;
+      return fullResponse.answer;
     } catch (err) {
       console.error('❌ Error enviando mensaje:', err);
       setError(err.message);
