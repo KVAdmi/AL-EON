@@ -238,6 +238,19 @@ export function useVoiceMode({
    * Enviar audio al backend: STT → Chat → TTS → reproducir
    */
   const sendAudioToBackend = useCallback(async (audioBlob) => {
+    // 🔒 VALIDACIÓN P0: No enviar audio vacío
+    if (!audioBlob || audioBlob.size === 0) {
+      const errorMsg = 'No se detectó audio. Verifica que tu micrófono esté funcionando y que hayas hablado.';
+      console.error('❌ [Voice] Audio blob vacío:', { size: audioBlob?.size || 0 });
+      setError(errorMsg);
+      setStatus('idle');
+      setIsSending(false);
+      onError?.(new Error(errorMsg));
+      return; // 🛑 NO enviar al backend
+    }
+
+    console.log('✅ [Voice] Audio válido:', { size: audioBlob.size, type: audioBlob.type });
+
     setIsSending(true);
     setStatus('processing');
     
