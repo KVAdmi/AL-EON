@@ -191,18 +191,21 @@ export async function startLiveMeeting(title) {
     console.log('[MeetingsService] Response status:', response.status);
 
     if (!response.ok) {
-      let errorMsg = `Error ${response.status}: Failed to create meeting`;
+      let errorMsg = 'No se pudo iniciar la reunión. Intenta de nuevo.';
       try {
         const errorData = await response.json();
         console.error('[MeetingsService] Error response:', errorData);
-        if (errorData?.error || errorData?.message) {
+        // ✅ PRIORIDAD: safe_message del backend
+        if (errorData?.safe_message) {
+          errorMsg = errorData.safe_message;
+        } else if (errorData?.error || errorData?.message) {
+          // Fallback a error/message si no hay safe_message
           errorMsg = errorData.error || errorData.message;
         }
       } catch (e) {
         // Response no es JSON válido
         const textError = await response.text();
         console.error('[MeetingsService] Error response (text):', textError);
-        errorMsg = `Error ${response.status}: ${textError || 'Failed to create meeting'}`;
       }
       throw new Error(errorMsg);
     }
@@ -259,15 +262,15 @@ export async function uploadLiveChunk(meetingId, audioBlob, chunkIndex, startedA
     console.log(`[MeetingsService] Response status: ${response.status}`);
 
     if (!response.ok) {
-      let errorMsg = `Error ${response.status} enviando chunk`;
+      let errorMsg = 'No se pudo procesar el audio de la reunión.';
       try {
         const errorData = await response.json();
         console.error(`[MeetingsService] ❌ Error data:`, errorData);
-        errorMsg = errorData?.error || errorData?.message || errorMsg;
+        // ✅ PRIORIDAD: safe_message del backend
+        errorMsg = errorData?.safe_message || errorData?.error || errorData?.message || errorMsg;
       } catch (e) {
         const textError = await response.text();
         console.error(`[MeetingsService] ❌ Error text:`, textError);
-        errorMsg = textError || errorMsg;
       }
       throw new Error(errorMsg);
     }
@@ -299,13 +302,14 @@ export async function stopLiveMeeting(meetingId) {
     });
 
     if (!response.ok) {
-      let errorMsg = `Error ${response.status} finalizando reunión`;
+      let errorMsg = 'No se pudo finalizar la reunión. Intenta de nuevo.';
       try {
         const errorData = await response.json();
-        errorMsg = errorData?.error || errorData?.message || errorMsg;
+        // ✅ PRIORIDAD: safe_message del backend
+        errorMsg = errorData?.safe_message || errorData?.error || errorData?.message || errorMsg;
       } catch (e) {
         const textError = await response.text();
-        errorMsg = textError || errorMsg;
+        console.error('[MeetingsService] Error response (text):', textError);
       }
       throw new Error(errorMsg);
     }
@@ -327,16 +331,17 @@ export async function getLiveStatus(meetingId) {
     const response = await fetch(`${BACKEND_URL}/api/meetings/live/${meetingId}/status`, {
       headers: await authHeaders()
     });
-
     if (!response.ok) {
-      let errorMsg = `Error ${response.status} obteniendo estado`;
+      let errorMsg = 'No se pudo obtener el estado de la reunión.';
       try {
         const errorData = await response.json();
-        errorMsg = errorData?.error || errorData?.message || errorMsg;
+        // ✅ PRIORIDAD: safe_message del backend
+        errorMsg = errorData?.safe_message || errorData?.error || errorData?.message || errorMsg;
       } catch (e) {
         const textError = await response.text();
-        errorMsg = textError || errorMsg;
+        console.error('[MeetingsService] Error response (text):', textError);
       }
+      throw new Error(errorMsg);
       throw new Error(errorMsg);
     }
 
