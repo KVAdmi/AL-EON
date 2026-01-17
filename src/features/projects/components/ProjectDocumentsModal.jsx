@@ -48,6 +48,24 @@ export function ProjectDocumentsModal({ isOpen, onClose, project }) {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
+    // 🔥 HARD BLOCK — NO PROCEDER SIN ESTOS VALORES
+    if (!userId) {
+      alert('❌ ERROR: userId no está definido. No se puede subir el archivo.');
+      console.error('[UPLOAD BLOQUEADO] userId es undefined');
+      e.target.value = '';
+      return;
+    }
+
+    if (!project?.id) {
+      alert('❌ ERROR: No hay proyecto seleccionado. No se puede subir el archivo.');
+      console.error('[UPLOAD BLOQUEADO] project.id es undefined');
+      e.target.value = '';
+      return;
+    }
+
+    console.log('[UPLOAD] ✅ userId:', userId);
+    console.log('[UPLOAD] ✅ projectId:', project.id);
+
     setIsUploading(true);
     try {
       // Subir cada archivo a la carpeta del proyecto
@@ -55,6 +73,8 @@ export function ProjectDocumentsModal({ isOpen, onClose, project }) {
         // ✅ MANTENER NOMBRE ORIGINAL (sin renombrar)
         const fileName = file.name;
         const filePath = `${userId}/projects/${project.id}/${fileName}`;
+
+        console.log('[UPLOAD] Subiendo a ruta:', filePath);
 
         const { error } = await supabase.storage
           .from('user-files')
@@ -165,20 +185,29 @@ export function ProjectDocumentsModal({ isOpen, onClose, project }) {
 
         {/* Upload Area */}
         <div className="p-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
+          {/* 🔥 MOSTRAR ERROR SI NO HAY userId o projectId */}
+          {(!userId || !project?.id) && (
+            <div className="mb-3 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+              ⚠️ <strong>No se puede subir archivos:</strong> {!userId ? 'Usuario no identificado' : 'Proyecto no seleccionado'}
+            </div>
+          )}
+          
           <label 
-            className="flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg cursor-pointer transition-all hover:bg-[var(--color-bg-secondary)]"
+            className="flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg transition-all"
             style={{ 
               borderColor: isUploading ? 'var(--color-accent)' : 'var(--color-border)',
-              color: 'var(--color-text-secondary)'
+              color: 'var(--color-text-secondary)',
+              cursor: (!userId || !project?.id || isUploading) ? 'not-allowed' : 'pointer',
+              opacity: (!userId || !project?.id || isUploading) ? 0.5 : 1
             }}
           >
             <Upload size={20} />
-            <span>{isUploading ? 'Subiendo...' : 'Haz clic o arrastra archivos aquí'}</span>
+            <span>{isUploading ? 'Subiendo...' : (!userId || !project?.id) ? 'Upload deshabilitado' : 'Haz clic o arrastra archivos aquí'}</span>
             <input
               type="file"
               multiple
               onChange={handleFileUpload}
-              disabled={isUploading}
+              disabled={isUploading || !userId || !project?.id}
               className="hidden"
               accept=".pdf,.doc,.docx,.txt,.md,.csv,.xlsx,.xls"
             />

@@ -1204,18 +1204,21 @@ function TabContent({
 
   // ===== VOZ =====
   if (activeTab === 'voice') {
+    // 🔥 PROTECCIÓN: Si availableVoices es undefined, forzar array vacío
+    const safeAvailableVoices = Array.isArray(availableVoices) ? availableVoices : [];
+    
     // Funciones de filtro de voces (con validación)
-    const mexicanVoices = (availableVoices || []).filter(v => 
+    const mexicanVoices = safeAvailableVoices.filter(v => 
       v.lang === 'es-MX' || 
       v.name.toLowerCase().includes('mexico') ||
       v.name.toLowerCase().includes('mexican')
     );
 
-    const spanishVoices = (availableVoices || []).filter(v => 
+    const spanishVoices = safeAvailableVoices.filter(v => 
       v.lang.startsWith('es') && !mexicanVoices.some(mv => mv.name === v.name)
     );
 
-    const maleVoices = (availableVoices || []).filter(v => 
+    const maleVoices = safeAvailableVoices.filter(v => 
       !v.name.toLowerCase().includes('female') &&
       !v.name.toLowerCase().includes('mujer') &&
       (v.name.toLowerCase().includes('male') || 
@@ -1224,7 +1227,7 @@ function TabContent({
        v.name.toLowerCase().includes('jorge'))
     );
 
-    const femaleVoices = (availableVoices || []).filter(v => 
+    const femaleVoices = safeAvailableVoices.filter(v => 
       v.name.toLowerCase().includes('female') ||
       v.name.toLowerCase().includes('mujer') ||
       v.name.toLowerCase().includes('paulina') ||
@@ -1245,8 +1248,8 @@ function TabContent({
       
       utterance.lang = settings.tts_lang;
       
-      if (settings.tts_voice_name && availableVoices && availableVoices.length > 0) {
-        const selectedVoice = availableVoices.find(v => v.name === settings.tts_voice_name);
+      if (settings.tts_voice_name && safeAvailableVoices.length > 0) {
+        const selectedVoice = safeAvailableVoices.find(v => v.name === settings.tts_voice_name);
         if (selectedVoice) {
           utterance.voice = selectedVoice;
         }
@@ -1423,7 +1426,7 @@ function TabContent({
                     </optgroup>
                   )}
                   
-                  {availableVoices.length === 0 && (
+                  {safeAvailableVoices.length === 0 && (
                     <option disabled>No hay voces disponibles</option>
                   )}
                 </select>
@@ -1432,7 +1435,7 @@ function TabContent({
               {/* Botón de prueba */}
               <button
                 onClick={testVoice}
-                disabled={testingVoice || availableVoices.length === 0}
+                disabled={testingVoice || safeAvailableVoices.length === 0}
                 className="w-full px-4 py-2 rounded-lg font-medium transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
                 style={{
                   backgroundColor: 'var(--color-accent)',

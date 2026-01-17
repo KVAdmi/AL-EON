@@ -1,7 +1,9 @@
 import React from 'react';
 
 export default function TelegramMessage({ message }) {
-  const isFromBot = message.from?.isBot || false;
+  // 🔥 MOSTRAR INCOMING = FALSE COMO MENSAJES DEL USUARIO (izquierda)
+  // 🔥 MOSTRAR INCOMING = TRUE COMO MENSAJES DEL BOT (derecha)
+  const isFromBot = message.incoming === true;
   const isOutgoing = isFromBot;
 
   function formatTime(dateString) {

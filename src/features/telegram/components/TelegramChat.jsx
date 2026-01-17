@@ -31,9 +31,16 @@ export default function TelegramChat({ chatId, chatName, botId, onMessageSent })
       console.log('[TelegramChat] Cargando mensajes para chatId:', chatId);
       
       const data = await getMessages(chatId);
-      console.log('[TelegramChat] Mensajes recibidos:', data);
-      console.log('[TelegramChat] Cantidad de mensajes:', data?.length || 0);
       
+      // 🔥 LOGGING COMPLETO DEL PAYLOAD
+      console.log('[TelegramChat] ========================================');
+      console.log('[TelegramChat] 📦 PAYLOAD COMPLETO:', JSON.stringify(data, null, 2));
+      console.log('[TelegramChat] 📊 Cantidad de mensajes:', data?.length || 0);
+      console.log('[TelegramChat] 📥 Mensajes incoming:', data?.filter(m => m.incoming === true).length || 0);
+      console.log('[TelegramChat] 📤 Mensajes outgoing:', data?.filter(m => m.incoming === false).length || 0);
+      console.log('[TelegramChat] ========================================');
+      
+      // ✅ NO FILTRAR — MOSTRAR TODOS (incoming true y false)
       setMessages(data || []);
     } catch (error) {
       console.error('[TelegramChat] Error cargando mensajes:', error);
