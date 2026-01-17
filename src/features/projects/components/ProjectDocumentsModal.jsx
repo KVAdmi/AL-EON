@@ -9,7 +9,8 @@ import { supabase } from '@/lib/supabase';
  * Los documentos se guardan en: user-files/{userId}/projects/{projectId}/
  */
 export function ProjectDocumentsModal({ isOpen, onClose, project }) {
-  const { userId } = useAuth();
+  const { user } = useAuth(); // 🔥 user.id es el userId correcto
+  const userId = user?.id; // 🔥 EXTRACCIÓN CORRECTA
   const [documents, setDocuments] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
