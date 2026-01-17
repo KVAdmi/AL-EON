@@ -73,7 +73,9 @@ export function ProjectDocumentsModal({ isOpen, onClose, project }) {
       for (const file of files) {
         // ✅ MANTENER NOMBRE ORIGINAL (sin renombrar)
         const fileName = file.name;
-        const filePath = `${userId}/projects/${project.id}/${fileName}`;
+        // Sanitizar el nombre del archivo y asegurar que la ruta no tenga caracteres extraños
+        const sanitizedFileName = fileName.replace(/[^\w\s.-]/gi, '_').replace(/\s+/g, '_');
+        const filePath = `${userId}/projects/${project.id}/${sanitizedFileName}`.replace(/\/+/g, '/');
 
         console.log('[UPLOAD] Subiendo a ruta:', filePath);
 
@@ -101,7 +103,7 @@ export function ProjectDocumentsModal({ isOpen, onClose, project }) {
     if (!confirm(`¿Eliminar "${documentName}"?`)) return;
 
     try {
-      const filePath = `${userId}/projects/${project.id}/${documentName}`;
+      const filePath = `${userId}/projects/${project.id}/${documentName}`.replace(/\/+/g, '/');
       
       const { error } = await supabase.storage
         .from('user-files')
@@ -118,7 +120,7 @@ export function ProjectDocumentsModal({ isOpen, onClose, project }) {
 
   const handleDownloadDocument = async (documentName) => {
     try {
-      const filePath = `${userId}/projects/${project.id}/${documentName}`;
+      const filePath = `${userId}/projects/${project.id}/${documentName}`.replace(/\/+/g, '/');
       
       const { data, error } = await supabase.storage
         .from('user-files')

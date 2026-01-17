@@ -180,7 +180,9 @@ export function useVoiceMode({
           streamRef.current = null;
         }
 
-        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        // 🔥 P0-2: Filtrar chunks vacíos antes de crear el Blob
+        const validChunks = audioChunksRef.current.filter(chunk => chunk.size > 0);
+        const audioBlob = new Blob(validChunks, { type: mimeType });
         const bytesGrabados = audioBlob.size;
         console.log(`🎵 [P0-2] Blob creado: ${bytesGrabados} bytes, tipo: ${audioBlob.type}`);
         
@@ -203,8 +205,8 @@ export function useVoiceMode({
         await sendAudioToBackend(audioBlob);
       };
 
-      // 🔥 CRÍTICO: Capturar chunks cada 1 segundo (no esperar al stop)
-      mediaRecorder.start(1000);
+      // 🔥 CRÍTICO: Capturar chunks cada 100ms para asegurar que no se pierda nada
+      mediaRecorder.start(100);
       setStatus('recording');
       setError(null);
       setTranscript('');
