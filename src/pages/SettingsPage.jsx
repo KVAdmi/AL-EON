@@ -1319,12 +1319,20 @@ function TabContent({
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => {
-                      const femaleVoice = mexicanVoices.find(v => 
+                      // 🔥 RECALCULAR mexicanVoices en el momento del click
+                      const safeVoices = Array.isArray(availableVoices) ? availableVoices : [];
+                      const mexicanVoicesNow = safeVoices.filter(v => 
+                        v.lang === 'es-MX' || 
+                        v.name.toLowerCase().includes('mexico') ||
+                        v.name.toLowerCase().includes('mexican')
+                      );
+                      
+                      const femaleVoice = mexicanVoicesNow.find(v => 
                         v.name.toLowerCase().includes('female') ||
                         v.name.toLowerCase().includes('mujer') ||
                         v.name.toLowerCase().includes('paulina') ||
                         v.name.toLowerCase().includes('monica')
-                      ) || mexicanVoices.find(v => !v.name.toLowerCase().includes('male'));
+                      ) || mexicanVoicesNow.find(v => !v.name.toLowerCase().includes('male'));
                       
                       setSettings({
                         ...settings,
@@ -1354,7 +1362,15 @@ function TabContent({
 
                   <button
                     onClick={() => {
-                      const maleVoice = mexicanVoices.find(v => 
+                      // 🔥 RECALCULAR mexicanVoices en el momento del click
+                      const safeVoices = Array.isArray(availableVoices) ? availableVoices : [];
+                      const mexicanVoicesNow = safeVoices.filter(v => 
+                        v.lang === 'es-MX' || 
+                        v.name.toLowerCase().includes('mexico') ||
+                        v.name.toLowerCase().includes('mexican')
+                      );
+                      
+                      const maleVoice = mexicanVoicesNow.find(v => 
                         v.name.toLowerCase().includes('male') ||
                         v.name.toLowerCase().includes('hombre') ||
                         v.name.toLowerCase().includes('diego') ||
