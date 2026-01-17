@@ -127,7 +127,21 @@ export async function sendToAleCore({ accessToken, userId, message, sessionId, w
     const text = await res.text();
     
     if (!res.ok) {
-      throw new Error(`AL-E Core respondió ${res.status}: ${text}`);
+      // ✅ P0: Intentar parsear JSON para extraer safe_message
+      let errorMsg = `Error ${res.status}`;
+      try {
+        const errorData = JSON.parse(text);
+        // PRIORIDAD: safe_message > error > message > status code
+        errorMsg = errorData?.safe_message || errorData?.error || errorData?.message || errorMsg;
+      } catch (e) {
+        // No es JSON, usar texto plano si es corto
+        if (text && text.length < 200) {
+          errorMsg = text;
+        } else {
+          errorMsg = `Error ${res.status}: No se pudo procesar la respuesta`;
+        }
+      }
+      throw new Error(errorMsg);
     }
 
     return JSON.parse(text);

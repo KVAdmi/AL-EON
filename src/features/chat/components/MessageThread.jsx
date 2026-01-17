@@ -423,7 +423,10 @@ function Message({ message, currentUser, assistantName = 'Luma', assistantAvatar
 
           {/* 🔥 NUEVO: Badges de tools ejecutados (solo para AL-E) */}
           {!isUser && !isError && message.toolsUsed && (
-            <ToolsBadge toolsUsed={message.toolsUsed} />
+            <ToolsBadge 
+              toolsUsed={message.toolsUsed} 
+              metadata={message.metadata}
+            />
           )}
 
           {/* 🔥 NUEVO: Metadata (modelo + latencia) */}
