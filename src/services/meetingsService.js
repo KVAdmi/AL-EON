@@ -392,7 +392,6 @@ export async function getLiveStatus(meetingId) {
         console.error('[MeetingsService] Error response (text):', textError);
       }
       throw new Error(errorMsg);
-      throw new Error(errorMsg);
     }
 
     return await response.json();

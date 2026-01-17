@@ -26,7 +26,7 @@ export default function MeetingsRecorderLive() {
   const [meetingId, setMeetingId] = useState(null);
   const [liveTranscript, setLiveTranscript] = useState('');
   const [recordingTime, setRecordingTime] = useState(0);
-  const [status, setStatus] = useState('idle'); // idle | recording | uploading | retrying | processing | ready | error
+  const [status, setStatus] = useState('idle'); // idle | starting | recording | uploading | retrying | processing | ready | error
   const [result, setResult] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
@@ -79,6 +79,14 @@ export default function MeetingsRecorderLive() {
       setErrorMessage('');
       console.log('[MEETINGS] Iniciando reunión en vivo...');
 
+      if (!accessToken || !user?.id) {
+        setErrorMessage('No hay sesión activa. Inicia sesión nuevamente para grabar.');
+        setStatus('error');
+        return;
+      }
+
+      setStatus('starting');
+
       // 1. Verificar permisos de micrófono
       let stream;
       try {
@@ -103,6 +111,11 @@ export default function MeetingsRecorderLive() {
       
       if (!meeting?.id) {
         throw new Error('No se pudo crear la reunión');
+      }
+
+      // Gating: si el backend devuelve un estado explícito inválido, abortar antes de grabar
+      if (meeting?.status && meeting.status !== 'recording' && meeting.status !== 'active') {
+        throw new Error(`Reunión creada pero en estado inválido: ${meeting.status}`);
       }
 
       setMeetingId(meeting.id);
@@ -366,7 +379,7 @@ export default function MeetingsRecorderLive() {
       </div>
 
       {/* Control Bar */}
-      {(status === 'idle' || status === 'error') && (
+      {(status === 'idle' || status === 'error' || status === 'starting') && (
         <div className="space-y-4">
           {errorMessage && (
             <div
@@ -389,17 +402,29 @@ export default function MeetingsRecorderLive() {
           )}
 
           <div className="text-center py-12">
-            <button
-              onClick={startRecording}
-              className="px-8 py-4 rounded-xl font-medium transition-all hover:opacity-90 flex items-center justify-center gap-3 mx-auto text-lg"
-              style={{
-                backgroundColor: 'var(--color-accent)',
-                color: '#FFFFFF',
-              }}
-            >
-              <Mic size={24} />
-              Iniciar Reunión
-            </button>
+            {status === 'starting' ? (
+              <div>
+                <Loader2 size={40} className="animate-spin mx-auto mb-4" style={{ color: 'var(--color-accent)' }} />
+                <p className="text-lg font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                  Creando sesión de reunión...
+                </p>
+                <p className="text-sm mt-2" style={{ color: 'var(--color-text-secondary)' }}>
+                  No cierres esta pantalla
+                </p>
+              </div>
+            ) : (
+              <button
+                onClick={startRecording}
+                className="px-8 py-4 rounded-xl font-medium transition-all hover:opacity-90 flex items-center justify-center gap-3 mx-auto text-lg"
+                style={{
+                  backgroundColor: 'var(--color-accent)',
+                  color: '#FFFFFF',
+                }}
+              >
+                <Mic size={24} />
+                Iniciar Reunión
+              </button>
+            )}
           </div>
         </div>
       )}

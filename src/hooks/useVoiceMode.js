@@ -182,44 +182,47 @@ export function useVoiceMode({
       };
 
       mediaRecorder.onstop = async () => {
+        // 🔥 P0-VOICE: snapshots estables para evitar TDZ/minificación en runtime
+        const recorderState = mediaRecorder.state;
+        const mimeTypeSnapshot = mimeType;
+        const chunksSnapshot = Array.isArray(audioChunksRef.current) ? [...audioChunksRef.current] : [];
+
         console.log('🛑 [P0-2] Grabación detenida, procesando...');
-        console.log(`📦 [P0-2] Total chunks: ${audioChunksRef.current.length}`);
-        
-        // Detener stream
+        console.log(`📦 [P0-2] Total chunks: ${chunksSnapshot.length}`);
+
+        // Detener stream siempre
         if (streamRef.current) {
           streamRef.current.getTracks().forEach(track => track.stop());
           streamRef.current = null;
         }
 
+        // Resetear buffer temprano (ya tenemos snapshot)
+        audioChunksRef.current = [];
+
         // 🔥 P0-2: Filtrar chunks vacíos antes de crear el Blob
-        const validChunks = audioChunksRef.current.filter(chunk => chunk.size > 0);
-        const audioBlob = new Blob(validChunks, { type: mimeType });
+        const validChunks = chunksSnapshot.filter(chunk => chunk && chunk.size > 0);
+        const audioBlob = new Blob(validChunks, { type: mimeTypeSnapshot });
         const bytesGrabados = audioBlob.size;
         console.log(`🎵 [P0-2] Blob creado: ${bytesGrabados} bytes, tipo: ${audioBlob.type}`);
-        
-        // 🔥 P0-2: MOSTRAR BYTES GRABADOS (debug UI)
-        console.log(`✅ [P0-2] BYTES GRABADOS: ${bytesGrabados} bytes (${audioChunksRef.current.length} chunks)`);
-        
-        audioChunksRef.current = [];
+        console.log(`✅ [P0-2] BYTES GRABADOS: ${bytesGrabados} bytes (${chunksSnapshot.length} chunks)`);
 
         // 🔥 P0-2: SI BYTES < 100, mostrar error CLARO
         if (bytesGrabados < 100) {
           const errorMsg = `❌ [P0-2] GRABACIÓN FALLÓ - Solo se capturaron ${bytesGrabados} bytes`;
           console.error(errorMsg);
           console.error('🔍 [DEBUG] Información de debugging:', {
-            chunks: audioChunksRef.current.length,
+            chunks: chunksSnapshot.length,
             validChunks: validChunks.length,
-            mimeType,
-            streamWasActive: !!streamRef.current,
-            recorderState: mediaRecorder.state
+            mimeType: mimeTypeSnapshot,
+            recorderState
           });
           setStatus('idle');
-          
+
           const finalError = new Error(
             `Error de captura: solo se grabaron ${bytesGrabados} bytes. ` +
             'Mantén presionado el botón al menos 3 segundos mientras hablas en voz alta.'
           );
-          
+
           setError(finalError);
           onError?.(finalError);
           return;

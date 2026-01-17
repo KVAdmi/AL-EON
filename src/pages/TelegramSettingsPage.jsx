@@ -14,6 +14,7 @@ export default function TelegramSettingsPage() {
   const [bots, setBots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showConnectForm, setShowConnectForm] = useState(false);
+  const [loadError, setLoadError] = useState(null);
 
   // 🔍 DEBUG: Verificar user
   useEffect(() => {
@@ -34,10 +35,12 @@ export default function TelegramSettingsPage() {
 
     try {
       setLoading(true);
+      setLoadError(null);
       const data = await getUserBots(user.id);
       setBots(data || []);
     } catch (error) {
       console.error('Error cargando bots:', error);
+      setLoadError(error);
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -119,6 +122,36 @@ export default function TelegramSettingsPage() {
           </div>
         ) : (
           <>
+            {loadError && (
+              <div
+                className="p-4 rounded-xl border flex items-start gap-3 mb-6"
+                style={{
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                  borderColor: 'rgba(239, 68, 68, 0.3)',
+                }}
+              >
+                <AlertCircle size={20} className="flex-shrink-0 mt-0.5" style={{ color: '#EF4444' }} />
+                <div className="flex-1">
+                  <p className="font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                    Error cargando bots
+                  </p>
+                  <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+                    {loadError.message || 'No se pudieron cargar los bots de Telegram'}
+                  </p>
+                  <button
+                    onClick={loadBots}
+                    className="mt-3 px-4 py-2 rounded-lg font-medium"
+                    style={{
+                      backgroundColor: 'var(--color-accent)',
+                      color: '#FFFFFF',
+                    }}
+                  >
+                    Reintentar
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Connected bots */}
             {bots.length > 0 && (
               <div className="space-y-4 mb-6">
@@ -305,7 +338,7 @@ export default function TelegramSettingsPage() {
               </div>
             ) : (
               <>
-                {bots.length === 0 && (
+                {bots.length === 0 && !loadError && (
                   <div 
                     className="text-center py-12 rounded-xl border mb-6"
                     style={{

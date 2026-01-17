@@ -10,9 +10,6 @@ import { supabase } from '../lib/supabase';
 import IntegrationModal from '../components/IntegrationModal';
 import { requestNotificationPermission, getNotificationPermission, showNotification } from '../lib/notifications';
 
-// 🔥 FIX: availableVoices debe estar disponible en todo el componente
-let globalAvailableVoices = [];
-
 export default function SettingsPage() {
   const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
@@ -108,7 +105,6 @@ export default function SettingsPage() {
       );
       
       setAvailableVoices(spanishVoices);
-      globalAvailableVoices = spanishVoices;
       
       // Auto-seleccionar voz mexicana si no hay ninguna guardada
       if (!settings.tts_voice_name && spanishVoices.length > 0) {
@@ -667,6 +663,9 @@ export default function SettingsPage() {
                 setProfile={setProfile}
                 settings={settings}
                 setSettings={setSettings}
+                availableVoices={availableVoices}
+                testingVoice={testingVoice}
+                setTestingVoice={setTestingVoice}
                 isOwner={isOwner}
                 backendStatus={backendStatus}
                 setIntegrationModal={setIntegrationModal}
@@ -703,6 +702,9 @@ function TabContent({
   setProfile, 
   settings, 
   setSettings, 
+  availableVoices,
+  testingVoice,
+  setTestingVoice,
   isOwner, 
   backendStatus, 
   setIntegrationModal, 
@@ -1329,7 +1331,7 @@ function TabContent({
                   <button
                     onClick={() => {
                       // 🔥 RECALCULAR mexicanVoices en el momento del click
-                      const safeVoices = Array.isArray(availableVoices) ? availableVoices : (Array.isArray(globalAvailableVoices) ? globalAvailableVoices : []);
+                      const safeVoices = Array.isArray(availableVoices) ? availableVoices : [];
                       const mexicanVoicesNow = safeVoices.filter(v => 
                         v.lang === 'es-MX' || 
                         v.name.toLowerCase().includes('mexico') ||
@@ -1372,7 +1374,7 @@ function TabContent({
                   <button
                     onClick={() => {
                       // 🔥 RECALCULAR mexicanVoices en el momento del click
-                      const safeVoices = Array.isArray(availableVoices) ? availableVoices : (Array.isArray(globalAvailableVoices) ? globalAvailableVoices : []);
+                      const safeVoices = Array.isArray(availableVoices) ? availableVoices : [];
                       const mexicanVoicesNow = safeVoices.filter(v => 
                         v.lang === 'es-MX' || 
                         v.name.toLowerCase().includes('mexico') ||
