@@ -207,14 +207,9 @@ export function useVoiceMode({
           console.error(errorMsg);
           setStatus('idle');
           
-          // Si el stream sigue activo, es un problema de captura de datos, no de permisos
-          const tracks = streamRef.current ? streamRef.current.getAudioTracks() : [];
-          const trackActive = tracks.length > 0 && tracks[0].enabled && tracks[0].readyState === 'live';
-          
+          // 🔥 MENSAJE CLARO: Es muy probable que el usuario suelte el botón demasiado rápido
           const finalError = new Error(
-            trackActive 
-              ? 'El micrófono no capturó sonido. Asegúrate de hablar claramente y que el micrófono no esté silenciado en el sistema.'
-              : 'El micrófono se desconectó o no tiene permisos. Verifica la configuración de tu navegador.'
+            'No se capturó audio. Mantén presionado el botón de micrófono por al menos 2 segundos mientras hablas.'
           );
           
           setError(finalError);
