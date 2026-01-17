@@ -230,14 +230,20 @@ export async function getUserBots(userId) {
       });
 
       if (response.ok) {
-        const bots = await response.json();
-        console.log('[TelegramService] ✅ Bots obtenidos desde backend:', bots);
+        const data = await response.json();
+        console.log('[TelegramService] ✅ Respuesta desde backend:', data);
         
-        // Validar que sea un array o un objeto (si es un solo bot)
-        if (Array.isArray(bots)) {
-          return bots;
-        } else if (bots && typeof bots === 'object' && Object.keys(bots).length > 0) {
-          return [bots]; // Envolver en array si es un solo objeto
+        // Backend devuelve: { ok: true, bots: [...] }
+        // Extraer el array de bots correctamente
+        if (data && data.bots && Array.isArray(data.bots)) {
+          console.log('[TelegramService] ✅ Bots extraídos:', data.bots);
+          return data.bots;
+        } else if (Array.isArray(data)) {
+          // Fallback: si backend devuelve array directo
+          return data;
+        } else if (data && typeof data === 'object' && data.bot_username) {
+          // Fallback: si es un solo bot directo
+          return [data];
         }
         
         console.warn('[TelegramService] ⚠️ Backend devolvió formato inválido o vacío, usando Supabase');
