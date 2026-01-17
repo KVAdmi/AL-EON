@@ -96,7 +96,7 @@ export async function connectBot(botData) {
                 .update({ owner_user_id: botData.ownerUserId })
                 .eq('id', existingBot.id)
                 .select()
-                .single();
+                .maybeSingle();
               
               if (!updateError && updated) {
                 console.log('[TelegramService] ✅ Bot ligado al usuario actual');
@@ -183,7 +183,7 @@ export async function connectBot(botData) {
         .select('*')
         .eq('bot_username', botData.botUsername)
         .eq('owner_user_id', botData.ownerUserId)
-        .single();
+        .maybeSingle();
 
       if (!error && data) {
         console.log('[TelegramService] ✅ Bot recuperado desde Supabase después de error de parsing:', data);

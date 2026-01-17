@@ -54,6 +54,7 @@ export function useVoiceMode({
   const abortControllerRef = useRef(null);
   const handsFreeRef = useRef(handsFreeEnabled);
   const streamRef = useRef(null);
+  const sendAudioToBackendRef = useRef(null);
 
   // Sincronizar handsFree
   useEffect(() => {
@@ -229,7 +230,16 @@ export function useVoiceMode({
         }
 
         console.log(`✅ [P0-2] Audio válido: ${bytesGrabados} bytes - Enviando al backend...`);
-        await sendAudioToBackend(audioBlob);
+        // 🔥 P0-VOICE: llamada estable vía ref (evita TDZ/minificador con funciones const)
+        const sendFn = sendAudioToBackendRef.current;
+        if (typeof sendFn !== 'function') {
+          const err = new Error('Voice backend sender no inicializado');
+          setError(err);
+          onError?.(err);
+          setStatus('idle');
+          return;
+        }
+        await sendFn(audioBlob);
       };
 
       // 🔥 CRÍTICO: NO usar timeslice - capturar TODO al detener
@@ -471,6 +481,11 @@ export function useVoiceMode({
       abortControllerRef.current = null;
     }
   }, [accessToken, sessionId, workspaceId, mode, onResponse, onError, startRecording]);
+
+  // Mantener una referencia estable para usarla desde callbacks nativos (MediaRecorder)
+  useEffect(() => {
+    sendAudioToBackendRef.current = sendAudioToBackend;
+  }, [sendAudioToBackend]);
 
   /**
    * Reproducir audio
