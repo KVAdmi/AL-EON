@@ -1,15 +1,20 @@
 /**
- * FileUploadButton - Componente para subir archivos
+ * FIX: Validación de procesamiento de archivos
  * 
- * CARACTERÍSTICAS:
- * - Botón "Adjuntar"
- * - Chips con estado (subiendo/procesando/listo/error)
- * - Tipos soportados: PDF, DOCX, TXT, MD, imágenes
- * - Tamaño máximo: 50MB
+ * PROBLEMAS QUE RESUELVE:
+ * 1. Chips muestran "success" aunque el backend no procesó el archivo
+ * 2. No se distingue entre "subido" y "procesado correctamente"
+ * 3. PDFs/imágenes fallan silenciosamente sin error visible
+ * 
+ * CAMBIOS:
+ * - Validar que backend devuelva `processed: true`
+ * - Mostrar error si archivo se subió pero no se procesó
+ * - Agregar botón "Reintentar" en archivos fallidos
+ * - Loggear detalles de procesamiento
  */
 
 import React, { useRef, useState } from 'react';
-import { Paperclip, X, FileText, Image as ImageIcon, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Paperclip, X, FileText, Image as ImageIcon, Loader2, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { uploadAndIngestFile } from '@/services/filesService';
 
 const ACCEPTED_FILE_TYPES = {
@@ -25,7 +30,7 @@ const ACCEPTED_FILE_TYPES = {
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
-export default function FileUploadButton({ sessionId, onFilesUploaded, disabled }) {
+export default function FileUploadButtonFixed({ sessionId, onFilesUploaded, disabled }) {
   const [files, setFiles] = useState([]);
   const fileInputRef = useRef(null);
 
@@ -52,53 +57,110 @@ export default function FileUploadButton({ sessionId, onFilesUploaded, disabled 
       size: file.size,
       status: 'uploading',
       progress: 0,
-      error: null
+      error: null,
+      processed: false, // 🔥 NUEVO: Flag de procesamiento
+      retryCount: 0 // 🔥 NUEVO: Contador de reintentos
     }));
 
     setFiles(prev => [...prev, ...newFiles]);
 
     // Subir archivos
     for (const fileData of newFiles) {
-      try {
-        // Actualizar estado a "processing"
-        setFiles(prev =>
-          prev.map(f =>
-            f.id === fileData.id ? { ...f, status: 'processing', progress: 50 } : f
-          )
-        );
-
-        // Subir y ingerir
-        const result = await uploadAndIngestFile(fileData.file, sessionId);
-
-        // Actualizar estado a "success"
-        setFiles(prev =>
-          prev.map(f =>
-            f.id === fileData.id
-              ? { ...f, ...result, status: 'success', progress: 100 }
-              : f
-          )
-        );
-
-        // Notificar archivo subido
-        onFilesUploaded?.([result]);
-      } catch (error) {
-        console.error(`❌ Error subiendo ${fileData.name}:`, error);
-
-        // Actualizar estado a "error"
-        setFiles(prev =>
-          prev.map(f =>
-            f.id === fileData.id
-              ? { ...f, status: 'error', error: error.message }
-              : f
-          )
-        );
-      }
+      await uploadFile(fileData);
     }
 
     // Limpiar input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  // 🔥 NUEVA FUNCIÓN: Upload con validación de procesamiento
+  const uploadFile = async (fileData) => {
+    try {
+      // Paso 1: Actualizar a "processing"
+      setFiles(prev =>
+        prev.map(f =>
+          f.id === fileData.id ? { ...f, status: 'processing', progress: 50 } : f
+        )
+      );
+
+      console.log(`[FileUpload] 📤 Subiendo archivo: ${fileData.name}`);
+
+      // Paso 2: Subir y procesar
+      const result = await uploadAndIngestFile(fileData.file, sessionId);
+
+      console.log(`[FileUpload] ✅ Respuesta del backend:`, result);
+
+      // 🔥 VALIDAR QUE EL ARCHIVO FUE PROCESADO CORRECTAMENTE
+      if (!result.processed && !result.ok) {
+        throw new Error(result.error || 'El archivo se subió pero no se pudo procesar');
+      }
+
+      // 🔥 VALIDAR QUE PARA PDFs SE EXTRAJO TEXTO
+      if (fileData.type === 'application/pdf' && !result.extractedText && !result.text) {
+        console.warn(`[FileUpload] ⚠️ PDF subido pero sin texto extraído:`, fileData.name);
+        throw new Error('No se pudo extraer texto del PDF. Verifica que sea un PDF válido.');
+      }
+
+      // Paso 3: Actualizar a "success"
+      setFiles(prev =>
+        prev.map(f =>
+          f.id === fileData.id
+            ? { 
+                ...f, 
+                ...result, 
+                status: 'success', 
+                progress: 100,
+                processed: true,
+                error: null
+              }
+            : f
+        )
+      );
+
+      console.log(`[FileUpload] ✅ Archivo procesado correctamente: ${fileData.name}`);
+
+      // Notificar archivo subido
+      onFilesUploaded?.([result]);
+
+    } catch (error) {
+      console.error(`[FileUpload] ❌ Error con archivo ${fileData.name}:`, error);
+
+      // Actualizar a "error"
+      setFiles(prev =>
+        prev.map(f =>
+          f.id === fileData.id
+            ? { 
+                ...f, 
+                status: 'error', 
+                error: error.message,
+                processed: false
+              }
+            : f
+        )
+      );
+    }
+  };
+
+  // 🔥 NUEVA FUNCIÓN: Reintentar archivo fallido
+  const retryFile = async (fileId) => {
+    const fileData = files.find(f => f.id === fileId);
+    if (!fileData || fileData.retryCount >= 3) {
+      console.warn(`[FileUpload] ⚠️ Máximo de reintentos alcanzado para: ${fileData?.name}`);
+      return;
+    }
+
+    console.log(`[FileUpload] 🔄 Reintentando archivo: ${fileData.name} (intento ${fileData.retryCount + 1})`);
+
+    // Actualizar contador de reintentos
+    setFiles(prev =>
+      prev.map(f =>
+        f.id === fileId ? { ...f, retryCount: f.retryCount + 1, status: 'uploading' } : f
+      )
+    );
+
+    await uploadFile(fileData);
   };
 
   const removeFile = (fileId) => {
@@ -112,33 +174,35 @@ export default function FileUploadButton({ sessionId, onFilesUploaded, disabled 
     return <FileText size={16} />;
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
+  const getStatusIcon = (fileData) => {
+    switch (fileData.status) {
       case 'uploading':
       case 'processing':
         return <Loader2 size={14} className="animate-spin" />;
       case 'success':
-        return <CheckCircle size={14} className="text-green-400" />;
+        return <CheckCircle size={14} />;
       case 'error':
-        return <AlertCircle size={14} className="text-red-400" />;
+        return <AlertCircle size={14} />;
       default:
         return null;
     }
   };
 
   const formatFileSize = (bytes) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Botón Adjuntar */}
+      {/* Botón adjuntar */}
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        disabled={disabled || !sessionId}
+        disabled={disabled}
         className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         title="Adjuntar archivo (PDF, DOCX, TXT, MD, imágenes)"
       >
@@ -182,20 +246,34 @@ export default function FileUploadButton({ sessionId, onFilesUploaded, disabled 
                   {formatFileSize(fileData.size)}
                   {fileData.status === 'uploading' && ' • Subiendo...'}
                   {fileData.status === 'processing' && ' • Procesando...'}
-                  {fileData.status === 'success' && ' • Listo'}
-                  {fileData.status === 'error' && ` • Error: ${fileData.error}`}
+                  {fileData.status === 'success' && fileData.processed && ' • ✅ Procesado'}
+                  {fileData.status === 'success' && !fileData.processed && ' • ⚠️ Subido sin procesar'}
+                  {fileData.status === 'error' && ` • ❌ ${fileData.error}`}
                 </span>
               </div>
 
               {/* Icono de estado */}
-              {getStatusIcon(fileData.status)}
+              {getStatusIcon(fileData)}
+
+              {/* 🔥 NUEVO: Botón reintentar (si falló) */}
+              {fileData.status === 'error' && fileData.retryCount < 3 && (
+                <button
+                  type="button"
+                  onClick={() => retryFile(fileData.id)}
+                  className="hover:opacity-70 transition-opacity ml-1"
+                  title="Reintentar"
+                >
+                  <RefreshCw size={14} />
+                </button>
+              )}
 
               {/* Botón eliminar */}
-              {fileData.status !== 'uploading' && (
+              {fileData.status !== 'uploading' && fileData.status !== 'processing' && (
                 <button
                   type="button"
                   onClick={() => removeFile(fileData.id)}
                   className="hover:opacity-70 transition-opacity ml-1"
+                  title="Eliminar"
                 >
                   <X size={14} />
                 </button>

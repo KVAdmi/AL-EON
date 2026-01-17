@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { UserProfileProvider } from '@/contexts/UserProfileContext';
 import { CapabilitiesProvider } from '@/contexts/CapabilitiesContext';
 import MainLayout from '@/components/MainLayout';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 // ✅ LAZY LOADING: Solo cargar páginas cuando se necesitan
 const LandingPage = lazy(() => import('@/pages/LandingPage'));
@@ -410,10 +411,12 @@ function App() {
 // Wrapper con Providers
 export default function AppWrapper() {
   return (
-    <CapabilitiesProvider>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </CapabilitiesProvider>
+    <ErrorBoundary resetOnError={false}>
+      <CapabilitiesProvider>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </CapabilitiesProvider>
+    </ErrorBoundary>
   );
 }

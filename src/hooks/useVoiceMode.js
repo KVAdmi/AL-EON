@@ -233,7 +233,7 @@ export function useVoiceMode({
       console.log('🎤 [P0-2] Iniciando MediaRecorder SIN timeslice para capturar todo');
       mediaRecorder.start(); // SIN parámetro para que capture todo de una vez
       setStatus('recording');
-      setError(null);
+      setError(null); // ✅ Resetear error al iniciar grabación exitosa
       setTranscript('');
       
       console.log('✅ [P0-2] Grabación iniciada - recording continuo');
