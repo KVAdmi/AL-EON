@@ -23,32 +23,47 @@ export default function TelegramChat({ chatId, chatName, botId, onMessageSent })
   async function loadMessages() {
     if (!chatId) {
       console.warn('[TelegramChat] No chatId provided');
+      toast({
+        variant: 'destructive',
+        title: '⚠️ Error',
+        description: 'No hay chatId - no se pueden cargar mensajes',
+      });
       return;
     }
 
     try {
       setLoading(true);
-      console.log('[TelegramChat] Cargando mensajes para chatId:', chatId);
+      console.log('[TelegramChat] ========================================');
+      console.log('[TelegramChat] 🔍 Cargando mensajes para chatId:', chatId);
+      console.log('[TelegramChat] 🔍 Bot ID:', botId);
       
       const data = await getMessages(chatId);
       
       // 🔥 LOGGING COMPLETO DEL PAYLOAD
-      console.log('[TelegramChat] ========================================');
       console.log('[TelegramChat] 📦 PAYLOAD COMPLETO:', JSON.stringify(data, null, 2));
+      console.log('[TelegramChat] � Tipo de dato:', typeof data, Array.isArray(data) ? 'ES ARRAY' : 'NO ES ARRAY');
       console.log('[TelegramChat] 📊 Cantidad de mensajes:', data?.length || 0);
-      console.log('[TelegramChat] 📥 Mensajes incoming:', data?.filter(m => m.incoming === true).length || 0);
-      console.log('[TelegramChat] 📤 Mensajes outgoing:', data?.filter(m => m.incoming === false).length || 0);
+      
+      if (Array.isArray(data) && data.length > 0) {
+        console.log('[TelegramChat] 📥 Mensajes incoming:', data.filter(m => m.incoming === true).length);
+        console.log('[TelegramChat] 📤 Mensajes outgoing:', data.filter(m => m.incoming === false).length);
+        console.log('[TelegramChat] 📝 Primer mensaje:', data[0]);
+      } else {
+        console.warn('[TelegramChat] ⚠️ Backend devolvió array vacío o formato inválido');
+      }
+      
       console.log('[TelegramChat] ========================================');
       
       // ✅ NO FILTRAR — MOSTRAR TODOS (incoming true y false)
-      setMessages(data || []);
+      setMessages(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('[TelegramChat] Error cargando mensajes:', error);
+      console.error('[TelegramChat] ❌ Error cargando mensajes:', error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'No se pudieron cargar los mensajes',
+        title: 'Error cargando mensajes',
+        description: error.message || 'No se pudieron cargar los mensajes de Telegram',
       });
+      setMessages([]); // 🔥 Limpiar mensajes en caso de error
     } finally {
       setLoading(false);
     }
