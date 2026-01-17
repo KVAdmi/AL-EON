@@ -63,7 +63,15 @@ export default function TelegramChatView() {
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}`);
+        let errorMsg = 'No se pudieron cargar los chats de Telegram.';
+        try {
+          const errorData = await response.json();
+          // ✅ PRIORIDAD: safe_message del backend
+          errorMsg = errorData?.safe_message || errorData?.error || errorData?.message || errorMsg;
+        } catch (e) {
+          // No es JSON, usar fallback
+        }
+        throw new Error(errorMsg);
       }
 
       const data = await response.json();
@@ -96,7 +104,15 @@ export default function TelegramChatView() {
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}`);
+        let errorMsg = 'No se pudieron cargar los mensajes.';
+        try {
+          const errorData = await response.json();
+          // ✅ PRIORIDAD: safe_message del backend
+          errorMsg = errorData?.safe_message || errorData?.error || errorData?.message || errorMsg;
+        } catch (e) {
+          // No es JSON, usar fallback
+        }
+        throw new Error(errorMsg);
       }
 
       const data = await response.json();
@@ -116,14 +132,6 @@ export default function TelegramChatView() {
   };
 
   const handleSendMessage = async (e) => {
-    e.preventDefault();
-    
-    if (!newMessage.trim() || !selectedChatId || sending) return;
-
-    try {
-      setSending(true);
-      console.log('[TELEGRAM] 📤 Enviando mensaje:', newMessage);
-
       const response = await fetch(`${BACKEND_URL}/api/telegram/send`, {
         method: 'POST',
         headers: {
@@ -133,6 +141,22 @@ export default function TelegramChatView() {
         body: JSON.stringify({
           chatId: selectedChatId,
           text: newMessage,
+        }),
+      });
+
+      if (!response.ok) {
+        let errorMsg = 'No se pudo enviar el mensaje.';
+        try {
+          const errorData = await response.json();
+          // ✅ PRIORIDAD: safe_message del backend
+          errorMsg = errorData?.safe_message || errorData?.error || errorData?.message || errorMsg;
+        } catch (e) {
+          // No es JSON, usar fallback
+        }
+        throw new Error(errorMsg);
+      }
+
+      console.log('[TELEGRAM] ✅ Mensaje enviado');
         }),
       });
 
@@ -320,6 +344,8 @@ export default function TelegramChatView() {
                 </div>
               ) : (
                 <>
+                  {/* ✅ VERIFICADO: Muestra TODOS los mensajes sin filtros
+                      Backend maneja incoming/outgoing, frontend los renderiza todos */}
                   {messages.map((message) => (
                     <div 
                       key={message.id}

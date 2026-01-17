@@ -429,13 +429,18 @@ export async function getMessages(chatId, options = {}) {
       const errorText = await response.text();
       console.error('[TelegramService] Error response:', errorText);
       
-      let error;
+      let errorMsg = 'No se pudieron cargar los mensajes de Telegram.';
       try {
-        error = JSON.parse(errorText);
+        const error = JSON.parse(errorText);
+        // ✅ PRIORIDAD: safe_message del backend
+        errorMsg = error?.safe_message || error?.message || error?.error || errorMsg;
       } catch (e) {
-        error = { message: errorText || 'Error al obtener mensajes' };
+        // No es JSON, usar el texto o el fallback
+        if (errorText && errorText.length < 200) {
+          errorMsg = errorText;
+        }
       }
-      throw new Error(error.message || 'Error al obtener mensajes');
+      throw new Error(errorMsg);
     }
 
     const data = await response.json();
