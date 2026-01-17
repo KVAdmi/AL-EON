@@ -128,7 +128,7 @@ export default function SettingsPage() {
   async function checkBackendHealth() {
     try {
       const BASE_URL = import.meta.env.VITE_ALE_CORE_BASE || import.meta.env.VITE_ALE_CORE_URL || 'https://api.al-eon.com';
-      const url = `${BASE_URL}/api/ai/chat`;
+      const url = `${BASE_URL}/api/ai/chat/v2`;
       
       console.log("🏥 Health check URL =>", url);
       
@@ -136,10 +136,14 @@ export default function SettingsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mode: 'universal', // ✅ AL-EON usa modo universal
           workspaceId: 'core',
-          userId: 'health-check',
-          messages: [{ role: 'user', content: 'ping' }]
+          sessionId: null,
+          message: 'ping',
+          meta: {
+            platform: 'AL-EON',
+            source: 'health-check',
+            timestamp: new Date().toISOString()
+          }
         })
       });
       setBackendStatus(response.ok ? 'online' : 'error');

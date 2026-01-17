@@ -360,7 +360,7 @@ export function useVoiceMode({
       const chatRequestId = generateRequestId();
       console.log(`[REQ-VOICE] 📤 CHAT - id=${chatRequestId} sessionId=${sessionId}`);
       
-      const chatResponse = await fetch(`${CORE_BASE_URL}/api/ai/chat`, {
+      const chatResponse = await fetch(`${CORE_BASE_URL}/api/ai/chat/v2`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -382,7 +382,7 @@ export function useVoiceMode({
 
       if (!chatResponse.ok) {
         const errorData = await chatResponse.json().catch(() => ({}));
-        logRequestError(chatRequestId, '/api/ai/chat', {
+        logRequestError(chatRequestId, '/api/ai/chat/v2', {
           status: chatResponse.status,
           error: errorData.error,
           sessionId
@@ -391,15 +391,19 @@ export function useVoiceMode({
       }
 
       const chatData = await chatResponse.json();
-      const assistantText = chatData.response || chatData.message || '';
+      // v2 expected: { answer, session_id, ... }
+      const assistantText = chatData.answer || chatData.response || chatData.message || '';
+
+      // NOTE: v2 can return session_id; this hook currently doesn't persist it.
+      // Keeping behavior unchanged to avoid introducing new state wiring here.
 
       if (!assistantText.trim()) {
-        logRequestError(chatRequestId, '/api/ai/chat', { error: 'Empty response', sessionId });
+        logRequestError(chatRequestId, '/api/ai/chat/v2', { error: 'Empty response', sessionId });
         throw new Error('Respuesta vacía del asistente');
       }
 
       console.log(`✅ Respuesta: "${assistantText.substring(0, 100)}..."`);
-      logRequest(chatRequestId, '/api/ai/chat', chatResponse.status, {
+      logRequest(chatRequestId, '/api/ai/chat/v2', chatResponse.status, {
         sessionId,
         responseLength: assistantText.length
       });

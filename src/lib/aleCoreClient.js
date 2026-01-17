@@ -62,10 +62,10 @@ export async function sendToAleCore({ accessToken, userId, message, sessionId, w
     throw new Error("❌ Missing VITE_ALE_CORE_BASE");
   }
 
-  // ✅ USAR ENDPOINT /api/ai/truth-chat - Truth Layer con Governor
-  const url = `${BASE_URL}/api/ai/truth-chat`;
+  // ✅ CORE mandate: use /api/ai/chat/v2 (avoid legacy orch)
+  const url = `${BASE_URL}/api/ai/chat/v2`;
   
-  console.log("✅ ALE CORE URL (truth-chat) =>", url);
+  console.log("✅ ALE CORE URL (chat/v2) =>", url);
 
   if (!accessToken) {
     throw new Error("❌ Missing accessToken");
@@ -75,22 +75,14 @@ export async function sendToAleCore({ accessToken, userId, message, sessionId, w
     throw new Error("❌ Message is required");
   }
 
-  // ✅ PAYLOAD PARA /api/ai/truth-chat - Formato con messages array
+  // ✅ PAYLOAD PARA /api/ai/chat/v2
+  // Contract (CORE): { message, sessionId, workspaceId?, meta?, userEmail?, userDisplayName? }
   const payloadData = {
-    messages: [
-      {
-        role: 'user',
-        content: message.trim()
-      }
-    ],
-    userId: userId || accessToken, // ✅ Usar userId real o fallback a token
+    message: message.trim(),
     sessionId: sessionId || undefined,
     workspaceId: workspaceId || 'core',
-    projectId: projectId || undefined, // ✅ ID del proyecto para RAG
-    userEmail: userEmail || undefined, // ✅ COLABORACIÓN
-    userDisplayName: userDisplayName || undefined, // ✅ COLABORACIÓN
-    userConfirmed: false, // Usuario no ha confirmado acción
-    mode: 'universal',
+    ...(userEmail ? { userEmail } : {}),
+    ...(userDisplayName ? { userDisplayName } : {}),
     meta: meta || {
       platform: "AL-EON",
       version: "1.0.0",
@@ -99,9 +91,10 @@ export async function sendToAleCore({ accessToken, userId, message, sessionId, w
     }
   };
 
-  // Agregar archivos si existen
+  // Agregar archivos si existen (v2: commonly accepted as `files`; keep `attachments` for backward compat)
   if (files && files.length > 0) {
-    payloadData.attachments = files; // ✅ Backend espera "attachments"
+    payloadData.files = files;
+    payloadData.attachments = files;
     console.log('📎 Archivos adjuntos:', files.length, files);
   }
 
