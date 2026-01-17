@@ -172,11 +172,12 @@ export function useVoiceMode({
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          console.log(`📊 [P0-2] Chunk recibido: ${event.data.size} bytes`);
+        console.log(`📊 [DEBUG] ondataavailable disparado - size: ${event.data.size} bytes`);
+        if (event.data && event.data.size > 0) {
+          console.log(`✅ [P0-2] Chunk válido recibido: ${event.data.size} bytes`);
           audioChunksRef.current.push(event.data);
         } else {
-          console.warn('⚠️ [P0-2] Chunk vacío recibido');
+          console.error('❌ [P0-2] Chunk vacío o inválido recibido');
         }
       };
 
@@ -201,35 +202,44 @@ export function useVoiceMode({
         
         audioChunksRef.current = [];
 
-        // 🔥 P0-2: SI BYTES = 0, NO MANDAR REQUEST
-        if (bytesGrabados < 100) { // Aumentamos el umbral a 100 bytes para filtrar ruido/vacío
-          const errorMsg = `⚠️ [P0-2] NO SE GRABÓ AUDIO SUFICIENTE (bytes: ${bytesGrabados})`;
+        // 🔥 P0-2: SI BYTES < 100, mostrar error CLARO
+        if (bytesGrabados < 100) {
+          const errorMsg = `❌ [P0-2] GRABACIÓN FALLÓ - Solo se capturaron ${bytesGrabados} bytes`;
           console.error(errorMsg);
+          console.error('🔍 [DEBUG] Información de debugging:', {
+            chunks: audioChunksRef.current.length,
+            validChunks: validChunks.length,
+            mimeType,
+            streamWasActive: !!streamRef.current,
+            recorderState: mediaRecorder.state
+          });
           setStatus('idle');
           
-          // 🔥 MENSAJE CLARO: Es muy probable que el usuario suelte el botón demasiado rápido
           const finalError = new Error(
-            'No se capturó audio. Mantén presionado el botón de micrófono por al menos 2 segundos mientras hablas.'
+            `Error de captura: solo se grabaron ${bytesGrabados} bytes. ` +
+            'Mantén presionado el botón al menos 3 segundos mientras hablas en voz alta.'
           );
           
           setError(finalError);
           onError?.(finalError);
-          return; // 🔥 NO ENVIAR REQUEST
+          return;
         }
 
         console.log(`✅ [P0-2] Audio válido: ${bytesGrabados} bytes - Enviando al backend...`);
         await sendAudioToBackend(audioBlob);
       };
 
-      // 🔥 CRÍTICO: Capturar chunks cada 250ms (balance entre rendimiento y seguridad)
-      mediaRecorder.start(250);
+      // 🔥 CRÍTICO: NO usar timeslice - capturar TODO al detener
+      console.log('🎤 [P0-2] Iniciando MediaRecorder SIN timeslice para capturar todo');
+      mediaRecorder.start(); // SIN parámetro para que capture todo de una vez
       setStatus('recording');
       setError(null);
       setTranscript('');
       
-      console.log('✅ [P0-2] Grabación iniciada con chunks cada 1 segundo');
+      console.log('✅ [P0-2] Grabación iniciada - recording continuo');
       console.log('🎤 [P0-2] Estado del recorder:', mediaRecorder.state);
       console.log('🎙️ [P0-2] Tracks de audio:', stream.getAudioTracks().length);
+      console.log('🎙️ [P0-2] Track 0 settings:', audioTrack.getSettings());
       
     } catch (err) {
       console.error('❌ [P0-2] Error al iniciar grabación:', err);
