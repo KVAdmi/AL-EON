@@ -9,6 +9,7 @@ import { useVoiceMode } from '@/hooks/useVoiceMode';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCapability } from '@/components/CapabilitiesGate';
 import { useEventNotifications } from '@/hooks/useEventNotifications';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 function ChatPage() {
   const { user, userProfile, accessToken, logout } = useAuth();
@@ -155,21 +156,23 @@ function ChatPage() {
 
       {/* ÁREA DE CHAT */}
       <div className="flex-1 flex flex-col overflow-hidden" style={{ width: '100%', maxWidth: '100%' }}>
-        <MessageThread
-          conversation={currentConversation}
-          isLoading={isLoading}
-          voiceMode={voiceMode}
-          voiceError={voiceError} // 🔥 NUEVO: Pasar error de voz
-          handsFree={handsFree}
-          onToggleHandsFree={handleToggleHandsFree}
-          onToggleSidebar={() => setShowSidebar(!showSidebar)}
-          onStopResponse={handleStopResponse}
-          onRegenerateResponse={handleRegenerateResponse}
-          currentUser={userProfile?.display_name || user?.email || 'Usuario'}
-          assistantName={userProfile?.assistant_name || 'Luma'}
-          assistantAvatar={userProfile?.assistant_avatar_url}
-          userAvatar={userProfile?.user_avatar_url}
-        />
+        <ErrorBoundary>
+          <MessageThread
+            conversation={currentConversation}
+            isLoading={isLoading}
+            voiceMode={voiceMode}
+            voiceError={voiceError} // 🔥 NUEVO: Pasar error de voz
+            handsFree={handsFree}
+            onToggleHandsFree={handleToggleHandsFree}
+            onToggleSidebar={() => setShowSidebar(!showSidebar)}
+            onStopResponse={handleStopResponse}
+            onRegenerateResponse={handleRegenerateResponse}
+            currentUser={userProfile?.display_name || user?.email || 'Usuario'}
+            assistantName={userProfile?.assistant_name || 'Luma'}
+            assistantAvatar={userProfile?.assistant_avatar_url}
+            userAvatar={userProfile?.user_avatar_url}
+          />
+        </ErrorBoundary>
         <MessageComposer
           onSendMessage={handleSendMessage}
           isLoading={isLoading}

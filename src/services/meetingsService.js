@@ -212,18 +212,41 @@ export async function startLiveMeeting(title) {
 
     const responseData = await response.json();
     console.log('[MeetingsService] ✅ Reunión creada:', responseData);
-    const { meetingId } = responseData;
+    
+    const { meetingId, status } = responseData;
+    
+    // 🔥 VALIDAR que el meeting está en estado correcto
+    if (!meetingId) {
+      throw new Error('Backend no devolvió meetingId válido');
+    }
+    
+    console.log('[MeetingsService] 📊 Meeting ID:', meetingId, 'Status:', status);
+    
+    // 🔥 VALIDAR estado
+    if (status && status !== 'recording' && status !== 'active') {
+      console.error('[MeetingsService] ⚠️ Meeting NO está en recording state:', status);
+      throw new Error(`Meeting creado pero en estado inválido: ${status}. No se pueden subir chunks.`);
+    }
 
     // Sincronizar con DB local (opcional, CORE ya lo maneja)
-    const { data: meeting } = await supabase
-      .from('meetings')
-      .select('*')
-      .eq('id', meetingId)
-      .single();
+    try {
+      const { data: meeting, error: dbError } = await supabase
+        .from('meetings')
+        .select('*')
+        .eq('id', meetingId)
+        .maybeSingle();
 
-    console.log('[MeetingsService] ✅ Reunión sincronizada en DB local');
+      if (dbError) {
+        console.warn('[MeetingsService] No se pudo sincronizar con DB local:', dbError);
+      } else if (meeting) {
+        console.log('[MeetingsService] ✅ Reunión sincronizada en DB local:', meeting);
+        return { id: meetingId, ...meeting };
+      }
+    } catch (syncError) {
+      console.warn('[MeetingsService] Error en sync con DB local:', syncError);
+    }
 
-    return { id: meetingId, ...meeting };
+    return { id: meetingId, status: status || 'recording', ...responseData };
   } catch (error) {
     console.error('[MeetingsService] ❌ Error iniciando reunión live:', error);
     throw error;
@@ -235,6 +258,14 @@ export async function startLiveMeeting(title) {
  */
 export async function uploadLiveChunk(meetingId, audioBlob, chunkIndex, startedAtMs) {
   try {
+    if (!meetingId) {
+      throw new Error('Meeting ID inválido. No se puede subir chunk.');
+    }
+    
+    if (!audioBlob || audioBlob.size === 0) {
+      throw new Error('Audio blob vacío. No se puede subir chunk.');
+    }
+    
     console.log(`[MeetingsService] 📤 Subiendo chunk ${chunkIndex}:`, {
       meetingId,
       blobSize: audioBlob.size,
@@ -263,16 +294,35 @@ export async function uploadLiveChunk(meetingId, audioBlob, chunkIndex, startedA
 
     if (!response.ok) {
       let errorMsg = 'No se pudo procesar el audio de la reunión.';
+      let errorDetails = {};
+      
       try {
         const errorData = await response.json();
         console.error(`[MeetingsService] ❌ Error data:`, errorData);
-        // ✅ PRIORIDAD: safe_message del backend
-        errorMsg = errorData?.safe_message || errorData?.error || errorData?.message || errorMsg;
+        errorDetails = errorData;
+        
+        // 🔥 MENSAJES ESPECÍFICOS POR CÓDIGO DE ERROR
+        if (response.status === 404) {
+          errorMsg = `Meeting ${meetingId} no encontrado. Puede haber expirado.`;
+        } else if (response.status === 400) {
+          // Bad request - puede ser estado inválido
+          if (errorData?.error?.includes('not in recording state')) {
+            errorMsg = 'La reunión no está en modo grabación. Reinicia la reunión.';
+          } else {
+            errorMsg = errorData?.safe_message || errorData?.error || errorData?.message || 'Datos inválidos al subir chunk.';
+          }
+        } else {
+          errorMsg = errorData?.safe_message || errorData?.error || errorData?.message || errorMsg;
+        }
       } catch (e) {
         const textError = await response.text();
         console.error(`[MeetingsService] ❌ Error text:`, textError);
       }
-      throw new Error(errorMsg);
+      
+      const err = new Error(errorMsg);
+      err.status = response.status;
+      err.details = errorDetails;
+      throw err;
     }
 
     const result = await response.json();

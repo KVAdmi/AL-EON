@@ -247,6 +247,8 @@ export async function getUserBots(userId) {
     }
 
     // 🔥 OPCIÓN 2: Si backend falla, leer directamente de Supabase
+    console.log('[TelegramService] 📊 Consultando Supabase con userId:', userId);
+    
     const { data, error } = await supabase
       .from('telegram_bots')
       .select('*')
@@ -255,13 +257,41 @@ export async function getUserBots(userId) {
 
     if (error) {
       console.error('[TelegramService] ❌ Error en Supabase:', error);
-      throw new Error(error.message || 'Error al obtener bots');
+      console.error('[TelegramService] ❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
+      throw new Error(`Error leyendo bots: ${error.message}. Puede ser un problema de RLS.`);
     }
 
     console.log('[TelegramService] ✅ Bots obtenidos desde Supabase:', data);
+    console.log('[TelegramService] 📊 Total de bots encontrados:', data?.length || 0);
+    
+    // 🔥 NUEVO: Si no hay bots, verificar si existe alguno sin filtro (debugging)
+    if (!data || data.length === 0) {
+      console.log('[TelegramService] ⚠️ No se encontraron bots para owner_user_id:', userId);
+      
+      try {
+        const { data: allBots, error: allError } = await supabase
+          .from('telegram_bots')
+          .select('id, bot_username, owner_user_id')
+          .limit(5);
+        
+        if (!allError && allBots && allBots.length > 0) {
+          console.warn('[TelegramService] 🔍 PERO hay bots en la tabla:', allBots);
+          console.warn('[TelegramService] 🔍 Puede ser problema de RLS o owner_user_id incorrecto');
+        } else {
+          console.log('[TelegramService] ℹ️ La tabla telegram_bots está vacía');
+        }
+      } catch (debugError) {
+        console.error('[TelegramService] No se pudo hacer query de debug:', debugError);
+      }
+    }
     
     // Mapear campos de Supabase a formato esperado por el frontend
-    const mappedBots = data.map(bot => ({
+    const mappedBots = (data || []).map(bot => ({
       id: bot.id,
       botUsername: bot.bot_username,
       botToken: bot.bot_token_enc,
