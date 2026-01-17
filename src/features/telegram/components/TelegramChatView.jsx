@@ -157,14 +157,6 @@ export default function TelegramChatView() {
       }
 
       console.log('[TELEGRAM] ✅ Mensaje enviado');
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}`);
-      }
-
-      console.log('[TELEGRAM] ✅ Mensaje enviado');
       
       setNewMessage('');
       
