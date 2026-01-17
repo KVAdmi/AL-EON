@@ -293,10 +293,18 @@ export async function disconnectBot(botId) {
  */
 export async function updateBotSettings(botId, settings) {
   try {
+    if (!botId) {
+      console.error('[TelegramService] ❌ Error: botId es undefined en updateBotSettings');
+      throw new Error('ID de bot no válido');
+    }
+
     // 🔐 Obtener token JWT
     const token = await getAuthToken();
     
-    const response = await fetch(`${BACKEND_URL}/api/telegram/bots/${botId}/settings`, {
+    const url = `${BACKEND_URL}/api/telegram/bots/${botId}/settings`;
+    console.log('[TelegramService] 📤 Actualizando configuración en:', url);
+
+    const response = await fetch(url, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -306,12 +314,20 @@ export async function updateBotSettings(botId, settings) {
       body: JSON.stringify(settings),
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error al actualizar configuración del bot');
+    const text = await response.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      console.error('[TelegramService] ❌ Error parseando respuesta del servidor:', text);
+      throw new Error(`Error del servidor (${response.status}): La respuesta no es un JSON válido.`);
     }
 
-    return await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || data.error || `Error ${response.status} al actualizar configuración`);
+    }
+
+    return data;
   } catch (error) {
     console.error('[TelegramService] Error en updateBotSettings:', error);
     throw error;

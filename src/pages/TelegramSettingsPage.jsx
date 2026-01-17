@@ -227,7 +227,11 @@ export default function TelegramSettingsPage() {
                             type="checkbox"
                             className="sr-only peer"
                             checked={bot.auto_send_enabled || false}
-                            onChange={() => handleToggleAutoSend(bot.id, bot.auto_send_enabled)}
+                            onChange={() => {
+                              const id = bot.id || bot.bot_id;
+                              console.log('[TelegramSettings] Toggling auto-send for bot:', id);
+                              handleToggleAutoSend(id, bot.auto_send_enabled);
+                            }}
                           />
                           <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0078d4]"></div>
                         </label>

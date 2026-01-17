@@ -148,6 +148,16 @@ export function useVoiceMode({
       }
       
       console.log('✅ [P0-2] Permisos concedidos, tracks activos:', stream.getAudioTracks().length);
+      
+      // 🔍 DEBUG: Monitorear actividad del track
+      const audioTrack = stream.getAudioTracks()[0];
+      console.log('🎙️ [P0-2] Track info:', {
+        label: audioTrack.label,
+        enabled: audioTrack.enabled,
+        readyState: audioTrack.readyState,
+        muted: audioTrack.muted
+      });
+
       streamRef.current = stream;
 
       // Determinar formato soportado
@@ -192,12 +202,23 @@ export function useVoiceMode({
         audioChunksRef.current = [];
 
         // 🔥 P0-2: SI BYTES = 0, NO MANDAR REQUEST
-        if (bytesGrabados === 0) {
-          const errorMsg = `⚠️ [P0-2] NO SE GRABÓ AUDIO (bytes: 0)`;
+        if (bytesGrabados < 100) { // Aumentamos el umbral a 100 bytes para filtrar ruido/vacío
+          const errorMsg = `⚠️ [P0-2] NO SE GRABÓ AUDIO SUFICIENTE (bytes: ${bytesGrabados})`;
           console.error(errorMsg);
           setStatus('idle');
-          setError(new Error('No se capturó audio'));
-          onError?.(new Error('No se capturó audio (0 bytes). Verifica que tu micrófono esté funcionando y habla más tiempo.'));
+          
+          // Si el stream sigue activo, es un problema de captura de datos, no de permisos
+          const tracks = streamRef.current ? streamRef.current.getAudioTracks() : [];
+          const trackActive = tracks.length > 0 && tracks[0].enabled && tracks[0].readyState === 'live';
+          
+          const finalError = new Error(
+            trackActive 
+              ? 'El micrófono no capturó sonido. Asegúrate de hablar claramente y que el micrófono no esté silenciado en el sistema.'
+              : 'El micrófono se desconectó o no tiene permisos. Verifica la configuración de tu navegador.'
+          );
+          
+          setError(finalError);
+          onError?.(finalError);
           return; // 🔥 NO ENVIAR REQUEST
         }
 
@@ -205,8 +226,8 @@ export function useVoiceMode({
         await sendAudioToBackend(audioBlob);
       };
 
-      // 🔥 CRÍTICO: Capturar chunks cada 100ms para asegurar que no se pierda nada
-      mediaRecorder.start(100);
+      // 🔥 CRÍTICO: Capturar chunks cada 250ms (balance entre rendimiento y seguridad)
+      mediaRecorder.start(250);
       setStatus('recording');
       setError(null);
       setTranscript('');
