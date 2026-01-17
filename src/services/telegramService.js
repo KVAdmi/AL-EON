@@ -207,9 +207,11 @@ export async function getUserBots(userId) {
         const bots = await response.json();
         console.log('[TelegramService] ✅ Bots obtenidos desde backend:', bots);
         
-        // Validar que sea un array, si no, ir directo a Supabase
-        if (Array.isArray(bots) && bots.length > 0) {
+        // Validar que sea un array o un objeto (si es un solo bot)
+        if (Array.isArray(bots)) {
           return bots;
+        } else if (bots && typeof bots === 'object' && Object.keys(bots).length > 0) {
+          return [bots]; // Envolver en array si es un solo objeto
         }
         
         console.warn('[TelegramService] ⚠️ Backend devolvió formato inválido o vacío, usando Supabase');
