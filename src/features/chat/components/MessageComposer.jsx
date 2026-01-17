@@ -91,6 +91,16 @@ function MessageComposer({ onSendMessage, isLoading, isUploading, disabled, sess
   };
 
   const handlePaste = (e) => {
+    // 🔒 VALIDACIÓN P0: Bloquear si no hay usuario
+    if (!user?.id) {
+      toast({
+        title: "Error de sesión",
+        description: "No se pueden subir archivos. Por favor recarga la página e inicia sesión nuevamente.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const items = e.clipboardData?.items;
     if (!items) return;
 
