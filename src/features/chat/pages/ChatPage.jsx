@@ -57,6 +57,8 @@ function ChatPage() {
   });
 
   // 🔒 Sistema de voz - SIEMPRE ejecutar hook (no condicional)
+  const [voiceError, setVoiceError] = useState(null); // 🔥 NUEVO: Estado para error de voz
+  
   const voiceMode = useVoiceMode({
     accessToken,                    // ✅ JWT token de Supabase (REQUERIDO)
     sessionId: currentConversation?.session_id || currentConversation?.id, // ✅ ID de sesión (REQUERIDO)
@@ -64,12 +66,13 @@ function ChatPage() {
     enabled: canUseVoice,          // ✅ Flag para activar/desactivar
     onResponse: (responseText) => { // ✅ Callback correcto - respuesta de AL-E
       console.log('✅ [Voice] Respuesta de AL-E:', responseText.substring(0, 100));
+      setVoiceError(null); // 🔥 Limpiar error cuando hay respuesta exitosa
       // El mensaje ya se agregó al conversation por el backend
       // Aquí solo actualizamos UI si es necesario
     },
-    onError: (error) => {           // ✅ Manejo de errores
+    onError: (error) => {           // 🔥 MEJORADO: Guardar error en estado
       console.error('❌ [Voice] Error:', error);
-      alert(`Error de voz: ${error.message}`);
+      setVoiceError(error); // 🔥 Mostrar error en UI en vez de alert
     },
     handsFreeEnabled: handsFree     // ✅ Modo manos libres
   });
@@ -156,6 +159,7 @@ function ChatPage() {
           conversation={currentConversation}
           isLoading={isLoading}
           voiceMode={voiceMode}
+          voiceError={voiceError} // 🔥 NUEVO: Pasar error de voz
           handsFree={handsFree}
           onToggleHandsFree={handleToggleHandsFree}
           onToggleSidebar={() => setShowSidebar(!showSidebar)}

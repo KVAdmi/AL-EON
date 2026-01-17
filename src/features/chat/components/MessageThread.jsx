@@ -44,7 +44,7 @@ function ProcessingTimer({ startTime }) {
   );
 }
 
-function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggleHandsFree, onToggleSidebar, onStopResponse, onRegenerateResponse, currentUser, assistantName, assistantAvatar, userAvatar }) {
+function MessageThread({ conversation, isLoading, voiceMode, voiceError, handsFree, onToggleHandsFree, onToggleSidebar, onStopResponse, onRegenerateResponse, currentUser, assistantName, assistantAvatar, userAvatar }) {
   const scrollRef = useRef(null);
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -192,6 +192,21 @@ function MessageThread({ conversation, isLoading, voiceMode, handsFree, onToggle
                 )}
               </>
             )}
+          </div>
+        )}
+
+        {/* 🔥 ERROR DE VOZ - Mostrar si existe */}
+        {voiceError && (
+          <div className="absolute top-16 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4">
+            <div className="bg-red-900/90 border border-red-700 text-white px-4 py-3 rounded-lg shadow-lg">
+              <div className="flex items-start gap-2">
+                <AlertCircle size={20} className="flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-semibold text-sm">Error en modo voz</p>
+                  <p className="text-sm mt-1">{voiceError.message || 'Error desconocido'}</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -93,34 +93,39 @@ export default function SettingsPage() {
   }, []);
 
   function loadVoices() {
-    if (!window.speechSynthesis) {
-      console.warn('[TTS] Web Speech API no disponible en este navegador');
-      return;
-    }
+    try {
+      if (!window.speechSynthesis) {
+        console.warn('[TTS] Web Speech API no disponible en este navegador');
+        return;
+      }
 
-    const voices = window.speechSynthesis.getVoices();
-    console.log('[TTS] Voces disponibles:', voices.length);
-    
-    // Filtrar voces en español (priorizar mexicanas)
-    const spanishVoices = voices.filter(v => 
-      v.lang.startsWith('es') || v.lang.startsWith('es-MX')
-    );
-    
-    setAvailableVoices(spanishVoices);
-    globalAvailableVoices = spanishVoices;
-    
-    // Auto-seleccionar voz mexicana si no hay ninguna guardada
-    if (!settings.tts_voice_name && spanishVoices.length > 0) {
-      const mexicanVoice = spanishVoices.find(v => 
-        v.lang === 'es-MX' || v.name.toLowerCase().includes('mexico')
+      const voices = window.speechSynthesis.getVoices();
+      console.log('[TTS] Voces disponibles:', voices.length);
+      
+      // Filtrar voces en español (priorizar mexicanas)
+      const spanishVoices = voices.filter(v => 
+        v.lang.startsWith('es') || v.lang.startsWith('es-MX')
       );
       
-      if (mexicanVoice) {
-        setSettings(prev => ({
-          ...prev,
-          tts_voice_name: mexicanVoice.name,
-        }));
+      setAvailableVoices(spanishVoices);
+      globalAvailableVoices = spanishVoices;
+      
+      // Auto-seleccionar voz mexicana si no hay ninguna guardada
+      if (!settings.tts_voice_name && spanishVoices.length > 0) {
+        const mexicanVoice = spanishVoices.find(v => 
+          v.lang === 'es-MX' || v.name.toLowerCase().includes('mexico')
+        );
+        
+        if (mexicanVoice) {
+          setSettings(prev => ({
+            ...prev,
+            tts_voice_name: mexicanVoice.name,
+          }));
+        }
       }
+    } catch (error) {
+      console.error('[TTS] Error al cargar voces:', error);
+      // No interrumpir la carga de la página si fallan las voces
     }
   }
 

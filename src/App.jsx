@@ -267,7 +267,9 @@ function App() {
           path="/settings" 
           element={
             <ProtectedRoute>
-              <SettingsPage />
+              <ErrorBoundary>
+                <SettingsPage />
+              </ErrorBoundary>
             </ProtectedRoute>
           } 
         />
