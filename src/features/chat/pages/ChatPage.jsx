@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCapability } from '@/components/CapabilitiesGate';
 import { useEventNotifications } from '@/hooks/useEventNotifications';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { supabase } from '@/lib/supabase';
 
 function ChatPage() {
   const { user, userProfile, accessToken, logout } = useAuth();
@@ -60,11 +61,43 @@ function ChatPage() {
   // 🔒 Sistema de voz - SIEMPRE ejecutar hook (no condicional)
   const [voiceError, setVoiceError] = useState(null); // 🔥 NUEVO: Estado para error de voz
   
+  // 🔊 Cargar settings de voz desde DB (para ttsGender)
+  const [userSettings, setUserSettings] = useState({ tts_gender: 'female' });
+  
+  useEffect(() => {
+    async function loadVoiceSettings() {
+      if (!user?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('user_settings')
+          .select('tts_gender')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (error) {
+          console.warn('[Voice Settings] No se pudieron cargar settings:', error.message);
+          return;
+        }
+        
+        if (data?.tts_gender) {
+          setUserSettings(prev => ({ ...prev, tts_gender: data.tts_gender }));
+          console.log('[Voice Settings] Género TTS cargado:', data.tts_gender);
+        }
+      } catch (err) {
+        console.error('[Voice Settings] Error cargando settings:', err);
+      }
+    }
+    
+    loadVoiceSettings();
+  }, [user?.id]);
+  
   const voiceMode = useVoiceMode({
     accessToken,                    // ✅ JWT token de Supabase (REQUERIDO)
     sessionId: currentConversation?.session_id || currentConversation?.id, // ✅ ID de sesión (REQUERIDO)
     workspaceId: 'core',           // ✅ Workspace ID
     enabled: canUseVoice,          // ✅ Flag para activar/desactivar
+    ttsGender: userSettings?.tts_gender || 'female', // 🔥 GÉNERO DE VOZ DESDE SETTINGS
     onResponse: (responseText) => { // ✅ Callback correcto - respuesta de AL-E
       console.log('✅ [Voice] Respuesta de AL-E:', responseText.substring(0, 100));
       setVoiceError(null); // 🔥 Limpiar error cuando hay respuesta exitosa
