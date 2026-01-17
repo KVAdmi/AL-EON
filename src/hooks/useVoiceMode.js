@@ -40,7 +40,8 @@ export function useVoiceMode({
   enabled = true, // Flag para activar/desactivar (NUEVO)
   onResponse, // Callback con respuesta de AL-E: (text) => void
   onError, // Callback de error: (error) => void
-  handsFreeEnabled = false
+  handsFreeEnabled = false,
+  ttsGender = 'female' // 🔥 Género de voz TTS (NUEVO)
 } = {}) {
   const [mode, setMode] = useState('text'); // 'text' | 'voice'
   const [status, setStatus] = useState('idle'); // 'idle' | 'recording' | 'processing' | 'speaking'
@@ -425,7 +426,7 @@ export function useVoiceMode({
         },
         body: JSON.stringify({
           text: assistantText,
-          voice: 'mx_female_default',
+          voice: ttsGender === 'male' ? 'mx_male_default' : 'mx_female_default',
           format: 'mp3'
         }),
         signal: abortControllerRef.current.signal
@@ -442,6 +443,13 @@ export function useVoiceMode({
       }
 
       const audioBlob = await ttsResponse.blob();
+      
+      // 🔥 Validar que el audio no esté vacío
+      if (!audioBlob || audioBlob.size === 0) {
+        console.error('[TTS] ❌ Backend no devolvió audio');
+        logRequestError(ttsRequestId, '/api/voice/tts', { error: 'Empty audio blob', sessionId });
+        throw new Error('TTS no devolvió audio');
+      }
       
       logRequest(ttsRequestId, '/api/voice/tts', ttsResponse.status, {
         sessionId,
@@ -484,7 +492,7 @@ export function useVoiceMode({
       setIsSending(false);
       abortControllerRef.current = null;
     }
-  }, [accessToken, sessionId, workspaceId, mode, onResponse, onError, startRecording]);
+  }, [accessToken, sessionId, workspaceId, mode, ttsGender, onResponse, onError, startRecording]);
 
   // Mantener una referencia estable para usarla desde callbacks nativos (MediaRecorder)
   useEffect(() => {

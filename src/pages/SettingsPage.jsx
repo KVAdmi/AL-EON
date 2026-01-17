@@ -106,17 +106,42 @@ export default function SettingsPage() {
       
       setAvailableVoices(spanishVoices);
       
-      // Auto-seleccionar voz mexicana si no hay ninguna guardada
+      // Auto-seleccionar voz mexicana si no hay ninguna guardada (respetando género)
       if (!settings.tts_voice_name && spanishVoices.length > 0) {
-        const mexicanVoice = spanishVoices.find(v => 
+        const mexicanVoices = spanishVoices.filter(v => 
           v.lang === 'es-MX' || v.name.toLowerCase().includes('mexico')
         );
         
-        if (mexicanVoice) {
+        if (mexicanVoices.length > 0) {
+          // 🔥 Filtrar por género guardado en settings
+          const gender = settings.tts_gender || 'female';
+          
+          let preferredVoice = null;
+          if (gender === 'female') {
+            preferredVoice = mexicanVoices.find(v => 
+              v.name.toLowerCase().includes('female') ||
+              v.name.toLowerCase().includes('mujer') ||
+              v.name.toLowerCase().includes('paulina') ||
+              v.name.toLowerCase().includes('monica')
+            );
+          } else {
+            preferredVoice = mexicanVoices.find(v => 
+              v.name.toLowerCase().includes('male') ||
+              v.name.toLowerCase().includes('hombre') ||
+              v.name.toLowerCase().includes('diego') ||
+              v.name.toLowerCase().includes('jorge')
+            );
+          }
+          
+          // Fallback: usar la primera mexicana disponible
+          const selectedVoice = preferredVoice || mexicanVoices[0];
+          
           setSettings(prev => ({
             ...prev,
-            tts_voice_name: mexicanVoice.name,
+            tts_voice_name: selectedVoice.name,
           }));
+          
+          console.log('[TTS] Auto-seleccionada voz:', selectedVoice.name, 'género:', gender);
         }
       }
     } catch (error) {
@@ -1334,7 +1359,6 @@ function TabContent({
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => {
-                      // 🔥 RECALCULAR mexicanVoices en el momento del click
                       const safeVoices = Array.isArray(availableVoices) ? availableVoices : [];
                       const mexicanVoicesNow = safeVoices.filter(v => 
                         v.lang === 'es-MX' || 
@@ -1342,18 +1366,40 @@ function TabContent({
                         v.name.toLowerCase().includes('mexican')
                       );
                       
-                      const femaleVoice = mexicanVoicesNow.find(v => 
+                      let femaleVoice = mexicanVoicesNow.find(v => 
                         v.name.toLowerCase().includes('female') ||
                         v.name.toLowerCase().includes('mujer') ||
                         v.name.toLowerCase().includes('paulina') ||
                         v.name.toLowerCase().includes('monica')
-                      ) || mexicanVoicesNow.find(v => !v.name.toLowerCase().includes('male'));
+                      );
+                      
+                      // 🔥 FALLBACK 1: Buscar cualquier voz que no tenga "male" en español
+                      if (!femaleVoice) {
+                        const spanishVoices = safeVoices.filter(v => v.lang.startsWith('es'));
+                        femaleVoice = spanishVoices.find(v => 
+                          (v.name.toLowerCase().includes('female') || 
+                           v.name.toLowerCase().includes('mujer')) &&
+                          !v.name.toLowerCase().includes('male')
+                        );
+                      }
+                      
+                      // 🔥 FALLBACK 2: Usar primera mexicana sin "male" en nombre
+                      if (!femaleVoice && mexicanVoicesNow.length > 0) {
+                        femaleVoice = mexicanVoicesNow.find(v => !v.name.toLowerCase().includes('male'));
+                      }
+                      
+                      // 🔥 FALLBACK 3: Usar primera disponible
+                      if (!femaleVoice && safeVoices.length > 0) {
+                        femaleVoice = safeVoices[0];
+                      }
                       
                       setSettings({
                         ...settings,
                         tts_gender: 'female',
                         tts_voice_name: femaleVoice?.name || null,
                       });
+                      
+                      console.log('[TTS] Cambiando a voz femenina:', femaleVoice?.name || 'ninguna');
                     }}
                     className={`p-4 rounded-lg border-2 transition-all ${
                       settings.tts_gender === 'female' 
@@ -1377,7 +1423,6 @@ function TabContent({
 
                   <button
                     onClick={() => {
-                      // 🔥 RECALCULAR mexicanVoices en el momento del click
                       const safeVoices = Array.isArray(availableVoices) ? availableVoices : [];
                       const mexicanVoicesNow = safeVoices.filter(v => 
                         v.lang === 'es-MX' || 
@@ -1385,18 +1430,39 @@ function TabContent({
                         v.name.toLowerCase().includes('mexican')
                       );
                       
-                      const maleVoice = mexicanVoicesNow.find(v => 
+                      let maleVoice = mexicanVoicesNow.find(v => 
                         v.name.toLowerCase().includes('male') ||
                         v.name.toLowerCase().includes('hombre') ||
                         v.name.toLowerCase().includes('diego') ||
                         v.name.toLowerCase().includes('jorge')
                       );
                       
+                      // 🔥 FALLBACK 1: Buscar cualquier voz masculina en español
+                      if (!maleVoice) {
+                        const spanishVoices = safeVoices.filter(v => v.lang.startsWith('es'));
+                        maleVoice = spanishVoices.find(v => 
+                          v.name.toLowerCase().includes('male') ||
+                          v.name.toLowerCase().includes('hombre')
+                        );
+                      }
+                      
+                      // 🔥 FALLBACK 2: Usar primera mexicana
+                      if (!maleVoice && mexicanVoicesNow.length > 0) {
+                        maleVoice = mexicanVoicesNow[0];
+                      }
+                      
+                      // 🔥 FALLBACK 3: Usar primera disponible
+                      if (!maleVoice && safeVoices.length > 0) {
+                        maleVoice = safeVoices[0];
+                      }
+                      
                       setSettings({
                         ...settings,
                         tts_gender: 'male',
                         tts_voice_name: maleVoice?.name || null,
                       });
+                      
+                      console.log('[TTS] Cambiando a voz masculina:', maleVoice?.name || 'ninguna');
                     }}
                     className={`p-4 rounded-lg border-2 transition-all ${
                       settings.tts_gender === 'male' 
