@@ -10,7 +10,7 @@
  * 2. Modo Voz Manos Libres (ON):
  *    a) Captura audio (push-to-talk)
  *    b) POST /api/voice/transcribe → { text }
- *    c) POST /api/ai/chat → { response }
+ *    c) POST /api/ai/chat/v2 → { answer, session_id }
  *    d) POST /api/voice/tts → audio MP3
  *    e) Reproduce audio
  *    f) Vuelve a escuchar (loop)
