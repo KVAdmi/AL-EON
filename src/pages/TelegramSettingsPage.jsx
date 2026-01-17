@@ -288,12 +288,19 @@ export default function TelegramSettingsPage() {
                       Recargar página
                     </button>
                   </div>
-                ) : (
+                ) : user?.id ? (
                   <ConnectBotForm
                     userId={user.id}
                     onSuccess={handleBotConnected}
                     onCancel={() => setShowConnectForm(false)}
                   />
+                ) : (
+                  <div className="text-center py-12">
+                    <AlertCircle size={48} className="mx-auto mb-4" style={{ color: 'var(--color-text-tertiary)' }} />
+                    <p style={{ color: 'var(--color-text-secondary)' }}>
+                      Cargando información del usuario...
+                    </p>
+                  </div>
                 )}
               </div>
             ) : (

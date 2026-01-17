@@ -421,7 +421,10 @@ export default function MeetingsRecorderLive() {
               </span>
             </div>
             <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-              Chunks enviados: {chunkCount}
+              Chunks enviados: {chunkIndexRef.current}
+            </p>
+            <p className="text-xs mt-2" style={{ color: 'var(--color-text-secondary)' }}>
+              {formatTime(recordingTime)}
             </p>
           </div>
 

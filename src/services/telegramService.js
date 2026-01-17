@@ -74,31 +74,57 @@ export async function connectBot(botData) {
       
       // Si el bot ya existe (código 409 o mensaje que lo indique)
       if (response.status === 409 || errorText.includes('already exists') || errorText.includes('ya existe')) {
-        console.log('[TelegramService] ℹ️ Bot ya existe, buscando en BD...');
+        console.log('[TelegramService] ℹ️ Bot ya existe, intentando ligar a usuario...');
         
-        // Intentar leer desde Supabase directamente
+        // 🔥 NUEVO: Primero buscar el bot SIN filtrar por owner_user_id
         try {
-          const { data, error } = await supabase
+          const { data: existingBot, error: searchError } = await supabase
             .from('telegram_bots')
             .select('*')
             .eq('bot_username', botData.botUsername)
-            .eq('owner_user_id', botData.ownerUserId)
-            .single();
+            .maybeSingle();
 
-          if (!error && data) {
-            console.log('[TelegramService] ✅ Bot encontrado en Supabase:', data);
-            return {
-              id: data.id,
-              botUsername: data.bot_username,
-              botToken: data.bot_token_enc,
-              ownerUserId: data.owner_user_id,
-              isConnected: true,
-              webhook: data.webhook_url,
-              createdAt: data.created_at,
-            };
+          if (existingBot) {
+            console.log('[TelegramService] ✅ Bot encontrado:', existingBot);
+            
+            // Si el bot existe pero tiene otro owner, intentar actualizarlo
+            if (existingBot.owner_user_id !== botData.ownerUserId) {
+              console.log('[TelegramService] 🔄 Bot tiene otro owner, actualizando...');
+              
+              const { data: updated, error: updateError } = await supabase
+                .from('telegram_bots')
+                .update({ owner_user_id: botData.ownerUserId })
+                .eq('id', existingBot.id)
+                .select()
+                .single();
+              
+              if (!updateError && updated) {
+                console.log('[TelegramService] ✅ Bot ligado al usuario actual');
+                return {
+                  id: updated.id,
+                  botUsername: updated.bot_username,
+                  botToken: updated.bot_token_enc,
+                  ownerUserId: updated.owner_user_id,
+                  isConnected: true,
+                  webhook: updated.webhook_url,
+                  createdAt: updated.created_at,
+                };
+              }
+            } else {
+              // Ya es el owner correcto
+              return {
+                id: existingBot.id,
+                botUsername: existingBot.bot_username,
+                botToken: existingBot.bot_token_enc,
+                ownerUserId: existingBot.owner_user_id,
+                isConnected: true,
+                webhook: existingBot.webhook_url,
+                createdAt: existingBot.created_at,
+              };
+            }
           }
         } catch (supabaseError) {
-          console.error('[TelegramService] Error consultando Supabase:', supabaseError);
+          console.error('[TelegramService] Error buscando/actualizando bot:', supabaseError);
         }
       }
       

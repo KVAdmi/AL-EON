@@ -270,10 +270,11 @@ export function useVoiceMode({
     if (!audioBlob || audioBlob.size === 0) {
       const errorMsg = 'No se detectó audio. Verifica que tu micrófono esté funcionando y que hayas hablado.';
       console.error('❌ [Voice] Audio blob vacío:', { size: audioBlob?.size || 0 });
-      setError(errorMsg);
+      const emptyError = new Error(errorMsg);
+      setError(emptyError);
       setStatus('idle');
       setIsSending(false);
-      onError?.(new Error(errorMsg));
+      onError?.(emptyError);
       return; // 🛑 NO enviar al backend
     }
 
