@@ -132,6 +132,14 @@ export default function TelegramChatView() {
   };
 
   const handleSendMessage = async (e) => {
+    e.preventDefault();
+    
+    if (!newMessage.trim() || !selectedChatId || sending) return;
+
+    try {
+      setSending(true);
+      console.log('[TELEGRAM] 📤 Enviando mensaje:', newMessage);
+
       const response = await fetch(`${BACKEND_URL}/api/telegram/send`, {
         method: 'POST',
         headers: {
