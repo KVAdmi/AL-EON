@@ -41,7 +41,7 @@ export default function TelegramChat({ chatId, chatName, botId, onMessageSent })
       
       // 🔥 LOGGING COMPLETO DEL PAYLOAD
       console.log('[TelegramChat] 📦 PAYLOAD COMPLETO:', JSON.stringify(data, null, 2));
-      console.log('[TelegramChat] � Tipo de dato:', typeof data, Array.isArray(data) ? 'ES ARRAY' : 'NO ES ARRAY');
+      console.log('[TelegramChat] 📊 Tipo de dato:', typeof data, Array.isArray(data) ? 'ES ARRAY' : 'NO ES ARRAY');
       console.log('[TelegramChat] 📊 Cantidad de mensajes:', data?.length || 0);
       
       if (Array.isArray(data) && data.length > 0) {
