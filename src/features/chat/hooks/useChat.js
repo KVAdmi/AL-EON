@@ -82,20 +82,28 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
           if (!docsError && data && data.length > 0) {
             console.log(`✅ Encontrados ${data.length} documentos del proyecto`);
             
-            // Obtener URLs públicas de los documentos
-            projectDocuments = data.map(doc => {
-              const { data: { publicUrl } } = supabase.storage
+            // 🔐 P0 CRÍTICO: Generar SIGNED URLs para documentos del proyecto
+            console.log('[useChat] 🔐 Generando signed URLs para documentos del proyecto...');
+            
+            const signedPromises = data.map(async (doc) => {
+              const { data: signedData, error: signedError } = await supabase.storage
                 .from('user-files')
-                .getPublicUrl(`${projectPath}${doc.name}`);
+                .createSignedUrl(`${projectPath}${doc.name}`, 3600); // 60 minutos
+              
+              if (signedError) {
+                console.error(`[useChat] ❌ Error generando signed URL para ${doc.name}:`, signedError);
+                return null;
+              }
               
               return {
                 name: doc.name,
-                url: publicUrl,
+                url: signedData.signedUrl, // ✅ SIGNED URL
                 size: doc.metadata?.size || 0,
                 type: doc.metadata?.mimetype || 'application/octet-stream'
               };
             });
-
+            
+            projectDocuments = (await Promise.all(signedPromises)).filter(Boolean); // Eliminar nulls
             console.log('📄 Documentos del proyecto que se enviarán:', projectDocuments.map(d => d.name));
           }
         } catch (error) {

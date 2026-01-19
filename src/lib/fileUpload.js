@@ -24,15 +24,23 @@ export async function uploadFile(file, userId) {
       throw error;
     }
 
-    // Obtener URL pública
-    const { data: { publicUrl } } = supabase.storage
+    // 🔐 P0 CRÍTICO: Generar SIGNED URL (válida 60 minutos) en lugar de public URL
+    console.log('[FileUpload] 🔐 Generando signed URL para:', filePath);
+    const { data: signedData, error: signedError } = await supabase.storage
       .from('user-files')
-      .getPublicUrl(filePath);
+      .createSignedUrl(filePath, 3600); // 60 minutos = 3600 segundos
+
+    if (signedError) {
+      console.error('[FileUpload] ❌ Error generando signed URL:', signedError);
+      throw signedError;
+    }
+
+    console.log('[FileUpload] ✅ Signed URL generada');
 
     return {
       bucket: 'user-files', // ✅ AL-E Core necesita bucket
       path: filePath,       // ✅ AL-E Core necesita path
-      url: publicUrl,       // Opcional (backward compatibility)
+      url: signedData.signedUrl, // ✅ SIGNED URL (no public URL)
       name: file.name,
       type: file.type,
       size: file.size
