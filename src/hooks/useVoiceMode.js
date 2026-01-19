@@ -367,11 +367,14 @@ export function useVoiceMode({
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
           'x-request-id': chatRequestId, // 🔥 REQUEST-ID
+          'x-channel': 'voice', // 🔥 P0: Marca de canal de voz para guardrail
         },
         body: JSON.stringify({
           message: userText,
           sessionId,
           workspaceId,
+          route: '/voice', // 🔥 P0: Marca de ruta de voz para backend
+          voice: true, // 🔥 P0: Flag de voz para activar guardrail
           meta: {
             inputMode: 'voice',
             platform: 'web',
