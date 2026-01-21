@@ -55,7 +55,7 @@ async function fetchWithRetry(url, options, retries = 1) {
  * @param {AbortSignal} params.signal - Señal para cancelar request (opcional)
  * @returns {Promise<Object>} Respuesta de AL-E Core con session_id
  */
-export async function sendToAleCore({ accessToken, userId, message, sessionId, workspaceId, projectId, userEmail, userDisplayName, meta, files, signal }) {
+export async function sendToAleCore({ accessToken, userId, messages, message, sessionId, workspaceId, projectId, userEmail, userDisplayName, meta, files, signal }) {
   const BASE_URL = import.meta.env.VITE_ALE_CORE_BASE || import.meta.env.VITE_ALE_CORE_URL?.replace('/api/ai/chat', '');
   
   if (!BASE_URL) {
@@ -71,14 +71,17 @@ export async function sendToAleCore({ accessToken, userId, message, sessionId, w
     throw new Error("❌ Missing accessToken");
   }
 
-  if (!message || !message.trim()) {
-    throw new Error("❌ Message is required");
+  // ✅ Soporte para historial completo (messages[]) o mensaje único (message)
+  const finalMessages = messages || (message ? [{ role: 'user', content: message }] : []);
+  
+  if (!finalMessages || finalMessages.length === 0) {
+    throw new Error("❌ Messages array is required");
   }
 
   // ✅ PAYLOAD PARA /api/ai/chat/v2
-  // Contract (CORE): { message, sessionId, workspaceId?, meta?, userEmail?, userDisplayName? }
+  // Contract (CORE): { messages[], sessionId, workspaceId?, meta?, userEmail?, userDisplayName? }
   const payloadData = {
-    message: message.trim(),
+    messages: finalMessages, // 🔥 ENVIAR HISTORIAL COMPLETO
     sessionId: sessionId || undefined,
     workspaceId: workspaceId || 'core',
     ...(userEmail ? { userEmail } : {}),
