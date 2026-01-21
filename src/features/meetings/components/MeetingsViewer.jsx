@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, Calendar, FileText, Clock, ChevronRight, ChevronDown } from 'lucide-react';
 import { getMeetings } from '@/services/meetingsService';
+import MeetingTranscriptView from './MeetingTranscriptView';
 
 const BACKEND_URL = import.meta.env.VITE_CORE_BASE_URL || 'https://api.al-eon.com';
 
@@ -250,8 +251,39 @@ export default function MeetingsViewer() {
                   )}
                 </div>
 
-                {/* Transcripción */}
-                {result.transcript && (
+                {/* Transcripción con diarización */}
+                {result.segments && result.segments.length > 0 ? (
+                  <div 
+                    className="rounded-xl border overflow-hidden"
+                    style={{
+                      backgroundColor: 'var(--color-bg-tertiary)',
+                      borderColor: 'var(--color-border)',
+                    }}
+                  >
+                    <button
+                      onClick={() => toggleSection('transcript')}
+                      className="w-full p-4 flex items-center justify-between hover:opacity-80 transition-opacity"
+                    >
+                      <span className="font-semibold flex items-center gap-2" style={{ color: 'var(--color-text-primary)' }}>
+                        <FileText size={18} />
+                        Transcripción con Speakers
+                      </span>
+                      <ChevronDown 
+                        size={18} 
+                        className={`transition-transform ${expandedSections.transcript ? '' : '-rotate-90'}`}
+                        style={{ color: 'var(--color-text-secondary)' }}
+                      />
+                    </button>
+                    {expandedSections.transcript && (
+                      <div className="p-4">
+                        <MeetingTranscriptView 
+                          segments={result.segments} 
+                          duration={result.duration || selectedMeeting.duration}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : result.transcript && (
                   <div 
                     className="rounded-xl border overflow-hidden"
                     style={{
