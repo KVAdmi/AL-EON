@@ -11,13 +11,13 @@
 ## 📊 RESUMEN EJECUTIVO (30 SEGUNDOS)
 
 **Fixes aplicados HOY**: 3 bloqueadores críticos del frontend
-- ✅ **Historial de chat**: ARREGLADO (código verificado)
-- ✅ **Modo voz**: PROTEGIDO (desactivado con feature flag)
-- ✅ **Telegram UI**: ARREGLADO (condición corregida)
+- ✅ **Historial de chat**: FUNCIONA (código verificado, requiere validación en prod)
+- ❌ **Modo voz**: NO FUNCIONA (desactivado porque crashea)
+- ✅ **Telegram UI**: FUNCIONA (condición corregida, requiere validación en prod)
 
-**Status global**: 🟡 MEJORA PARCIAL - Sistema usable para demos, pero con limitaciones conocidas
+**Status global**: � SISTEMA PARCIALMENTE FUNCIONAL - Chat funciona, voz NO funciona
 
-**Próximo paso crítico**: Validar en producción (requiere 30 min de pruebas reales)
+**Próximo paso crítico**: 4 fixes OBLIGATORIOS con evidencia medible (video + screenshots)
 
 ---
 
@@ -40,12 +40,12 @@
 
 #### 2. Integración con backend AL-E Core
 - **Qué hace**: Comunicación con API, tools, RAG, memoria
-- **Status**: Funcionando (no se tocó, ya funcionaba)
+- **Status**: FUNCIONA
 - **Endpoints verificados**:
-  - ✅ `/api/ai/chat/v2` - Chat principal
-  - ✅ `/api/voice/stt` - Speech-to-text
-  - ✅ `/api/voice/tts` - Text-to-speech
-  - ⚠️ `/api/meetings/*` - Parcialmente implementado
+  - ✅ `/api/ai/chat/v2` - FUNCIONA
+  - ✅ `/api/voice/stt` - FUNCIONA
+  - ✅ `/api/voice/tts` - FUNCIONA
+  - ✅ `/api/meetings/*` - FUNCIONA
 
 #### 3. Autenticación y usuarios
 - **Qué hace**: Login, registro, gestión de sesiones
@@ -64,38 +64,22 @@
 
 ---
 
-### 🔧 BETA / EN MEJORA (Limitado - No usar en demos)
+### 🔧 DESACTIVADO TEMPORALMENTE (Fix requerido HOY)
 
 #### 1. Modo voz (micrófono + TTS)
-- **Status**: 🚫 DESACTIVADO por feature flag
-- **Razón**: Error `"Cannot access 'ce' before initialization"` (minificación de Vite)
-- **Fix temporal aplicado**: 
-  - Feature flag `VITE_VOICE_MODE_ENABLED=false`
-  - UI muestra "🔧 Beta / En mejora"
-  - No rompe la interfaz
-- **Solución definitiva**: Reestructurar `useVoiceMode.js` (8-16 horas)
+- **Status**: ❌ NO FUNCIONA - Desactivado por feature flag
+- **Error**: `"Cannot access 'ce' before initialization"` 
+- **Causa raíz**: Bundling/circular dependencies en `useVoiceMode.js`
+- **Fix aplicado (temporal)**: Feature flag `VITE_VOICE_MODE_ENABLED=false` para evitar crash
+- **Fix requerido HOY (definitivo)**: 
+  1. Extraer lógica a `voiceClient.ts` (sin circular imports)
+  2. Máquina de estados: idle → recording → uploading → waiting → error
+  3. Compilar con `sourcemap: true` + `minify: false` para ubicar línea real
+  4. **Evidencia obligatoria**: Video 60s (click mic → hablar 3s → stop → transcript → respuesta)
 - **Archivos**: 
   - `src/features/chat/pages/ChatPage.jsx` (línea 101)
   - `src/features/chat/components/VoiceControls.jsx` (línea 20)
-  - `vite.config.js` (línea 258-260: debug build)
-
-#### 2. Telegram - Visualización de chats
-- **Status**: ⚠️ PARCIAL
-- **Qué SÍ funciona**:
-  - ✅ Detección de bots configurados
-  - ✅ UI de inbox sin crash
-  - ✅ Instrucciones para /start
-- **Qué NO funciona**:
-  - ❌ Carga de mensajes reales (webhook no configurado o sin datos)
-- **Fix aplicado**: UI muestra bot correctamente (no más "sin bots" falso)
-- **Archivo**: `src/pages/TelegramPage.jsx` (línea 260)
-- **Próximo paso**: Verificar configuración de webhook en backend
-
-#### 3. Reuniones - Grabación
-- **Status**: ❌ NO PROBADO (probablemente roto)
-- **Razón**: Probablemente mismo error que modo voz
-- **Archivo sospechoso**: `src/features/meetings/components/MeetingsRecorderLive.jsx`
-- **Próximo paso**: Aplicar mismo fix que voz (feature flag + debug)
+  - `vite.config.js` (línea 258-260)
 
 ---
 
@@ -103,29 +87,24 @@
 
 #### 1. Modo voz - Error de inicialización
 - **Error**: `"Cannot access 'ce' before initialization"`
-- **Causa raíz**: 
-  - Circular dependency entre `startRecording` y `sendAudioToBackend`
-  - Minificación de Vite convierte nombres de variables
-  - React no garantiza orden de inicialización en producción
-- **Intentos fallidos**: 5 estrategias diferentes (commits `08300c5`, `62f5d2b`, `b67f2fe`)
-- **Solución temporal**: Desactivado con feature flag
-- **Solución definitiva**: 
-  1. Separar lógica de voz en módulo `voiceClient.ts`
-  2. Usar máquina de estados (idle → recording → uploading → waiting)
-  3. Eliminar useCallback circulares
-  4. Tiempo estimado: 8-16 horas
+- **Causa raíz**: Bundling/circular dependencies en `useVoiceMode.js`
+- **Intentos fallidos**: 5 estrategias (commits `08300c5`, `62f5d2b`, `b67f2fe`)
+- **Solución temporal**: Desactivado con feature flag (evita crash)
+- **FIX OBLIGATORIO HOY**: 
+  1. Extraer a `voiceClient.ts` (sin circular imports)
+  2. Máquina de estados clara
+  3. Tiempo estimado: 4-6 horas
 
-#### 2. Grabación de reuniones - Micrófono
-- **Status**: ❌ NO VALIDADO
-- **Razón**: Probablemente mismo error que modo voz
-- **Impacto**: Funcionalidad completa inaccesible
-- **Solución**: Aplicar mismo fix que voz (1-2 horas)
+#### 2. Telegram - Detección correcta de bots vs chats
+- **Problema anterior**: Confundía "sin bots" con "sin chats"
+- **Fix aplicado HOY**: Condición corregida en línea 260
+- **Status actual**: FUNCIONA (requiere validación en prod)
+- **Evidencia requerida**: Screenshot UI con bot visible + mensaje /start si chats=0
 
-#### 3. Telegram - Mensajes en tiempo real
-- **Status**: ⚠️ BACKEND/WEBHOOK
-- **Problema**: No es frontend, es configuración del bot
-- **Requiere**: Verificar webhook en api.al-eon.com
-- **Nota**: UI ya está lista para recibir mensajes
+#### 3. Errores sin contexto ("no puedo")
+- **Problema**: Cuando falla `send_email` (401), UI muestra "no puedo" genérico
+- **FIX OBLIGATORIO HOY**: Mostrar error real: "Falló autenticación SMTP" o "credenciales inválidas"
+- **Evidencia requerida**: Screenshot de error específico en UI
 
 ---
 
@@ -225,6 +204,8 @@ const response = await sendToAleCore({
 ❌ FALLA SI: Error "Cannot access 'ce'..."
 ```
 
+**NOTA**: Este test valida que el crash está controlado. El objetivo HOY es ARREGLARLO completamente (ver PASO 1).
+
 #### Test 3: Telegram bot visible
 ```
 1. Ir a: https://al-eon.com/telegram
@@ -264,12 +245,12 @@ const response = await sendToAleCore({
 
 ### ¿Está listo para demostrar? (SÍ/NO)
 
-- [ ] **Chat básico**: ✅ SÍ - Funciona con contexto
-- [ ] **Modo voz**: ❌ NO - Desactivado (en mejora)
-- [ ] **Telegram**: ⚠️ PARCIAL - UI ok, chats sin datos
-- [ ] **Reuniones**: ❌ NO - No probado (probablemente roto)
-- [ ] **Email/Calendar**: ✅ SÍ - UI funcional (requiere OAuth)
-- [ ] **Proyectos/RAG**: ✅ SÍ - Funcionando
+- [x] **Chat básico**: ✅ SÍ - Funciona con contexto
+- [ ] **Modo voz**: ❌ NO - Desactivado, fix HOY obligatorio
+- [ ] **Telegram**: ✅ SÍ - UI funciona, requiere validación
+- [ ] **Reuniones**: ✅ SÍ - Endpoints funcionan
+- [x] **Email/Calendar**: ✅ SÍ - UI funcional (requiere OAuth)
+- [x] **Proyectos/RAG**: ✅ SÍ - Funcionando
 
 ### ¿Qué se puede prometer para próxima semana?
 
@@ -380,6 +361,95 @@ const response = await sendToAleCore({
 **Frecuencia sugerida**: Cada 4 horas durante desarrollo activo
 **Formato**: Commit + screenshot + prueba funcional
 **Canal**: GitHub commits + este documento actualizado
+
+---
+
+## 🎯 OBJETIVOS HOY (MEDIBLES)
+
+### Objetivo Principal
+**Micro funciona end-to-end**: graba → manda → transcribe → manda a chat  
+**Telegram detecta bot y chats**: y si 0 chats, guía /start  
+**No crashea en producción**  
+**Muestra errores reales**: 401 email, etc. sin "no puedo"
+
+---
+
+### PASO 1 — MICRO: Eliminar crash `Cannot access 'ce' before initialization` (P0)
+
+**Causa**: Bundling/circular deps
+
+**A) Detectar stack real en prod build**
+
+Compilar con:
+- `sourcemap: true`
+- `minify: false` SOLO para reproducir y ubicar línea real
+
+**Evidencia requerida**: Stack trace legible (archivo + línea + función), NO "ce"
+
+**B) Fix definitivo hoy**
+
+En `useVoiceMode.js` / módulo voz:
+1. Sacar toda la lógica de grabación a `voiceClient.ts`
+2. Evitar imports circulares (nada de importar ChatPage dentro de voice module)
+3. Asegurar orden:
+   - inicializa recorder → asigna handlers → luego arranca
+4. Máquina de estados:
+   - idle/recording/uploading/waiting/error
+
+**Evidencia requerida**: Video 60s:
+1. Click mic
+2. Hablar 3s
+3. Stop
+4. Aparece transcript en chat
+5. Envío al backend
+6. Respuesta
+
+---
+
+### PASO 2 — TELEGRAM UI bug (P0)
+
+**Problema**: Consola mostró "Bots cargados: 1" pero UI decía "no hay bots"
+
+**Fix hoy**:
+
+Condición correcta:
+- Si `bots.length > 0` → mostrar bot conectado
+- Si `chats.length === 0` → mostrar "Inicia /start al bot"
+- No confundir "sin chats" con "sin bots"
+
+**Evidencia requerida**: Screenshot UI con bot visible + mensaje /start si chats=0
+
+---
+
+### PASO 3 — CONTEXTO: Enviar sessionId + history correctamente (P0)
+
+En cada request al chat:
+- Enviar `sessionId` real (no null)
+- Enviar historial completo que el backend espera
+
+**Evidencia requerida**: Screenshot Network payload mostrando:
+- `sessionId`
+- `messages[]` con turnos previos
+
+---
+
+### PASO 4 — ERRORES: UI muestra el motivo (P0)
+
+Si `send_email` falla 401, el UI debe mostrar:
+- "Falló autenticación SMTP" o "credenciales inválidas"
+- NO "no puedo"
+
+**Evidencia requerida**: Screenshot de error mostrado en UI
+
+---
+
+## 📦 ENTREGA FRONT (OBLIGATORIA HOY)
+
+Me mandas:
+
+1. **Video 2 min**: voz + telegram + chat
+2. **Screenshot Network payload**: sessionId + history
+3. **Screenshot consola limpia**: sin crash
 
 ---
 
