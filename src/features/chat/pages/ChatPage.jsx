@@ -97,11 +97,14 @@ function ChatPage() {
     loadVoiceSettings();
   }, [user?.id]);
   
+  // 🚫 P0 BLOQUEADOR 2: DESACTIVAR VOZ EN PRODUCCIÓN
+  const VOICE_MODE_ENABLED = import.meta.env.VITE_VOICE_MODE_ENABLED === 'true' || false;
+  
   const voiceMode = useVoiceMode({
     accessToken,                    // ✅ JWT token de Supabase (REQUERIDO)
     sessionId: currentConversation?.session_id || currentConversation?.id, // ✅ ID de sesión (REQUERIDO)
     workspaceId: 'core',           // ✅ Workspace ID
-    enabled: canUseVoice,          // ✅ Flag para activar/desactivar
+    enabled: VOICE_MODE_ENABLED && canUseVoice, // 🚫 DESACTIVADO por feature flag
     ttsGender: userSettings?.tts_gender || 'female', // 🔥 GÉNERO DE VOZ DESDE SETTINGS
     onResponse: (responseText) => { // ✅ Callback correcto - respuesta de AL-E
       console.log('✅ [Voice] Respuesta de AL-E:', responseText.substring(0, 100));

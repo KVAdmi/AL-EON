@@ -106,9 +106,14 @@ export default function TelegramInbox({ botId, chats, onChatsUpdated }) {
               >
                 No hay conversaciones aún
               </p>
-              <p className="text-xs max-w-xs mx-auto">
-                Abre Telegram en tu teléfono y envía un mensaje a tu bot para iniciar una conversación
+              <p className="text-xs max-w-xs mx-auto mb-4">
+                Para iniciar tu primera conversación:
               </p>
+              <ol className="text-xs max-w-xs mx-auto text-left space-y-2">
+                <li>1️⃣ Abre Telegram en tu teléfono</li>
+                <li>2️⃣ Busca el bot y envía <code className="px-1 py-0.5 rounded" style={{backgroundColor: 'var(--color-bg-tertiary)'}}>/start</code></li>
+                <li>3️⃣ Los mensajes aparecerán aquí automáticamente</li>
+              </ol>
             </div>
           )}
         </div>

@@ -152,7 +152,36 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
 
       addMessage(currentConversation.id, userMessage);
 
-      console.log('📤 Enviando a AL-E Core - SOLO mensaje actual');
+      // 🔥 P0 CRÍTICO: Construir historial completo de mensajes
+      const apiMessages = [
+        ...currentConversation.messages.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+          // Incluir attachments si existen
+          ...(msg.attachments && msg.attachments.length > 0 && {
+            attachments: msg.attachments
+          })
+        })),
+        {
+          role: 'user',
+          content: content.trim(),
+          ...(uploadedFiles.length > 0 && {
+            attachments: uploadedFiles.map(f => ({
+              bucket: f.bucket,
+              path: f.path,
+              name: f.name,
+              url: f.url,
+              type: f.type,
+              size: f.size
+            }))
+          })
+        }
+      ];
+
+      console.log('📤 Enviando a AL-E Core - HISTORIAL COMPLETO:', {
+        totalMessages: apiMessages.length,
+        breakdown: apiMessages.map((m, i) => `${i+1}. ${m.role}: ${m.content.substring(0, 50)}...`)
+      });
 
       // ✅ Crear AbortController para poder cancelar
       abortControllerRef.current = new AbortController();
@@ -176,11 +205,11 @@ export function useChat({ currentConversation, addMessage, updateConversation, a
         console.log('🔄 Usando sessionId persistente:', finalSessionId);
       }
 
-      // ✅ P0: ENVIAR SOLO EL MENSAJE ACTUAL, SIN HISTORIAL
+      // 🔥 P0 BLOQUEADOR 1: ENVIAR HISTORIAL COMPLETO
       const response = await sendToAleCore({
         accessToken, // JWT de Supabase
         userId, // ✅ USER ID real (UUID)
-        message: content.trim(), // ✅ SOLO mensaje actual
+        messages: apiMessages, // 🔥 HISTORIAL COMPLETO, NO SOLO MENSAJE ACTUAL
         sessionId: finalSessionId,
         workspaceId,
         projectId: currentConversation.project_id || null, // ✅ ID del proyecto para RAG

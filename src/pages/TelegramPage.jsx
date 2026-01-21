@@ -256,8 +256,10 @@ export default function TelegramPageFixed() {
     );
   }
 
-  // 🔥 SIN BOTS: UI clara de "no hay datos"
-  if (!Array.isArray(bots) || bots.length === 0 || !bots.some(b => b.isConnected)) {
+  // 🔥 P0 FIX: SIN BOTS - NO confundir "sin bots" con "sin chats"
+  // ANTES: mostraba "sin bots" cuando bots.length=1 pero chats.length=0
+  // AHORA: solo mostrar "sin bots" si realmente no hay bots
+  if (!Array.isArray(bots) || bots.length === 0) {
     return (
       <div 
         className="min-h-screen flex items-center justify-center p-6"

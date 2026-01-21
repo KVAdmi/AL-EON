@@ -254,6 +254,9 @@ export default defineConfig({
 		},
 	},
 	build: {
+		// 🚨 P0 FIX: Desactivar minificación para ver stack trace real
+		minify: false,
+		sourcemap: true,
 		rollupOptions: {
 			external: [
 				'@babel/parser',

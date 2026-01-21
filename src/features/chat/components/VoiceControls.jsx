@@ -34,6 +34,9 @@ export default function VoiceControls({
   disabled = false
 }) {
   const isBusy = Boolean(isProcessing || isSpeaking || isSending);
+  
+  // 🚫 P0 BLOQUEADOR 2: Verificar si modo voz está habilitado
+  const VOICE_MODE_ENABLED = import.meta.env.VITE_VOICE_MODE_ENABLED === 'true' || false;
 
   return (
     <div
@@ -63,23 +66,43 @@ export default function VoiceControls({
 
         <button
           type="button"
-          onClick={() => onModeChange?.('voice')}
-          disabled={disabled || isBusy}
-          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+          onClick={() => VOICE_MODE_ENABLED && onModeChange?.('voice')}
+          disabled={!VOICE_MODE_ENABLED || disabled || isBusy}
+          className={`flex-1 flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg font-medium transition-all ${
             mode === 'voice' ? 'shadow-lg' : 'hover:opacity-80'
-          } ${disabled || isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
+          } ${!VOICE_MODE_ENABLED || disabled || isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
           style={{
             backgroundColor: mode === 'voice' ? '#9333EA' : 'var(--color-bg-secondary)',
             color: mode === 'voice' ? '#FFFFFF' : 'var(--color-text-secondary)'
           }}
+          title={!VOICE_MODE_ENABLED ? 'Funcionalidad en mejora - Próximamente disponible' : ''}
         >
-          <Waves size={18} />
-          <span>Modo Voz Manos Libres</span>
+          <div className="flex items-center gap-2">
+            <Waves size={18} />
+            <span>Modo Voz Manos Libres</span>
+          </div>
+          {!VOICE_MODE_ENABLED && (
+            <span className="text-xs opacity-75">🔧 Beta / En mejora</span>
+          )}
         </button>
       </div>
 
-      {/* Controles de Voz */}
-      {mode === 'voice' && (
+      {/* 🚫 Mensaje cuando modo voz está desactivado */}
+      {mode === 'voice' && !VOICE_MODE_ENABLED && (
+        <div
+          className="text-sm px-3 py-2 rounded border flex items-center gap-2"
+          style={{
+            backgroundColor: '#FFF3CD',
+            borderColor: '#FFC107',
+            color: '#856404'
+          }}
+        >
+          <span>⚠️ Modo voz temporalmente desactivado para mejorar estabilidad. Usa modo texto mientras tanto.</span>
+        </div>
+      )}
+
+      {/* Controles de Voz - Solo si está habilitado */}
+      {mode === 'voice' && VOICE_MODE_ENABLED && (
         <div className="flex flex-col gap-2">
           {/* Botón Micrófono */}
           <div className="flex gap-2">
