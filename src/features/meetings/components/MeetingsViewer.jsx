@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, Calendar, FileText, Clock, ChevronRight, ChevronDown } from 'lucide-react';
+import { getMeetings } from '@/services/meetingsService';
 
 const BACKEND_URL = import.meta.env.VITE_CORE_BASE_URL || 'https://api.al-eon.com';
 
@@ -32,21 +33,12 @@ export default function MeetingsViewer() {
   const fetchMeetings = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${BACKEND_URL}/api/meetings`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-
-      if (!response.ok) {
-        throw new Error('Error obteniendo reuniones');
-      }
-
-      const data = await response.json();
-      
-      if (data.success) {
-        setMeetings(data.meetings || []);
-      }
+      // Usar el servicio que consulta Supabase directamente
+      const data = await getMeetings();
+      setMeetings(data || []);
     } catch (error) {
       console.error('[MEETINGS] ❌ Error:', error);
+      setMeetings([]);
     } finally {
       setLoading(false);
     }
