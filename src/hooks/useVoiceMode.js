@@ -56,6 +56,7 @@ export function useVoiceMode({
   const handsFreeRef = useRef(handsFreeEnabled);
   const streamRef = useRef(null);
   const sendAudioToBackendRef = useRef(null);
+  const startRecordingRef = useRef(null); // 🔥 NUEVO: ref para evitar ciclo de dependencias
 
   // Sincronizar handsFree
   useEffect(() => {
@@ -470,7 +471,8 @@ export function useVoiceMode({
         console.log('🔄 Modo manos libres: reiniciando grabación...');
         setTimeout(() => {
           if (mode === 'voice' && handsFreeRef.current && !isSending) {
-            startRecording();
+            // 🔥 Usar ref para evitar ciclo de dependencias
+            startRecordingRef.current?.();
           }
         }, 500);
       } else {
@@ -495,12 +497,17 @@ export function useVoiceMode({
       setIsSending(false);
       abortControllerRef.current = null;
     }
-  }, [accessToken, sessionId, workspaceId, mode, ttsGender, onResponse, onError, startRecording]);
+  }, [accessToken, sessionId, workspaceId, mode, ttsGender, onResponse, onError]);
 
   // Mantener una referencia estable para usarla desde callbacks nativos (MediaRecorder)
   useEffect(() => {
     sendAudioToBackendRef.current = sendAudioToBackend;
   }, [sendAudioToBackend]);
+
+  // 🔥 NUEVO: Mantener referencia de startRecording para evitar ciclos
+  useEffect(() => {
+    startRecordingRef.current = startRecording;
+  }, [startRecording]);
 
   /**
    * Reproducir audio
@@ -548,9 +555,9 @@ export function useVoiceMode({
     
     // Si cambia a modo voz con handsFree, iniciar grabación
     if (newMode === 'voice' && handsFreeRef.current && !isSending) {
-      setTimeout(() => startRecording(), 500);
+      setTimeout(() => startRecordingRef.current?.(), 500);
     }
-  }, [mode, stopRecording, stopAudio, isSending, startRecording]);
+  }, [mode, stopRecording, stopAudio, isSending]);
 
   /**
    * Detener todo (grabación + audio)

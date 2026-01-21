@@ -280,11 +280,24 @@ export default function TelegramSettingsPage() {
                           }}
                         >
                           <p 
-                            className="text-sm font-medium"
+                            className="text-sm font-medium mb-2"
                             style={{ color: 'var(--color-text-primary)' }}
                           >
-                            📱 <strong>Último paso:</strong> Abre Telegram, busca tu bot <span className="font-mono">@{bot.botUsername || bot.bot_username}</span> y presiona <strong>INICIAR</strong>
+                            📱 <strong>Último paso:</strong> Abre Telegram y presiona <strong>INICIAR</strong> en el bot
                           </p>
+                          <a
+                            href={`https://t.me/${bot.botUsername || bot.bot_username}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all hover:opacity-80"
+                            style={{
+                              backgroundColor: '#0088cc',
+                              color: '#ffffff'
+                            }}
+                          >
+                            <Send size={16} />
+                            Abrir @{bot.botUsername || bot.bot_username} en Telegram
+                          </a>
                         </div>
                       )}
                     </div>
