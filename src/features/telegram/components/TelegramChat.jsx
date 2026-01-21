@@ -14,6 +14,15 @@ export default function TelegramChat({ chatId, chatName, botId, onMessageSent })
 
   useEffect(() => {
     loadMessages();
+    // 🔥 POLLING: Recargar cada 3 segundos para ver mensajes nuevos
+    const interval = setInterval(() => {
+      if (chatId) {
+        console.log('[TelegramChat] 🔄 Auto-refresh...');
+        loadMessages();
+      }
+    }, 3000);
+    
+    return () => clearInterval(interval);
   }, [chatId]);
 
   useEffect(() => {
