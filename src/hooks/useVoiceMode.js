@@ -116,6 +116,55 @@ export function useVoiceMode({
   }
 
   /**
+   * Verificar permisos de micrófono antes de grabar
+   */
+  const checkMicrophonePermission = useCallback(async () => {
+    try {
+      console.log('🔍 [Mic] Verificando permisos de micrófono...');
+      
+      // Verificar si el navegador soporta la API
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Tu navegador no soporta grabación de audio. Usa Chrome, Firefox o Safari actualizado.');
+      }
+
+      // Intentar obtener permisos
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // Verificar que hay audio tracks
+      const audioTracks = stream.getAudioTracks();
+      if (audioTracks.length === 0) {
+        throw new Error('No se detectó micrófono. Conecta uno e intenta de nuevo.');
+      }
+
+      console.log('✅ [Mic] Permisos concedidos:', {
+        label: audioTracks[0].label,
+        state: audioTracks[0].readyState
+      });
+
+      // Detener el stream de prueba
+      stream.getTracks().forEach(track => track.stop());
+      
+      return { success: true, message: 'Micrófono detectado y funcionando' };
+    } catch (err) {
+      console.error('❌ [Mic] Error verificando permisos:', err);
+      
+      let userMessage = 'Error desconocido con el micrófono';
+      
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        userMessage = 'Debes permitir el acceso al micrófono. Revisa el ícono 🔒 en la barra de dirección del navegador.';
+      } else if (err.name === 'NotFoundError') {
+        userMessage = 'No se encontró ningún micrófono. Conecta uno e intenta de nuevo.';
+      } else if (err.name === 'NotReadableError') {
+        userMessage = 'El micrófono está siendo usado por otra aplicación. Ciérrala e intenta de nuevo.';
+      } else if (err.message) {
+        userMessage = err.message;
+      }
+      
+      return { success: false, message: userMessage };
+    }
+  }, []);
+
+  /**
    * Iniciar grabación de audio
    */
   const startRecording = useCallback(async () => {
@@ -146,7 +195,7 @@ export function useVoiceMode({
       
       // 🔥 P0-2: VERIFICAR que el stream tiene audio tracks
       if (!stream || stream.getAudioTracks().length === 0) {
-        throw new Error('No se pudo acceder al micrófono. Verifica permisos.');
+        throw new Error('No se pudo acceder al micrófono. Verifica permisos en tu navegador (ícono 🔒).');
       }
       
       console.log('✅ [P0-2] Permisos concedidos, tracks activos:', stream.getAudioTracks().length);
@@ -418,7 +467,7 @@ export function useVoiceMode({
       
       // 🔥 NUEVO REQUEST-ID para TTS
       const ttsRequestId = generateRequestId();
-      console.log(`[REQ-VOICE] 📤 TTS - id=${ttsRequestId} sessionId=${sessionId}`);
+      console.log(`[REQ-VOICE] 📤 TTS - id=${ttsRequestId} sessionId=${sessionId} gender=${ttsGender}`);
       
       const ttsResponse = await fetch(`${CORE_BASE_URL}/api/voice/tts`, {
         method: 'POST',
@@ -429,7 +478,7 @@ export function useVoiceMode({
         },
         body: JSON.stringify({
           text: assistantText,
-          voice: ttsGender === 'male' ? 'mx_male_default' : 'mx_female_default',
+          gender: ttsGender, // 🔥 POLLY: enviar 'female' o 'male' directamente
           format: 'mp3'
         }),
         signal: abortControllerRef.current.signal
@@ -579,6 +628,7 @@ export function useVoiceMode({
     startRecording,
     stopRecording,
     stopAll,
+    checkMicrophonePermission, // 🔥 NUEVO: Verificar permisos antes de grabar
     
     // 🔥 ALIASES para compatibilidad con UI
     startListening: startRecording,

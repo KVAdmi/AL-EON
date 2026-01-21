@@ -43,7 +43,12 @@ export function AuthProvider({ children }) {
         return null;
       }
       
-      console.log('[BOOT] ✅ profile loaded:', data?.display_name || data?.email);
+      console.log('[BOOT] ✅ profile loaded:', {
+        display_name: data?.display_name,
+        assistant_name: data?.assistant_name,
+        assistant_avatar_url: data?.assistant_avatar_url,
+        fields: Object.keys(data || {})
+      });
       setUserProfile(data);
       return data;
     } catch (err) {

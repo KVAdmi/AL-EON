@@ -24,9 +24,14 @@ function ChatPage() {
   useEventNotifications(user?.id);
   
   // 🔍 DEBUG: Ver qué datos tenemos del perfil
-  console.log('🔍 [ChatPage] userProfile:', userProfile);
+  console.log('🔍 [ChatPage] userProfile completo:', userProfile);
   console.log('🔍 [ChatPage] assistant_avatar_url:', userProfile?.assistant_avatar_url);
   console.log('🔍 [ChatPage] assistant_name:', userProfile?.assistant_name);
+  console.log('🔍 [ChatPage] Props para MessageThread:', {
+    assistantName: userProfile?.assistant_name || 'Luma',
+    assistantAvatar: userProfile?.assistant_avatar_url,
+    currentUser: userProfile?.display_name || user?.email
+  });
   
   // �🔒 VERIFICAR SI VOZ ESTÁ HABILITADA
   const canUseVoice = useCapability('voice');
