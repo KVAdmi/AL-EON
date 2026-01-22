@@ -154,19 +154,18 @@ function MessageThread({ conversation, isLoading, voiceMode, voiceError, handsFr
                     onClick={() => {
                       console.log('🔥🔥🔥 [MessageThread] CLICK EN MICRÓFONO');
                       console.log('[VoiceUI] voiceMode:', voiceMode);
-                      console.log('[VoiceUI] voiceMode.startListening existe?', typeof voiceMode.startListening);
-                      console.log('[VoiceUI] isListening:', voiceMode?.isListening);
+                      console.log('[VoiceUI] state:', voiceMode?.state);
                       
-                      if (voiceMode.isListening) {
+                      if (voiceMode.state === 'recording') {
                         console.log('🛑 Deteniendo grabación...');
-                        voiceMode.stopAll();
+                        voiceMode.stopRecording();
                       } else {
                         console.log('🎤 Iniciando grabación...');
-                        voiceMode.startListening();
+                        voiceMode.startRecording();
                       }
                     }}
                     className={`p-2 rounded-full transition-all ${
-                      voiceMode.isListening
+                      voiceMode.state === 'recording'
                         ? 'bg-red-600 text-white animate-pulse'
                         : 'bg-gray-700 text-white hover:bg-gray-600 border border-gray-600'
                     }`}
