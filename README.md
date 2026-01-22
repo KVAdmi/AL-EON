@@ -4,10 +4,11 @@
 
 ### 🔧 Variables de Entorno (.env)
 ```bash
-VITE_ALE_CORE_URL=https://api.al-entity.com/api/ai/chat
+VITE_ALE_CORE_URL=https://api.al-eon.com/api/ai/chat
 VITE_WORKSPACE_ID=al-eon
 VITE_DEFAULT_MODE=universal
 VITE_USER_ID=patty
+VITE_VOICE_MODE_ENABLED=true  # 🎤 P0 FIX: Modo voz habilitado
 ```
 
 ### 🎯 Arquitectura
