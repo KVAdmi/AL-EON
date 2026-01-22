@@ -106,11 +106,12 @@ function ChatPage() {
     workspaceId: 'core',           // ✅ Workspace ID
     enabled: VOICE_MODE_ENABLED && canUseVoice, // 🚫 DESACTIVADO por feature flag
     ttsGender: userSettings?.tts_gender || 'female', // 🔥 GÉNERO DE VOZ DESDE SETTINGS
-    onResponse: (responseText) => { // ✅ Callback correcto - respuesta de AL-E
-      console.log('✅ [Voice] Respuesta de AL-E:', responseText.substring(0, 100));
-      setVoiceError(null); // 🔥 Limpiar error cuando hay respuesta exitosa
-      // El mensaje ya se agregó al conversation por el backend
-      // Aquí solo actualizamos UI si es necesario
+    onResponse: async (responseText) => { // 🔥 FIX: Enviar transcripción al chat
+      console.log('✅ [Voice] Transcripción recibida:', responseText);
+      setVoiceError(null);
+      
+      // 🔥 CRÍTICO: Enviar el texto transcrito al chat para que Luna responda
+      await handleSendMessage(responseText, []);
     },
     onError: (error) => {           // 🔥 MEJORADO: Guardar error en estado
       console.error('❌ [Voice] Error:', error);
