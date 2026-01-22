@@ -138,7 +138,7 @@ function ChatPage() {
 
   const handleSendMessage = async (content, attachments) => {
     if (!currentConversation) {
-      createConversation();
+      await createConversation(); // 🔥 FIX: Esperar a que se cree la conversación
     }
     await sendMessage(content, attachments);
   };
