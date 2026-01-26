@@ -9,6 +9,7 @@ import { useVoiceMode } from '@/hooks/useVoiceMode';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCapability } from '@/components/CapabilitiesGate';
 import { useEventNotifications } from '@/hooks/useEventNotifications';
+import { VoiceModeSwitch } from '@/components/VoiceModeSwitch';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { supabase } from '@/lib/supabase';
 
