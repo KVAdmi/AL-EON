@@ -11,6 +11,7 @@ import { useCapability } from '@/components/CapabilitiesGate';
 import { useEventNotifications } from '@/hooks/useEventNotifications';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { supabase } from '@/lib/supabase';
+import { VoiceModeSwitch } from '@/components/VoiceModeSwitch';
 
 function ChatPage() {
   const { user, userProfile, accessToken, logout } = useAuth();
@@ -110,8 +111,14 @@ function ChatPage() {
       console.log('✅ [Voice] Transcripción recibida:', responseText);
       setVoiceError(null);
       
-      // 🔥 CRÍTICO: Enviar el texto transcrito al chat para que Luna responda
-      await handleSendMessage(responseText, []);
+      // 🔥 P0 FIX: Pasar voiceMeta para que backend active TTS en respuesta
+      const voiceMeta = {
+        inputMode: 'voice',
+        localeHint: 'es-MX',
+        handsFree: handsFree || false
+      };
+      
+      await handleSendMessage(responseText, [], voiceMeta);
     },
     onError: (error) => {           // 🔥 MEJORADO: Guardar error en estado
       console.error('❌ [Voice] Error:', error);
@@ -198,6 +205,21 @@ function ChatPage() {
 
       {/* ÁREA DE CHAT */}
       <div className="flex-1 flex flex-col overflow-hidden" style={{ width: '100%', maxWidth: '100%' }}>
+        {/* 🎤 P0 FIX: Switch visible para modo voz (como ChatGPT) */}
+        <div className="flex items-center justify-end px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+          <VoiceModeSwitch
+            enabled={voiceMode?.mode === 'voice'}
+            onChange={(enabled) => {
+              if (enabled) {
+                voiceMode?.startListening?.();
+              } else {
+                voiceMode?.stopListening?.();
+              }
+            }}
+            disabled={!canUseVoice}
+          />
+        </div>
+
         <ErrorBoundary>
           <MessageThread
             conversation={currentConversation}
