@@ -119,76 +119,40 @@ function MessageThread({ conversation, isLoading, voiceMode, voiceError, handsFr
                   </div>
                 )}
 
-                {/* Selector de modo */}
-                <button
-                  onClick={() => {
-                    console.log('🎯 [MessageThread] Click en botón modo voz/texto');
-                    console.log('🎯 voiceMode:', voiceMode);
-                    console.log('🎯 voiceMode.mode:', voiceMode?.mode);
-                    console.log('🎯 voiceMode.setMode:', typeof voiceMode?.setMode);
-                    
-                    if (voiceMode?.setMode) {
-                      const newMode = voiceMode.mode === 'text' ? 'voice' : 'text';
-                      console.log('🎯 Cambiando a modo:', newMode);
-                      voiceMode.setMode(newMode);
-                    } else {
-                      console.error('❌ voiceMode.setMode no está disponible');
-                    }
-                  }}
-                  className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    voiceMode.mode === 'voice'
-                      ? 'bg-gray-700 text-white border border-gray-600'
-                      : 'bg-transparent text-gray-400 hover:bg-gray-800 border border-gray-700'
-                  }`}
-                >
-                  {voiceMode.mode === 'voice' ? (
-                    <><Waves size={12} md:size={14} /> <span className="hidden sm:inline">Voz</span></>
-                  ) : (
-                    <><MessageSquare size={12} md:size={14} /> <span className="hidden sm:inline">Texto</span></>
-                  )}
-                </button>
-
-                {/* Botón micrófono en modo voz */}
-                {voiceMode.mode === 'voice' && (
+                {/* 🎤 SWITCH ÚNICO DE VOZ (ON/OFF) */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400">Modo Voz</span>
                   <button
                     onClick={() => {
-                      console.log('🔥🔥🔥 [MessageThread] CLICK EN MICRÓFONO');
-                      console.log('[VoiceUI] voiceMode:', voiceMode);
-                      console.log('[VoiceUI] state:', voiceMode?.state);
-                      
-                      if (voiceMode.state === 'recording') {
-                        console.log('🛑 Deteniendo grabación...');
-                        voiceMode.stopRecording();
-                      } else {
-                        console.log('🎤 Iniciando grabación...');
-                        voiceMode.startRecording();
+                      if (voiceMode?.setMode) {
+                        const newMode = voiceMode.mode === 'text' ? 'voice' : 'text';
+                        console.log('🎯 Switch voz:', newMode);
+                        voiceMode.setMode(newMode);
+                        
+                        // Si se activa voz, auto-iniciar grabación
+                        if (newMode === 'voice' && voiceMode.startRecording) {
+                          setTimeout(() => voiceMode.startRecording(), 100);
+                        }
                       }
                     }}
-                    className={`p-2 rounded-full transition-all ${
-                      voiceMode.state === 'recording'
-                        ? 'bg-red-600 text-white animate-pulse'
-                        : 'bg-gray-700 text-white hover:bg-gray-600 border border-gray-600'
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      voiceMode.mode === 'voice'
+                        ? 'bg-blue-600'
+                        : 'bg-gray-700'
                     }`}
+                    role="switch"
+                    aria-checked={voiceMode.mode === 'voice'}
                   >
-                    <Mic size={14} md:size={16} />
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        voiceMode.mode === 'voice' ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
                   </button>
-                )}
-
-                {/* Botón Manos Libres */}
-                {voiceMode.mode === 'voice' && (
-                  <button
-                    onClick={onToggleHandsFree}
-                    className={`flex items-center gap-1.5 px-2 md:px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                      handsFree
-                        ? 'bg-blue-600 text-white border border-blue-500'
-                        : 'bg-transparent text-gray-400 hover:bg-gray-800 border border-gray-700'
-                    }`}
-                    title={handsFree ? 'Desactivar manos libres' : 'Activar manos libres'}
-                  >
-                    <Waves size={12} md:size={14} />
-                    <span className="hidden sm:inline">Manos Libres</span>
-                  </button>
-                )}
+                  {voiceMode.mode === 'voice' && voiceMode.state === 'recording' && (
+                    <Mic size={14} className="text-red-500 animate-pulse" />
+                  )}
+                </div>
               </>
             )}
           </div>

@@ -11,7 +11,6 @@ import { useCapability } from '@/components/CapabilitiesGate';
 import { useEventNotifications } from '@/hooks/useEventNotifications';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { supabase } from '@/lib/supabase';
-import { VoiceModeSwitch } from '@/components/VoiceModeSwitch';
 
 function ChatPage() {
   const { user, userProfile, accessToken, logout } = useAuth();
