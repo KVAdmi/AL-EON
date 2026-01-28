@@ -107,6 +107,7 @@ function MessageThread({ conversation, isLoading, voiceMode, voiceError, handsFr
             {voiceMode && (
             <>
                 {/* Estado actual */}
+                {/* 🎤 Solo mostrar indicador de estado (switch está en header) */}
                 {voiceMode.status !== 'idle' && (
                   <div className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-full text-xs font-medium ${
                     voiceMode.status === 'listening' ? 'bg-green-900/30 text-green-400 border border-green-700' :
@@ -118,41 +119,6 @@ function MessageThread({ conversation, isLoading, voiceMode, voiceError, handsFr
                     {voiceMode.status === 'speaking' && <><Volume2 size={12} md:size={14} className="animate-pulse" /> <span className="hidden sm:inline">AL-E habla</span></>}
                   </div>
                 )}
-
-                {/* 🎤 SWITCH ÚNICO DE VOZ (ON/OFF) */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400">Modo Voz</span>
-                  <button
-                    onClick={() => {
-                      if (voiceMode?.setMode) {
-                        const newMode = voiceMode.mode === 'text' ? 'voice' : 'text';
-                        console.log('🎯 Switch voz:', newMode);
-                        voiceMode.setMode(newMode);
-                        
-                        // Si se activa voz, auto-iniciar grabación
-                        if (newMode === 'voice' && voiceMode.startRecording) {
-                          setTimeout(() => voiceMode.startRecording(), 100);
-                        }
-                      }
-                    }}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      voiceMode.mode === 'voice'
-                        ? 'bg-blue-600'
-                        : 'bg-gray-700'
-                    }`}
-                    role="switch"
-                    aria-checked={voiceMode.mode === 'voice'}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        voiceMode.mode === 'voice' ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                  {voiceMode.mode === 'voice' && voiceMode.state === 'recording' && (
-                    <Mic size={14} className="text-red-500 animate-pulse" />
-                  )}
-                </div>
               </>
             )}
           </div>
