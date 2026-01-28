@@ -176,9 +176,12 @@ class VoiceClient {
   /**
    * Enviar audio al backend (CORE) para STT
    * Retorna el JSON decodificado del servidor o lanza error
+   * 
+   * 🔥 USA URL RELATIVA para aprovechar proxy de Netlify
    */
   async sendAudio(blob: Blob, accessToken?: string) {
-    const CORE_BASE_URL = (import.meta as any).env?.VITE_CORE_BASE_URL || 'https://api.al-eon.com';
+    // Usar URL relativa - Netlify proxy redirige /api/* a EC2
+    const API_BASE = '';
     
     try {
       const requestId = `voice-${Date.now()}-${Math.random().toString(36).substring(7)}`;
@@ -191,7 +194,7 @@ class VoiceClient {
 
       console.log(`[${requestId}] POST /api/voice/stt`);
 
-      const response = await fetch(`${CORE_BASE_URL}/api/voice/stt`, {
+      const response = await fetch(`${API_BASE}/api/voice/stt`, {
         method: 'POST',
         headers,
         body: formData,
