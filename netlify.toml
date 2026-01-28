@@ -3,14 +3,7 @@
   command = "npm run build"
   publish = "dist"
 
-# 🔥 CRÍTICO: Proxy a EC2 - DEBE IR PRIMERO
-[[redirects]]
-  from = "/api/*"
-  to = "http://100.27.201.233:3001/api/:splat"
-  status = 200
-  force = true
-
-# Catch-all para SPA (DEBE IR AL FINAL)
+# SPA fallback
 [[redirects]]
   from = "/*"
   to = "/index.html"
